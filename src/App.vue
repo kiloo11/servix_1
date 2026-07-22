@@ -1007,6 +1007,9 @@ export default {
       if (toCurrency === "USDT") return eur * (Number(this.meta.rateUsdtPerEur) || 1.08);
       return eur;
     },
+    usdRubRate() {
+      return Number(this.meta.rateRubPerEur || 0) / (Number(this.meta.rateUsdtPerEur) || 1);
+    },
     async refreshRates() {
       this.meta = { ...this.meta, ...(await this.api("/api/rates/refresh", { method: "POST" })) };
       this.toast(this.t("settings.ratesRefreshed"));
