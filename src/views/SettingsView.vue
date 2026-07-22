@@ -52,6 +52,7 @@
         <div class="rate-display-grid">
           <div><span>{{ app.t("settings.rateRubPerEur") }}</span><strong>{{ app.formatShort(app.meta.rateRubPerEur) }} RUB</strong></div>
           <div><span>{{ app.t("settings.rateUsdtPerEur") }}</span><strong>{{ app.formatShort(app.meta.rateUsdtPerEur) }} USDT</strong></div>
+          <div><span>{{ app.t("settings.rateUsdRub") }}</span><strong>{{ app.formatShort(app.usdRubRate()) }} RUB</strong></div>
         </div>
         <div class="settings-inline-footer">
           <span class="hint">{{ app.meta.rateUpdatedAt ? app.t("settings.ratesUpdated", { value: app.formatDateTime(app.meta.rateUpdatedAt) }) : app.t("settings.ratesNever") }}</span>
