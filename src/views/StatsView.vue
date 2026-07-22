@@ -2,14 +2,19 @@
   <section class="view active">
     <div class="section-head">
       <h1>{{ app.t("nav.stats") }}</h1>
-      <select v-model="app.statsPeriod" class="period-select" :aria-label="app.t('stats.period')">
-        <option value="7d">{{ app.t("stats.period7d") }}</option>
-        <option value="30d">{{ app.t("stats.period30d") }}</option>
-        <option value="90d">{{ app.t("stats.period90d") }}</option>
-        <option value="180d">{{ app.t("stats.period180d") }}</option>
-        <option value="1y">{{ app.t("stats.period1y") }}</option>
-        <option value="all">{{ app.t("stats.periodAll") }}</option>
-      </select>
+      <div class="section-head-actions">
+        <select v-model="app.statsCurrency" class="period-select" :aria-label="app.t('stats.currencyFilter')">
+          <option v-for="currency in app.availableCurrencies" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : app.t(`currency.${currency}`) }}</option>
+        </select>
+        <select v-model="app.statsPeriod" class="period-select" :aria-label="app.t('stats.period')">
+          <option value="7d">{{ app.t("stats.period7d") }}</option>
+          <option value="30d">{{ app.t("stats.period30d") }}</option>
+          <option value="90d">{{ app.t("stats.period90d") }}</option>
+          <option value="180d">{{ app.t("stats.period180d") }}</option>
+          <option value="1y">{{ app.t("stats.period1y") }}</option>
+          <option value="all">{{ app.t("stats.periodAll") }}</option>
+        </select>
+      </div>
     </div>
     <div class="stats-grid">
       <article v-for="card in app.statCards" :key="card.label" class="stat-card"><span>{{ card.label }}</span><strong>{{ card.value }}</strong></article>
@@ -18,7 +23,7 @@
       <article class="chart-panel wide-chart">
         <div class="chart-title-row">
           <h2>{{ app.t("stats.spendByUnit", { unit: app.timelineUnitLabel }) }}</h2>
-          <span>{{ app.formatUsdt(app.timelineTotal) }}</span>
+          <span>{{ app.formatMoney(app.timelineTotal, app.statsCurrency) }}</span>
         </div>
         <div class="line-chart" v-if="app.paymentAmountTimeline.length" @mouseleave="app.hideChartTooltip">
           <svg viewBox="0 0 100 42" preserveAspectRatio="none" aria-hidden="true">
@@ -41,7 +46,7 @@
         <h2>{{ app.t("stats.providerSpend") }}</h2>
         <div class="bar-list" v-if="app.providerSpend.length">
           <div v-for="row in app.providerSpend" :key="row.id" class="bar-row">
-            <span><i :style="{ background: row.color }"></i>{{ row.name }}</span><div><i :style="{ width: row.width + '%', background: row.color }"></i></div><strong>{{ app.formatUsdt(row.value) }}</strong>
+            <span><i :style="{ background: row.color }"></i>{{ row.name }}</span><div><i :style="{ width: row.width + '%', background: row.color }"></i></div><strong>{{ app.formatMoney(row.value, app.statsCurrency) }}</strong>
           </div>
         </div>
         <div v-else class="inline-empty">{{ app.t("stats.spendNone") }}</div>
@@ -108,13 +113,13 @@
           <span>{{ app.formatDateTime(payment.paidAt) }}</span>
           <span>{{ payment.asset.name }}</span>
           <span>{{ app.providerOf(payment.asset)?.name || app.t("common.providerEmpty") }}</span>
-          <strong>{{ app.formatUsdt(payment.amount) }}</strong>
+          <strong>{{ app.formatMoney(payment.amount, app.statsCurrency) }}</strong>
         </div>
       </div>
       <div v-else-if="app.periodPayments.length" class="inline-empty">{{ app.t("stats.noFilteredPayments") }}</div>
       <div v-else class="inline-empty">{{ app.t("stats.noPeriodPayments") }}</div>
       <div class="table-footer" v-if="app.filteredPeriodPayments.length">
-        <span>{{ app.t("common.total") }}: {{ app.formatUsdt(app.filteredPeriodPaymentsTotal) }}</span>
+        <span>{{ app.t("common.total") }}: {{ app.formatMoney(app.filteredPeriodPaymentsTotal, app.statsCurrency) }}</span>
         <div class="pagination">
           <button class="secondary-button icon-only" type="button" @click="app.setPaymentPage(app.paymentTablePage - 1)" :disabled="app.paymentTablePage <= 1" :aria-label="app.t('stats.prevPage')"><ChevronLeftIcon :size="16" /></button>
           <strong>{{ app.paymentTablePage }} / {{ app.paymentTablePages }}</strong>

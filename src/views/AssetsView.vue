@@ -55,7 +55,7 @@
                 <span>{{ app.daysText(asset.expiresAt) }}</span>
               </div>
               <div class="payment-strip">
-                <strong>{{ app.formatUsdt(app.totalPayments(asset.payments)) }}</strong>
+                <strong>{{ app.formatPaymentTotal(asset.payments) }}</strong>
                 <span>{{ app.tc("payment", asset.payments?.length || 0) }}</span>
               </div>
               <footer>

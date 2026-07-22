@@ -723,6 +723,13 @@ label {
   width: min(190px, 100%);
 }
 
+.section-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .danger-button {
   background: var(--danger-soft);
   border-color: color-mix(in srgb, var(--danger) 38%, var(--line));
@@ -1665,8 +1672,8 @@ label {
 
 .quick-payment {
   display: grid;
-  grid-template-columns: minmax(110px, 0.85fr) minmax(190px, 1.15fr) 44px;
-  grid-template-areas: "amount date add";
+  grid-template-columns: minmax(100px, 0.7fr) minmax(90px, 0.55fr) minmax(170px, 1fr) 44px;
+  grid-template-areas: "amount currency date add";
   gap: 8px;
   align-items: end;
   border: 1px solid var(--line);
@@ -1684,10 +1691,33 @@ label {
 }
 
 .quick-payment label:nth-child(2) {
+  grid-area: currency;
+}
+
+.quick-payment label:nth-child(3) {
   grid-area: date;
 }
 
-.quick-payment input {
+.quick-payment input,
+.quick-payment select {
+  min-width: 0;
+}
+
+.renewal-price-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.85fr) minmax(120px, 0.6fr);
+  gap: 8px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.renewal-price-row label,
+.renewal-price-row input,
+.renewal-price-row select {
   min-width: 0;
 }
 
@@ -2252,6 +2282,15 @@ label {
 
 .payments-table-row strong {
   color: var(--text);
+}
+
+.pnl-toolbar {
+  grid-template-columns: minmax(180px, 1.25fr) minmax(160px, 0.9fr) 94px;
+}
+
+.pnl-table-row {
+  grid-template-columns: minmax(160px, 1.1fr) minmax(140px, 0.8fr) minmax(150px, 0.9fr) 150px 170px;
+  min-width: 820px;
 }
 
 .payments-table-row strong:last-child {
