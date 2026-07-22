@@ -990,6 +990,21 @@ label {
   font-weight: 900;
 }
 
+.country-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.flag-icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--line) 90%, transparent);
+}
+
 .provider-color-mark {
   background: color-mix(in srgb, var(--provider-color, var(--accent)) 22%, var(--panel));
   color: var(--text);

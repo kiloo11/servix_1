@@ -90,12 +90,18 @@
           <label>{{ t("common.country") }}
             <div class="search-select">
               <button class="search-select-button" type="button" @click="countrySelectOpen = !countrySelectOpen">
-                <span>{{ editingAsset.countryCode ? countryLabel(editingAsset.countryCode) : t("common.countryEmpty") }}</span>
+                <span class="country-option">
+                  <img v-if="editingAsset.countryCode" class="flag-icon" :src="countryFlagUrl(editingAsset.countryCode)" alt="">
+                  {{ editingAsset.countryCode ? countryDisplayName(editingAsset.countryCode) : t("common.countryEmpty") }}
+                </span>
               </button>
               <div v-if="countrySelectOpen" class="search-select-panel">
                 <input v-model="countrySearch" type="search" :placeholder="t('common.searchCountry')" @keydown.escape="countrySelectOpen = false">
                 <div class="search-select-options">
-                  <button v-for="country in filteredCountries" :key="country.code || 'empty'" type="button" :class="{ active: editingAsset.countryCode === country.code }" @click="selectCountry(country.code)">{{ country.code ? countryLabel(country.code) : t("common.countryEmpty") }}</button>
+                  <button v-for="country in filteredCountries" :key="country.code || 'empty'" type="button" class="country-option" :class="{ active: editingAsset.countryCode === country.code }" @click="selectCountry(country.code)">
+                    <img v-if="country.code" class="flag-icon" :src="countryFlagUrl(country.code)" alt="">
+                    {{ country.code ? countryDisplayName(country.code) : t("common.countryEmpty") }}
+                  </button>
                   <div v-if="!filteredCountries.length" class="inline-empty">{{ t("common.noCountries") }}</div>
                 </div>
               </div>
@@ -1200,11 +1206,18 @@ export default {
       return /^https?:\/\//i.test(value) ? value : `https://${value}`;
     },
     assetSubtitle(asset) {
-      if (asset.type === "vps") return asset.countryCode ? countryLabelForLocale(asset.countryCode, this.currentLocale) : this.t("common.countryEmpty");
+      if (asset.type === "vps") return asset.countryCode ? this.countryDisplayName(asset.countryCode) : this.t("common.countryEmpty");
       return asset.domain || this.t("common.domain");
     },
     countryLabel(code) {
       return countryLabelForLocale(code, this.currentLocale);
+    },
+    countryDisplayName(code) {
+      return countryNameForLocale(code, this.currentLocale);
+    },
+    countryFlagUrl(code) {
+      const countryCode = String(code || "").trim().toLowerCase();
+      return countryCode ? `https://flagcdn.com/${countryCode}.svg` : "";
     },
     selectCountry(code) {
       this.editingAsset.countryCode = code;
@@ -1461,6 +1474,11 @@ function countryLabelForLocale(code, locale) {
   const flag = countryFlag(countryCode);
   const name = countryCode ? countryName(countryCode, locale) : translate(locale, "common.countryEmpty");
   return countryCode ? `${flag} ${name}` : name;
+}
+
+function countryNameForLocale(code, locale) {
+  const countryCode = String(code || "").toUpperCase();
+  return countryCode ? countryName(countryCode, locale) : translate(locale, "common.countryEmpty");
 }
 
 function countryFlag(code) {

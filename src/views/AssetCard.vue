@@ -14,7 +14,10 @@
         <span v-else class="favicon-placeholder">{{ app.providerInitial(asset) }}</span>
         <div>
           <h2>{{ asset.name }}</h2>
-          <span v-if="asset.type === 'vps'">{{ app.assetSubtitle(asset) }}</span>
+          <span v-if="asset.type === 'vps'" class="country-option">
+            <img v-if="asset.countryCode" class="flag-icon" :src="app.countryFlagUrl(asset.countryCode)" alt="">
+            {{ app.assetSubtitle(asset) }}
+          </span>
           <a v-else-if="asset.domain" class="card-subtitle-link" :href="app.domainHref(asset.domain)" target="_blank" rel="noreferrer">{{ asset.domain }}</a>
           <span v-else>{{ app.assetSubtitle(asset) }}</span>
         </div>
