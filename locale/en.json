@@ -14,12 +14,17 @@
     "assets": "Records",
     "providers": "Providers",
     "stats": "Statistics",
+    "pnl": "P&L",
     "alerts": "Alerts",
     "logs": "Logs",
     "guide": "Manual",
     "settings": "Settings",
     "collapseMenu": "Collapse menu",
     "expandMenu": "Expand menu"
+  },
+  "currency": {
+    "EUR": "Euro",
+    "RUB": "Russian ruble"
   },
   "type": {
     "vps": "Server",
@@ -63,7 +68,11 @@
     "notSpecified": "Not specified",
     "now": "now",
     "testTelegram": "Test Telegram",
-    "addPayment": "Add payment"
+    "addPayment": "Add payment",
+    "price": "Price",
+    "currency": "Currency",
+    "renewalPrice": "Renewal price",
+    "renewalPriceHint": "If you set a price before extending the term, it will be added as a payment."
   },
   "auth": {
     "title": "Auth",
@@ -124,6 +133,7 @@
     "deleteConfirm": "Delete provider \"{name}\"?"
   },
   "stats": {
+    "currencyFilter": "Statistics currency",
     "period": "Statistics period",
     "period7d": "7 days",
     "period30d": "30 days",
@@ -167,6 +177,26 @@
     "segmentSoon": "Soon",
     "segmentOverdue": "Overdue"
   },
+  "pnl": {
+    "subtitle": "Spend across all records and a forecast of future costs.",
+    "horizon": "Forecast horizon",
+    "cardRecords": "Active records",
+    "cardHistorical": "Total spent",
+    "cardForecast": "Forecast for {days} d",
+    "tableTitle": "Spend by record",
+    "filter": "Filter: name, provider, type",
+    "sort": "Sorting",
+    "sortForecastDesc": "Forecast descending",
+    "sortForecastAsc": "Forecast ascending",
+    "sortRenewalAsc": "Renewal soonest first",
+    "sortRenewalDesc": "Renewal latest first",
+    "sortNameAsc": "Name A-Z",
+    "colTotal": "Total paid",
+    "colRenewal": "Next renewal",
+    "colForecast": "Forecast",
+    "noForecast": "Not enough data",
+    "empty": "No active records yet to calculate P&L"
+  },
   "alerts": {
     "emptyTitle": "No terms",
     "emptyText": "No upcoming expirations need attention.",
@@ -199,6 +229,7 @@
     "timezone": "Timezone",
     "telegramNotifyUrl": "Notification URL",
     "notifyOnStart": "Send notifications on start",
+    "currency": "Default currency",
     "saved": "Settings saved",
     "testTelegram": "Test Telegram"
   },
@@ -414,7 +445,6 @@
   },
   "payments": {
     "title": "Payments: {name}",
-    "amountUsdt": "Amount USDT",
     "empty": "No payments yet",
     "addAmount": "Enter payment amount",
     "added": "Payment added",

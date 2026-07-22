@@ -19,6 +19,11 @@
         <div class="settings-form-grid">
           <label>{{ app.t("settings.language") }}<select v-model="app.settings.locale"><option v-for="locale in app.localeOptions" :key="locale" :value="locale">{{ app.t(`language.${locale}`) }}</option></select></label>
           <label>{{ app.t("settings.timezone") }}<input v-model="app.settings.timezone" type="text" placeholder="Europe/Moscow" required></label>
+          <label>{{ app.t("settings.currency") }}
+            <select v-model="app.settings.currency">
+              <option v-for="currency in app.currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : app.t(`currency.${currency}`) }}</option>
+            </select>
+          </label>
         </div>
         <label>{{ app.t("settings.telegramNotifyUrl") }}
           <span class="input-with-action">

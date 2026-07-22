@@ -14,12 +14,17 @@
     "assets": "Записи",
     "providers": "Провайдеры",
     "stats": "Статистика",
+    "pnl": "P&L",
     "alerts": "Уведомления",
     "logs": "Логи",
     "guide": "Руководство",
     "settings": "Настройки",
     "collapseMenu": "Свернуть меню",
     "expandMenu": "Развернуть меню"
+  },
+  "currency": {
+    "EUR": "Евро",
+    "RUB": "Российский рубль"
   },
   "type": {
     "vps": "Сервер",
@@ -63,7 +68,11 @@
     "notSpecified": "Не указано",
     "now": "сейчас",
     "testTelegram": "Тест Telegram",
-    "addPayment": "Добавить платеж"
+    "addPayment": "Добавить платеж",
+    "price": "Цена",
+    "currency": "Валюта",
+    "renewalPrice": "Цена продления",
+    "renewalPriceHint": "Если указать цену перед продлением срока, она будет добавлена как платеж."
   },
   "auth": {
     "title": "Авторизация",
@@ -124,6 +133,7 @@
     "deleteConfirm": "Удалить провайдера \"{name}\"?"
   },
   "stats": {
+    "currencyFilter": "Валюта статистики",
     "period": "Период статистики",
     "period7d": "7 дней",
     "period30d": "30 дней",
@@ -167,6 +177,26 @@
     "segmentSoon": "Скоро",
     "segmentOverdue": "Просрочено"
   },
+  "pnl": {
+    "subtitle": "Расходы по всем записям и прогноз будущих трат.",
+    "horizon": "Горизонт прогноза",
+    "cardRecords": "Активных записей",
+    "cardHistorical": "Всего потрачено",
+    "cardForecast": "Прогноз на {days} дн.",
+    "tableTitle": "Расходы по записям",
+    "filter": "Фильтр: название, провайдер, тип",
+    "sort": "Сортировка",
+    "sortForecastDesc": "Прогноз по убыванию",
+    "sortForecastAsc": "Прогноз по возрастанию",
+    "sortRenewalAsc": "Продление сначала ближе",
+    "sortRenewalDesc": "Продление сначала дальше",
+    "sortNameAsc": "Название А-Я",
+    "colTotal": "Всего уплачено",
+    "colRenewal": "Следующее продление",
+    "colForecast": "Прогноз",
+    "noForecast": "Недостаточно данных",
+    "empty": "Пока нет активных записей для расчета P&L"
+  },
   "alerts": {
     "emptyTitle": "Сроков нет",
     "emptyText": "Истечения в ближайшие дни не требуют внимания.",
@@ -199,6 +229,7 @@
     "timezone": "Таймзона",
     "telegramNotifyUrl": "URL уведомлений",
     "notifyOnStart": "Отправлять уведомления при старте",
+    "currency": "Валюта по умолчанию",
     "saved": "Настройки сохранены",
     "testTelegram": "Проверить Telegram"
   },
@@ -414,7 +445,6 @@
   },
   "payments": {
     "title": "Платежи: {name}",
-    "amountUsdt": "Сумма USDT",
     "empty": "Платежей пока нет",
     "addAmount": "Укажите сумму платежа",
     "added": "Платеж добавлен",

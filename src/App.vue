@@ -43,7 +43,7 @@
           <div><span>{{ t("summary.servers") }}</span><strong>{{ countByType('vps') }}</strong></div>
           <div><span>{{ t("summary.domains") }}</span><strong>{{ countByType('domain') }}</strong></div>
           <div><span>{{ t("summary.providers") }}</span><strong>{{ providers.length }}</strong></div>
-          <div class="summary-wide"><span>{{ t("summary.paid") }}</span><strong>{{ formatUsdt(totalPaid) }}</strong></div>
+          <div class="summary-wide"><span>{{ t("summary.paid") }}</span><strong>{{ totalPaidDisplay }}</strong></div>
           <div class="summary-wide"><span>{{ t("summary.terms") }}</span><strong>{{ alerts.length }}</strong></div>
         </div>
         <button class="secondary-button sidebar-logout tooltip-collapsed" type="button" :data-tooltip="t('common.logout')" @click="logout"><LogOutIcon :size="18" /><span>{{ t("common.logout") }}</span></button>
@@ -54,6 +54,7 @@
       <AssetsView v-show="view === 'assets'" :app="appContext" />
       <ProvidersView v-show="view === 'providers'" :app="appContext" />
       <StatsView v-show="view === 'stats'" :app="appContext" />
+      <PnLView v-show="view === 'pnl'" :app="appContext" />
       <AlertsView v-show="view === 'alerts'" :app="appContext" />
       <LogsView v-show="view === 'logs'" :app="appContext" />
       <GuideView v-show="view === 'guide'" :app="appContext" />
@@ -97,6 +98,14 @@
         </template>
         <label v-else>{{ t("common.domain") }}<input v-model="editingAsset.domain" type="text"></label>
         <label>{{ t("common.expiresAt") }}<input v-model="editingAsset.expiresAt" class="datetime-input" type="datetime-local" step="60"></label>
+        <template v-if="!editingAsset.id">
+          <label>{{ t("common.price") }}<input v-model.number="editingAsset.price" type="number" min="0" step="0.000001" placeholder="0.00"></label>
+          <label>{{ t("common.currency") }}
+            <select v-model="editingAsset.priceCurrency">
+              <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
+            </select>
+          </label>
+        </template>
       </div>
       <div class="dialog-actions" :class="{ 'has-danger': editingAsset.id }">
         <button class="danger-button icon-only tooltip" v-if="editingAsset.id" type="button" @click="deleteAsset" :aria-label="t('common.delete')" :data-tooltip="t('common.delete')"><Trash2Icon :size="18" /></button>
@@ -113,13 +122,18 @@
     <form id="paymentsForm" @submit.prevent>
       <div class="dialog-head"><h2>{{ t("payments.title", { name: paymentsAsset?.name || "" }) }}</h2><button class="icon-button" type="button" @click="closeModal('payments')"><XIcon :size="20" /></button></div>
       <div class="quick-payment">
-        <label>{{ t("payments.amountUsdt") }}<input v-model.number="quickPayment.amount" type="number" min="0" step="0.000001" placeholder="0.00"></label>
+        <label>{{ t("common.price") }}<input v-model.number="quickPayment.amount" type="number" min="0" step="0.000001" placeholder="0.00"></label>
+        <label>{{ t("common.currency") }}
+          <select v-model="quickPayment.currency">
+            <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
+          </select>
+        </label>
         <label>{{ t("common.dateTime") }}<input v-model="quickPayment.paidAt" class="datetime-input" type="datetime-local" step="60"></label>
         <button class="primary-button quick-add-button" type="button" :aria-label="t('common.addPayment')" @click="addQuickPayment"><PlusIcon :size="18" /></button>
       </div>
       <div class="payments-list">
         <article v-for="payment in paginatedAssetPayments" :key="payment.id" class="payment-item">
-          <div><strong>{{ formatUsdt(payment.amount) }}</strong><span>{{ formatDateTime(payment.paidAt) }}{{ payment.note ? ` · ${payment.note}` : '' }}</span></div>
+          <div><strong>{{ formatMoney(payment.amount, payment.currency) }}</strong><span>{{ formatDateTime(payment.paidAt) }}{{ payment.note ? ` · ${payment.note}` : '' }}</span></div>
           <button class="icon-button" type="button" @click="deletePayment(payment.id)"><Trash2Icon :size="18" /></button>
         </article>
         <div v-if="!sortedPayments.length" class="inline-empty">{{ t("payments.empty") }}</div>
@@ -144,6 +158,15 @@
         <span>{{ t("common.currentTerm") }}</span>
         <strong>{{ formatDateTime(expireAsset?.expiresAt) }}</strong>
       </div>
+      <div class="renewal-price-row">
+        <label>{{ t("common.renewalPrice") }}<input v-model.number="renewalPayment.amount" type="number" min="0" step="0.000001" placeholder="0.00"></label>
+        <label>{{ t("common.currency") }}
+          <select v-model="renewalPayment.currency">
+            <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">{{ t("common.renewalPriceHint") }}</p>
       <div class="date-adjust-panel">
         <div class="date-adjust-group is-minus">
           <div class="date-adjust-title"><strong>{{ t("duration.reduceTerm") }}</strong><span>{{ t("duration.reduceHint") }}</span></div>
@@ -203,6 +226,7 @@ import AlertsView from "./views/AlertsView.vue";
 import AssetsView from "./views/AssetsView.vue";
 import GuideView from "./views/GuideView.vue";
 import LogsView from "./views/LogsView.vue";
+import PnLView from "./views/PnLView.vue";
 import ProvidersView from "./views/ProvidersView.vue";
 import SettingsView from "./views/SettingsView.vue";
 import StatsView from "./views/StatsView.vue";
@@ -233,6 +257,7 @@ import {
   Settings as SettingsIcon,
   ShieldCheck as ShieldCheckIcon,
   Trash2 as Trash2Icon,
+  Wallet as WalletIcon,
   X as XIcon
 } from "@lucide/vue";
 
@@ -271,11 +296,13 @@ const navItems = [
   { view: "assets", labelKey: "nav.assets", icon: ServerIcon },
   { view: "providers", labelKey: "nav.providers", icon: BuildingIcon },
   { view: "stats", labelKey: "nav.stats", icon: BarChartIcon },
+  { view: "pnl", labelKey: "nav.pnl", icon: WalletIcon },
   { view: "alerts", labelKey: "nav.alerts", icon: BellIcon },
   { view: "logs", labelKey: "nav.logs", icon: ScrollTextIcon },
   { view: "guide", labelKey: "nav.guide", icon: BookOpenIcon },
   { view: "settings", labelKey: "nav.settings", icon: SettingsIcon }
 ];
+const CURRENCIES = ["USDT", "EUR", "RUB"];
 export default {
   components: {
     AlertsView,
@@ -302,6 +329,7 @@ export default {
     PanelLeftOpenIcon,
     PencilIcon,
     PlusIcon,
+    PnLView,
     ProvidersView,
     QrCodeIcon,
     RotateCcwIcon,
@@ -314,6 +342,7 @@ export default {
     StatsView,
     Trash2Icon,
     TwoFactorView,
+    WalletIcon,
     XIcon
   },
   data() {
@@ -321,6 +350,7 @@ export default {
       nav: navItems,
       typeLabels,
       localeOptions,
+      currencyOptions: CURRENCIES,
       currentLocale: "ru",
       countries,
       assetTypeOptions: ["vps", "domain", "certificate"],
@@ -337,18 +367,24 @@ export default {
       mobileNavOpen: false,
       sidebarCollapsed: localStorage.getItem("sidebarCollapsed") === "true",
       statsPeriod: "90d",
+      statsCurrency: "USDT",
       paymentTableSearch: "",
       paymentTableProvider: "all",
       paymentTableSort: "date-desc",
       paymentTablePage: 1,
       paymentTablePageSize: 10,
+      pnlHorizonDays: 90,
+      pnlSearch: "",
+      pnlSort: "forecast-desc",
+      pnlPage: 1,
+      pnlPageSize: 10,
       search: "",
       typeFilter: "all",
       draggedAssetId: "",
       countrySearch: "",
       countrySelectOpen: false,
-      meta: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true, telegramConfigured: false },
-      settings: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true },
+      meta: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true, telegramConfigured: false, currency: "USDT" },
+      settings: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true, currency: "USDT" },
       passwordForm: { currentPassword: "", newPassword: "", passwordRepeat: "" },
       security: { login: "", totpEnabled: false, hasPendingTotp: false },
       twoFactor: { currentPassword: "", token: "", secret: "", otpauthUrl: "", qrCode: "" },
@@ -369,7 +405,8 @@ export default {
       assetPaymentPage: 1,
       assetPaymentPageSize: 5,
       expireAssetId: "",
-      quickPayment: { amount: "", paidAt: toLocalInput(new Date()) },
+      quickPayment: { amount: "", currency: "USDT", paidAt: toLocalInput(new Date()) },
+      renewalPayment: { amount: "", currency: "USDT" },
       chartTooltip: null,
       toasts: []
     };
@@ -425,8 +462,16 @@ export default {
         }))
         .filter((group) => group.items.length);
     },
-    totalPaid() {
-      return this.assets.reduce((sum, asset) => sum + this.totalPayments(asset.payments), 0);
+    allPayments() {
+      return this.assets.flatMap((asset) => asset.payments || []);
+    },
+    totalPaidDisplay() {
+      return this.formatPaymentTotal(this.allPayments);
+    },
+    availableCurrencies() {
+      const used = new Set(this.allPayments.map((payment) => payment.currency || "USDT"));
+      used.add(this.settings.currency || "USDT");
+      return CURRENCIES.filter((currency) => used.has(currency));
     },
     paymentsAsset() {
       return this.assetById(this.paymentsAssetId);
@@ -470,10 +515,10 @@ export default {
       return [
         { label: this.t("stats.cardServers"), value: this.vpsAssets.length },
         { label: this.t("stats.cardPaidServers"), value: paidVps },
-        { label: this.t("stats.cardPaidPeriod"), value: this.formatUsdt(periodTotal) },
+        { label: this.t("stats.cardPaidPeriod"), value: this.formatMoney(periodTotal, this.statsCurrency) },
         { label: this.t("stats.cardPayments"), value: payments.length },
-        { label: this.t("stats.cardAvgPayment"), value: this.formatUsdt(avg) },
-        { label: this.t("stats.cardMaxPayment"), value: this.formatUsdt(maxPayment) },
+        { label: this.t("stats.cardAvgPayment"), value: this.formatMoney(avg, this.statsCurrency) },
+        { label: this.t("stats.cardMaxPayment"), value: this.formatMoney(maxPayment, this.statsCurrency) },
         { label: this.t("stats.cardSoon"), value: soon },
         { label: this.t("stats.cardOverdue"), value: overdue }
       ];
@@ -592,6 +637,7 @@ export default {
     periodPayments() {
       const since = periodStart(this.statsPeriod);
       return this.vpsAssets.flatMap((asset) => (asset.payments || []).map((payment) => ({ ...payment, asset })))
+        .filter((payment) => (payment.currency || "USDT") === this.statsCurrency)
         .filter((payment) => {
           if (!since) return true;
           const paidAt = parseAppDate(payment.paidAt);
@@ -626,10 +672,76 @@ export default {
       const page = this.currentLogPage;
       const size = Number(this.logPageSize || 25);
       return this.filteredLogs.slice((page - 1) * size, page * size);
+    },
+    pnlRows() {
+      return this.assets
+        .filter((asset) => !asset.inactive)
+        .map((asset) => {
+          const last = this.assetLastPayment(asset);
+          const forecast = this.assetForecast(asset, this.pnlHorizonDays);
+          return {
+            id: asset.id,
+            asset,
+            name: asset.name,
+            type: asset.type,
+            provider: this.providerOf(asset)?.name || this.t("common.providerEmpty"),
+            totalDisplay: this.formatPaymentTotal(asset.payments),
+            lastAmount: last ? Number(last.amount || 0) : 0,
+            lastCurrency: last ? (last.currency || "USDT") : (this.settings.currency || "USDT"),
+            lastDate: last ? last.paidAt : "",
+            cycleDays: this.assetCycleDays(asset),
+            expiresAt: asset.expiresAt,
+            forecastAmount: forecast.amount,
+            forecastCurrency: forecast.currency,
+            forecastOccurrences: forecast.occurrences
+          };
+        });
+    },
+    pnlFilteredRows() {
+      const query = this.pnlSearch.trim().toLowerCase();
+      if (!query) return this.pnlRows;
+      return this.pnlRows.filter((row) => [row.name, row.provider, this.typeLabel(row.type)].join(" ").toLowerCase().includes(query));
+    },
+    pnlSortedRows() {
+      const rows = [...this.pnlFilteredRows];
+      const sorters = {
+        "forecast-desc": (a, b) => b.forecastAmount - a.forecastAmount,
+        "forecast-asc": (a, b) => a.forecastAmount - b.forecastAmount,
+        "renewal-asc": (a, b) => String(a.expiresAt).localeCompare(String(b.expiresAt)),
+        "renewal-desc": (a, b) => String(b.expiresAt).localeCompare(String(a.expiresAt)),
+        "name-asc": (a, b) => String(a.name).localeCompare(String(b.name), "ru")
+      };
+      return rows.sort(sorters[this.pnlSort] || sorters["forecast-desc"]);
+    },
+    pnlPages() {
+      return Math.max(1, Math.ceil(this.pnlSortedRows.length / Number(this.pnlPageSize || 10)));
+    },
+    pnlCurrentPage() {
+      return Math.min(this.pnlPage, this.pnlPages);
+    },
+    pnlPaginatedRows() {
+      const page = this.pnlCurrentPage;
+      const size = Number(this.pnlPageSize || 10);
+      return this.pnlSortedRows.slice((page - 1) * size, page * size);
+    },
+    pnlHistoricalTotalDisplay() {
+      return this.formatPaymentTotal(this.pnlRows.flatMap((row) => row.asset.payments || []));
+    },
+    pnlForecastTotalDisplay() {
+      const groups = new Map();
+      for (const row of this.pnlRows) {
+        if (!row.forecastAmount) continue;
+        groups.set(row.forecastCurrency, (groups.get(row.forecastCurrency) || 0) + row.forecastAmount);
+      }
+      if (!groups.size) return this.formatMoney(0, this.settings.currency || "USDT");
+      return CURRENCIES.filter((currency) => groups.has(currency))
+        .map((currency) => this.formatMoney(groups.get(currency), currency))
+        .join(" + ");
     }
   },
   watch: {
     statsPeriod: "resetPaymentTablePage",
+    statsCurrency: "resetPaymentTablePage",
     paymentTableSearch: "resetPaymentTablePage",
     paymentTableProvider: "resetPaymentTablePage",
     paymentTableSort: "resetPaymentTablePage",
@@ -637,7 +749,11 @@ export default {
     logSearch: "resetLogPage",
     logActionFilter: "resetLogPage",
     logSort: "resetLogPage",
-    logPageSize: "resetLogPage"
+    logPageSize: "resetLogPage",
+    pnlSearch: "resetPnlPage",
+    pnlSort: "resetPnlPage",
+    pnlHorizonDays: "resetPnlPage",
+    pnlPageSize: "resetPnlPage"
   },
   async mounted() {
     this.view = viewFromPath(location.pathname);
@@ -771,11 +887,13 @@ export default {
         locale: this.currentLocale,
         timezone: data.meta.timezone || "Europe/Moscow",
         telegramNotifyUrl: data.meta.telegramNotifyUrl || "",
-        notifyOnStart: Boolean(data.meta.notifyOnStart)
+        notifyOnStart: Boolean(data.meta.notifyOnStart),
+        currency: CURRENCIES.includes(data.meta.currency) ? data.meta.currency : "USDT"
       };
       this.providers = data.providers || [];
       this.assets = data.assets || [];
       this.alerts = (await this.api("/api/notifications")).items || [];
+      if (!this.availableCurrencies.includes(this.statsCurrency)) this.statsCurrency = this.settings.currency;
       document.title = this.meta.siteTitle;
     },
     async loadSecurity() {
@@ -799,18 +917,25 @@ export default {
       this.modals[name] = false;
     },
     openAsset(asset = null) {
-      this.editingAsset = asset ? clone(asset) : emptyAsset();
+      this.editingAsset = asset ? clone(asset) : { ...emptyAsset(), priceCurrency: this.settings.currency || "USDT" };
       this.countrySearch = "";
       this.countrySelectOpen = false;
       this.openModal("asset");
     },
     async saveAsset() {
       const asset = { ...this.editingAsset };
+      const isNew = !asset.id;
       if (asset.type === "vps") asset.domain = "";
       else {
         asset.ip = "";
         asset.countryCode = "";
       }
+      const price = Number(asset.price || 0);
+      if (isNew && price > 0) {
+        asset.payments = [...(asset.payments || []), { amount: price, currency: asset.priceCurrency || "USDT", paidAt: toLocalInput(new Date()), note: "" }];
+      }
+      delete asset.price;
+      delete asset.priceCurrency;
       const path = asset.id ? `/api/assets/${asset.id}` : "/api/assets";
       const method = asset.id ? "PUT" : "POST";
       await this.api(path, { method, body: JSON.stringify(asset) });
@@ -872,17 +997,18 @@ export default {
     openPayments(asset) {
       this.paymentsAssetId = asset.id;
       this.assetPaymentPage = 1;
-      this.quickPayment = { amount: "", paidAt: toLocalInput(new Date()) };
+      this.quickPayment = { amount: "", currency: this.settings.currency || "USDT", paidAt: toLocalInput(new Date()) };
       this.openModal("payments");
     },
     async addQuickPayment() {
       const asset = this.assetById(this.paymentsAssetId);
       const amount = Number(this.quickPayment.amount || 0);
       if (!asset || amount <= 0) return this.toast(this.t("payments.addAmount"));
-      await this.updateAsset({ ...asset, payments: [...(asset.payments || []), { amount, paidAt: this.quickPayment.paidAt || toLocalInput(new Date()), note: "" }] });
+      const currency = this.quickPayment.currency || "USDT";
+      await this.updateAsset({ ...asset, payments: [...(asset.payments || []), { amount, currency, paidAt: this.quickPayment.paidAt || toLocalInput(new Date()), note: "" }] });
       this.toast(this.t("payments.added"));
       await this.load();
-      this.quickPayment = { amount: "", paidAt: toLocalInput(new Date()) };
+      this.quickPayment = { amount: "", currency, paidAt: toLocalInput(new Date()) };
     },
     async deletePayment(paymentId) {
       const asset = this.assetById(this.paymentsAssetId);
@@ -893,6 +1019,7 @@ export default {
     },
     openExpire(asset) {
       this.expireAssetId = asset.id;
+      this.renewalPayment = { amount: "", currency: this.settings.currency || "USDT" };
       this.openModal("expire");
     },
     async adjustExpireDays(days) {
@@ -901,8 +1028,14 @@ export default {
       const current = parseAppDate(asset.expiresAt);
       const date = Number.isNaN(current.getTime()) ? new Date() : current;
       date.setDate(date.getDate() + days);
-      await this.updateAsset({ ...asset, expiresAt: toLocalInput(date) });
+      const updated = { ...asset, expiresAt: toLocalInput(date) };
+      const price = Number(this.renewalPayment.amount || 0);
+      if (days > 0 && price > 0) {
+        updated.payments = [...(asset.payments || []), { amount: price, currency: this.renewalPayment.currency || "USDT", paidAt: toLocalInput(new Date()), note: "" }];
+      }
+      await this.updateAsset(updated);
       this.toast(this.t("settings.saved"));
+      this.renewalPayment = { amount: "", currency: this.settings.currency || "USDT" };
       await this.load();
     },
     async updateAsset(asset) {
@@ -1042,14 +1175,15 @@ export default {
       const rows = this.paymentExportRows();
       if (!rows.length) return;
       const escape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+      const amountHeader = `${this.t("export.amount")} (${this.statsCurrency})`;
       const csv = [
-        [this.t("export.date"), this.t("export.server"), this.t("export.provider"), this.t("export.amount")].map(escape).join(","),
+        [this.t("export.date"), this.t("export.server"), this.t("export.provider"), amountHeader].map(escape).join(","),
         ...rows.map((row) => [row.date, row.server, row.provider, row.amount].map(escape).join(","))
       ].join("\n");
       const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `payments-${this.statsPeriod}.csv`;
+      link.download = `payments-${this.statsPeriod}-${this.statsCurrency}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
     },
@@ -1057,14 +1191,14 @@ export default {
       const rows = this.paymentExportRows();
       if (!rows.length) return;
       const doc = new jsPDF({ orientation: "landscape" });
-      const headers = [this.t("export.date"), this.t("export.server"), this.t("export.provider"), this.t("export.amount")];
+      const headers = [this.t("export.date"), this.t("export.server"), this.t("export.provider"), `${this.t("export.amount")} (${this.statsCurrency})`];
       const body = rows.map((row) => [row.date, row.server, row.provider, row.amount.toFixed(6).replace(/\.?0+$/, "")]);
       const pages = buildPdfCanvases(this.t("export.title"), headers, body);
       pages.forEach((canvas, index) => {
         if (index > 0) doc.addPage("a4", "landscape");
         doc.addImage(canvas.toDataURL("image/png"), "PNG", 8, 8, 281, 194);
       });
-      doc.save(`payments-${this.statsPeriod}.pdf`);
+      doc.save(`payments-${this.statsPeriod}-${this.statsCurrency}.pdf`);
     },
     countByType(type) {
       return this.assets.filter((asset) => asset.type === type).length;
@@ -1072,8 +1206,82 @@ export default {
     totalPayments(payments = []) {
       return payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     },
-    formatUsdt(value) {
-      return `${new Intl.NumberFormat(this.currentLocale === "en" ? "en-US" : "ru-RU", { maximumFractionDigits: 6 }).format(Number(value || 0))} USDT`;
+    formatMoney(value, currency = "USDT") {
+      const locale = this.currentLocale === "en" ? "en-US" : "ru-RU";
+      const num = Number(value || 0);
+      if (currency === "EUR" || currency === "RUB") {
+        return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 2 }).format(num);
+      }
+      return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 6 }).format(num)} USDT`;
+    },
+    groupPaymentsByCurrency(payments = []) {
+      const totals = new Map();
+      for (const payment of payments || []) {
+        const currency = CURRENCIES.includes(payment.currency) ? payment.currency : "USDT";
+        totals.set(currency, (totals.get(currency) || 0) + Number(payment.amount || 0));
+      }
+      return CURRENCIES.filter((currency) => totals.has(currency)).map((currency) => ({ currency, amount: totals.get(currency) }));
+    },
+    formatPaymentTotal(payments = []) {
+      const groups = this.groupPaymentsByCurrency(payments);
+      if (!groups.length) return this.formatMoney(0, this.settings.currency || "USDT");
+      return groups.map((group) => this.formatMoney(group.amount, group.currency)).join(" + ");
+    },
+    assetLastPayment(asset) {
+      const payments = [...(asset.payments || [])].filter((payment) => payment.paidAt);
+      if (!payments.length) return null;
+      return payments.sort((a, b) => parseAppDate(b.paidAt) - parseAppDate(a.paidAt))[0];
+    },
+    assetCycleDays(asset) {
+      const payments = [...(asset.payments || [])]
+        .filter((payment) => payment.paidAt)
+        .sort((a, b) => parseAppDate(a.paidAt) - parseAppDate(b.paidAt));
+      if (payments.length >= 2) {
+        const diffs = [];
+        for (let index = 1; index < payments.length; index += 1) {
+          const diff = (parseAppDate(payments[index].paidAt) - parseAppDate(payments[index - 1].paidAt)) / 86_400_000;
+          if (diff > 0) diffs.push(diff);
+        }
+        if (diffs.length) return Math.round(diffs.reduce((sum, diff) => sum + diff, 0) / diffs.length);
+      }
+      const created = parseAppDate(asset.createdAt);
+      const expires = parseAppDate(asset.expiresAt);
+      const initial = (expires - created) / 86_400_000;
+      if (Number.isFinite(initial) && initial > 0) return Math.round(initial);
+      return 30;
+    },
+    assetForecast(asset, horizonDays) {
+      const last = this.assetLastPayment(asset);
+      const currency = last ? (last.currency || "USDT") : (this.settings.currency || "USDT");
+      const amount = last ? Number(last.amount || 0) : 0;
+      const cycleDays = this.assetCycleDays(asset);
+      const expiresAt = parseAppDate(asset.expiresAt);
+      if (!amount || asset.inactive || Number.isNaN(expiresAt.getTime())) {
+        return { occurrences: 0, amount: 0, currency, next: null, cycleDays };
+      }
+      const now = new Date();
+      const horizonEnd = new Date(now.getTime() + horizonDays * 86_400_000);
+      let occurrence = new Date(expiresAt);
+      let occurrences = 0;
+      let total = 0;
+      let next = null;
+      let guard = 0;
+      while (occurrence <= horizonEnd && guard < 1000) {
+        if (occurrence >= now) {
+          if (!next) next = new Date(occurrence);
+          occurrences += 1;
+          total += amount;
+        }
+        occurrence = new Date(occurrence.getTime() + cycleDays * 86_400_000);
+        guard += 1;
+      }
+      return { occurrences, amount: total, currency, next, cycleDays };
+    },
+    resetPnlPage() {
+      this.pnlPage = 1;
+    },
+    setPnlPage(page) {
+      this.pnlPage = Math.min(this.pnlPages, Math.max(1, Number(page || 1)));
     },
     formatShort(value) {
       return new Intl.NumberFormat(this.currentLocale === "en" ? "en-US" : "ru-RU", { maximumFractionDigits: 2 }).format(Number(value || 0));
@@ -1117,8 +1325,8 @@ export default {
         left,
         top,
         label: point.row.label,
-        value: chart === "amount" ? this.formatUsdt(point.row.amount) : this.tc("piece", point.row.count),
-        count: chart === "amount" ? this.tc("payment", point.row.count) : this.formatUsdt(point.row.amount)
+        value: chart === "amount" ? this.formatMoney(point.row.amount, this.statsCurrency) : this.tc("piece", point.row.count),
+        count: chart === "amount" ? this.tc("payment", point.row.count) : this.formatMoney(point.row.amount, this.statsCurrency)
       };
     },
     formatDuration(minutes) {
@@ -1283,7 +1491,7 @@ function pluralIndex(locale, count) {
 }
 
 function emptyAsset() {
-  return { id: "", type: "vps", name: "", providerId: "", ip: "", domain: "", countryCode: "", inactive: false, sortOrder: Date.now(), expiresAt: toLocalInput(new Date()), payments: [] };
+  return { id: "", type: "vps", name: "", providerId: "", ip: "", domain: "", countryCode: "", inactive: false, sortOrder: Date.now(), expiresAt: toLocalInput(new Date()), payments: [], price: "", priceCurrency: "USDT" };
 }
 
 function emptyProvider() {
@@ -1339,6 +1547,7 @@ function viewFromPath(pathname) {
     "/": "assets",
     "/providers": "providers",
     "/stats": "stats",
+    "/pnl": "pnl",
     "/alerts": "alerts",
     "/logs": "logs",
     "/guide": "guide",
@@ -1351,6 +1560,7 @@ function pathFromView(view) {
     assets: "/",
     providers: "/providers",
     stats: "/stats",
+    pnl: "/pnl",
     alerts: "/alerts",
     logs: "/logs",
     guide: "/guide",

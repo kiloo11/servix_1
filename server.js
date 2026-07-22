@@ -25,6 +25,7 @@ const SESSION_MAX_AGE_SECONDS = 2_592_000;
 const AUTH_RATE_WINDOW_MS = 15 * 60_000;
 const AUTH_RATE_MAX_ATTEMPTS = 8;
 const TOTP_RATE_MAX_ATTEMPTS = 6;
+const CURRENCIES = ["USDT", "EUR", "RUB"];
 
 const sessions = new Map();
 const authAttempts = new Map();
@@ -133,6 +134,7 @@ async function initDb() {
       id TEXT PRIMARY KEY,
       asset_id TEXT NOT NULL,
       amount REAL NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'USDT',
       paid_at TEXT NOT NULL DEFAULT '',
       note TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL,
@@ -159,12 +161,14 @@ async function initDb() {
   ensureColumn("users", "totp_secret", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("users", "totp_pending_secret", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("users", "totp_enabled", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("payments", "currency", "TEXT NOT NULL DEFAULT 'USDT'");
   ensureMeta("siteTitle", SITE_TITLE);
   ensureMeta("notificationLeads", "5m,2h,1d,3d,5d");
   ensureMeta("locale", "ru");
   ensureMeta("timezone", normalizeTimezone(APP_TIMEZONE));
   ensureMeta("telegramNotifyUrl", TELEGRAM_NOTIFY_URL);
   ensureMeta("notifyOnStart", String(NOTIFY_ON_START));
+  ensureMeta("currency", "USDT");
   process.env.TZ = getMeta().timezone;
   if (!existed) await migrateLegacyJson();
   ensureProviderColors();
@@ -210,7 +214,8 @@ function getMeta() {
     timezone: normalizeTimezone(meta.timezone || APP_TIMEZONE),
     telegramNotifyUrl: meta.telegramNotifyUrl || "",
     notifyOnStart: String(meta.notifyOnStart ?? "true") === "true",
-    telegramConfigured: Boolean(meta.telegramNotifyUrl || TELEGRAM_NOTIFY_URL)
+    telegramConfigured: Boolean(meta.telegramNotifyUrl || TELEGRAM_NOTIFY_URL),
+    currency: normalizeCurrency(meta.currency)
   };
 }
 
@@ -219,8 +224,14 @@ function getPublicMeta() {
   return {
     siteTitle: meta.siteTitle,
     locale: meta.locale,
-    timezone: meta.timezone
+    timezone: meta.timezone,
+    currency: meta.currency
   };
+}
+
+function normalizeCurrency(value) {
+  const currency = String(value || "").trim().toUpperCase();
+  return CURRENCIES.includes(currency) ? currency : "USDT";
 }
 
 function setMeta(key, value) {
@@ -250,7 +261,7 @@ function getData() {
     FROM assets ORDER BY type ASC, sort_order ASC, created_at DESC
   `).all();
   const payments = db.prepare(`
-    SELECT id, asset_id AS assetId, amount, paid_at AS paidAt, note, created_at AS createdAt
+    SELECT id, asset_id AS assetId, amount, currency, paid_at AS paidAt, note, created_at AS createdAt
     FROM payments ORDER BY paid_at DESC, created_at DESC
   `).all();
   for (const asset of assets) {
@@ -364,6 +375,7 @@ function normalizePayments(input) {
     .map((payment) => ({
       id: payment.id || crypto.randomUUID(),
       amount: Number(payment.amount || 0),
+      currency: normalizeCurrency(payment.currency),
       paidAt: normalizeDateTime(payment.paidAt || "", { dateOnlyOk: true }),
       note: String(payment.note || "").trim(),
       createdAt: payment.createdAt || new Date().toISOString()
@@ -468,9 +480,9 @@ function upsertAsset(asset) {
       updated_at = excluded.updated_at
   `).run(asset.id, asset.type, asset.name, asset.providerId, asset.expiresAt, asset.ip, asset.domain, asset.countryCode, asset.sortOrder, asset.inactive ? 1 : 0, asset.createdAt, asset.updatedAt);
   db.prepare("DELETE FROM payments WHERE asset_id = ?").run(asset.id);
-  const stmt = db.prepare("INSERT INTO payments (id, asset_id, amount, paid_at, note, created_at) VALUES (?, ?, ?, ?, ?, ?)");
+  const stmt = db.prepare("INSERT INTO payments (id, asset_id, amount, currency, paid_at, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
   for (const payment of asset.payments || []) {
-    stmt.run(payment.id, asset.id, payment.amount, payment.paidAt, payment.note, payment.createdAt);
+    stmt.run(payment.id, asset.id, payment.amount, payment.currency || "USDT", payment.paidAt, payment.note, payment.createdAt);
   }
   scheduleNotifications();
   return asset;
@@ -878,7 +890,7 @@ function alertText(item, locale = "ru") {
   const asset = item.asset;
   const provider = item.provider;
   const target = asset.type === "vps" ? asset.ip : asset.domain;
-  const paid = totalPayments(asset.payments);
+  const paid = formatPaymentTotal(asset.payments, locale);
   const country = asset.type === "vps" && asset.countryCode ? countryLabel(asset.countryCode, locale) : "";
   const lines = [
     t(locale, "telegram.title"),
@@ -890,7 +902,7 @@ function alertText(item, locale = "ru") {
     `<b>${escapeTelegram(t(locale, "telegram.expiresAt"))}:</b> ${escapeTelegram(formatDateTime(asset.expiresAt, locale))}`,
     `<b>${escapeTelegram(t(locale, "telegram.left"))}:</b> ${escapeTelegram(when)}`,
     item.lead ? `<b>${escapeTelegram(t(locale, "telegram.trigger"))}:</b> ${escapeTelegram(t(locale, "telegram.triggerBefore", { lead: formatLead(item.lead, locale) }))}` : "",
-    `<b>${escapeTelegram(t(locale, "telegram.paidTotal"))}:</b> ${escapeTelegram(formatUsdt(paid, locale))}`
+    `<b>${escapeTelegram(t(locale, "telegram.paidTotal"))}:</b> ${escapeTelegram(paid)}`
   ].filter(Boolean);
   return lines.join("\n");
 }
@@ -926,12 +938,28 @@ function formatLead(lead, locale = "ru") {
   return tc(locale, key, lead.amount);
 }
 
-function formatUsdt(value, locale = "ru") {
-  return `${new Intl.NumberFormat(locale === "en" ? "en-US" : "ru-RU", { maximumFractionDigits: 6 }).format(Number(value || 0))} USDT`;
+function formatMoney(value, currency = "USDT", locale = "ru") {
+  const intlLocale = locale === "en" ? "en-US" : "ru-RU";
+  const num = Number(value || 0);
+  if (currency === "EUR" || currency === "RUB") {
+    return new Intl.NumberFormat(intlLocale, { style: "currency", currency, maximumFractionDigits: 2 }).format(num);
+  }
+  return `${new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 6 }).format(num)} USDT`;
 }
 
-function totalPayments(payments = []) {
-  return payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+function groupPaymentsByCurrency(payments = []) {
+  const totals = new Map();
+  for (const payment of payments) {
+    const currency = normalizeCurrency(payment.currency);
+    totals.set(currency, (totals.get(currency) || 0) + Number(payment.amount || 0));
+  }
+  return CURRENCIES.filter((currency) => totals.has(currency)).map((currency) => ({ currency, amount: totals.get(currency) }));
+}
+
+function formatPaymentTotal(payments = [], locale = "ru") {
+  const groups = groupPaymentsByCurrency(payments);
+  if (!groups.length) return formatMoney(0, "USDT", locale);
+  return groups.map((group) => formatMoney(group.amount, group.currency, locale)).join(" + ");
 }
 
 function wasSent(eventIdValue) {
@@ -1106,6 +1134,7 @@ async function handleApi(req, res, url) {
     setMeta("timezone", normalizeTimezone(body.timezone));
     setMeta("telegramNotifyUrl", String(body.telegramNotifyUrl || "").trim());
     setMeta("notifyOnStart", String(Boolean(body.notifyOnStart)));
+    setMeta("currency", normalizeCurrency(body.currency));
     process.env.TZ = getMeta().timezone;
     scheduleNotifications();
     await logAction(req, "settings.update", { locale: body.locale, timezone: body.timezone, telegramConfigured: Boolean(body.telegramNotifyUrl) });
