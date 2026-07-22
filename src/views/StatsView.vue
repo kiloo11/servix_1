@@ -3,9 +3,6 @@
     <div class="section-head">
       <h1>{{ app.t("nav.stats") }}</h1>
       <div class="section-head-actions">
-        <select v-model="app.statsCurrency" class="period-select" :aria-label="app.t('stats.currencyFilter')">
-          <option v-for="currency in app.availableCurrencies" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : app.t(`currency.${currency}`) }}</option>
-        </select>
         <select v-model="app.statsPeriod" class="period-select" :aria-label="app.t('stats.period')">
           <option value="7d">{{ app.t("stats.period7d") }}</option>
           <option value="30d">{{ app.t("stats.period30d") }}</option>
@@ -23,7 +20,7 @@
       <article class="chart-panel wide-chart">
         <div class="chart-title-row">
           <h2>{{ app.t("stats.spendByUnit", { unit: app.timelineUnitLabel }) }}</h2>
-          <span>{{ app.formatMoney(app.timelineTotal, app.statsCurrency) }}</span>
+          <span>{{ app.formatMoney(app.timelineTotal, app.settings.currency) }}</span>
         </div>
         <div class="line-chart" v-if="app.paymentAmountTimeline.length" @mouseleave="app.hideChartTooltip">
           <svg viewBox="0 0 100 42" preserveAspectRatio="none" aria-hidden="true">
@@ -46,7 +43,7 @@
         <h2>{{ app.t("stats.providerSpend") }}</h2>
         <div class="bar-list" v-if="app.providerSpend.length">
           <div v-for="row in app.providerSpend" :key="row.id" class="bar-row">
-            <span><i :style="{ background: row.color }"></i>{{ row.name }}</span><div><i :style="{ width: row.width + '%', background: row.color }"></i></div><strong>{{ app.formatMoney(row.value, app.statsCurrency) }}</strong>
+            <span><i :style="{ background: row.color }"></i>{{ row.name }}</span><div><i :style="{ width: row.width + '%', background: row.color }"></i></div><strong>{{ app.formatMoney(row.value, app.settings.currency) }}</strong>
           </div>
         </div>
         <div v-else class="inline-empty">{{ app.t("stats.spendNone") }}</div>
@@ -113,13 +110,13 @@
           <span>{{ app.formatDateTime(payment.paidAt) }}</span>
           <span>{{ payment.asset.name }}</span>
           <span>{{ app.providerOf(payment.asset)?.name || app.t("common.providerEmpty") }}</span>
-          <strong>{{ app.formatMoney(payment.amount, app.statsCurrency) }}</strong>
+          <strong>{{ app.formatMoney(payment.amount, app.settings.currency) }}</strong>
         </div>
       </div>
       <div v-else-if="app.periodPayments.length" class="inline-empty">{{ app.t("stats.noFilteredPayments") }}</div>
       <div v-else class="inline-empty">{{ app.t("stats.noPeriodPayments") }}</div>
       <div class="table-footer" v-if="app.filteredPeriodPayments.length">
-        <span>{{ app.t("common.total") }}: {{ app.formatMoney(app.filteredPeriodPaymentsTotal, app.statsCurrency) }}</span>
+        <span>{{ app.t("common.total") }}: {{ app.formatMoney(app.filteredPeriodPaymentsTotal, app.settings.currency) }}</span>
         <div class="pagination">
           <button class="secondary-button icon-only" type="button" @click="app.setPaymentPage(app.paymentTablePage - 1)" :disabled="app.paymentTablePage <= 1" :aria-label="app.t('stats.prevPage')"><ChevronLeftIcon :size="16" /></button>
           <strong>{{ app.paymentTablePage }} / {{ app.paymentTablePages }}</strong>

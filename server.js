@@ -26,6 +26,7 @@ const AUTH_RATE_WINDOW_MS = 15 * 60_000;
 const AUTH_RATE_MAX_ATTEMPTS = 8;
 const TOTP_RATE_MAX_ATTEMPTS = 6;
 const CURRENCIES = ["USDT", "EUR", "RUB"];
+const CATEGORIES = ["infra", "node", "test"];
 
 const sessions = new Map();
 const authAttempts = new Map();
@@ -158,6 +159,9 @@ async function initDb() {
   ensureColumn("assets", "country_code", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("assets", "sort_order", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn("assets", "inactive", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn("assets", "category", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("assets", "price", "REAL NOT NULL DEFAULT 0");
+  ensureColumn("assets", "price_currency", "TEXT NOT NULL DEFAULT 'USDT'");
   ensureColumn("users", "totp_secret", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("users", "totp_pending_secret", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("users", "totp_enabled", "INTEGER NOT NULL DEFAULT 0");
@@ -169,6 +173,9 @@ async function initDb() {
   ensureMeta("telegramNotifyUrl", TELEGRAM_NOTIFY_URL);
   ensureMeta("notifyOnStart", String(NOTIFY_ON_START));
   ensureMeta("currency", "USDT");
+  ensureMeta("rateRubPerEur", "100");
+  ensureMeta("rateUsdtPerEur", "1.08");
+  ensureMeta("rateUpdatedAt", "");
   process.env.TZ = getMeta().timezone;
   if (!existed) await migrateLegacyJson();
   ensureProviderColors();
@@ -215,8 +222,31 @@ function getMeta() {
     telegramNotifyUrl: meta.telegramNotifyUrl || "",
     notifyOnStart: String(meta.notifyOnStart ?? "true") === "true",
     telegramConfigured: Boolean(meta.telegramNotifyUrl || TELEGRAM_NOTIFY_URL),
-    currency: normalizeCurrency(meta.currency)
+    currency: normalizeCurrency(meta.currency),
+    rateRubPerEur: normalizeRate(meta.rateRubPerEur, 100),
+    rateUsdtPerEur: normalizeRate(meta.rateUsdtPerEur, 1.08),
+    rateUpdatedAt: meta.rateUpdatedAt || ""
   };
+}
+
+const EXCHANGE_RATE_URL = "https://open.er-api.com/v6/latest/EUR";
+const EXCHANGE_RATE_INTERVAL_MS = 6 * 60 * 60_000;
+
+async function refreshExchangeRates() {
+  try {
+    const response = await fetch(EXCHANGE_RATE_URL, { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const rub = Number(data?.rates?.RUB);
+    const usd = Number(data?.rates?.USD);
+    if (Number.isFinite(rub) && rub > 0) setMeta("rateRubPerEur", rub);
+    if (Number.isFinite(usd) && usd > 0) setMeta("rateUsdtPerEur", usd);
+    if ((Number.isFinite(rub) && rub > 0) || (Number.isFinite(usd) && usd > 0)) {
+      setMeta("rateUpdatedAt", new Date().toISOString());
+    }
+  } catch (error) {
+    console.warn(`Exchange rate refresh failed: ${error.message}`);
+  }
 }
 
 function getPublicMeta() {
@@ -232,6 +262,16 @@ function getPublicMeta() {
 function normalizeCurrency(value) {
   const currency = String(value || "").trim().toUpperCase();
   return CURRENCIES.includes(currency) ? currency : "USDT";
+}
+
+function normalizeCategory(value) {
+  const category = String(value || "").trim();
+  return CATEGORIES.includes(category) ? category : "";
+}
+
+function normalizeRate(value, fallback) {
+  const rate = Number(value);
+  return Number.isFinite(rate) && rate > 0 ? rate : fallback;
 }
 
 function setMeta(key, value) {
@@ -257,7 +297,7 @@ function getData() {
     FROM providers ORDER BY created_at DESC
   `).all();
   const assets = db.prepare(`
-    SELECT id, type, name, provider_id AS providerId, expires_at AS expiresAt, ip, domain, country_code AS countryCode, sort_order AS sortOrder, inactive, created_at AS createdAt, updated_at AS updatedAt
+    SELECT id, type, name, provider_id AS providerId, expires_at AS expiresAt, ip, domain, country_code AS countryCode, sort_order AS sortOrder, inactive, category, price, price_currency AS priceCurrency, created_at AS createdAt, updated_at AS updatedAt
     FROM assets ORDER BY type ASC, sort_order ASC, created_at DESC
   `).all();
   const payments = db.prepare(`
@@ -362,6 +402,9 @@ function normalizeAsset(input, previous = {}) {
     countryCode: type === "vps" ? String(input.countryCode || previous.countryCode || "").trim().toUpperCase().slice(0, 2) : "",
     sortOrder: Number(input.sortOrder ?? previous.sortOrder ?? Date.now()),
     inactive: Boolean(input.inactive ?? previous.inactive ?? false),
+    category: normalizeCategory(input.category ?? previous.category),
+    price: Math.max(0, Number(input.price ?? previous.price ?? 0)),
+    priceCurrency: normalizeCurrency(input.priceCurrency ?? previous.priceCurrency),
     payments: normalizePayments(input.payments ?? previous.payments ?? []),
     createdAt: previous.createdAt || now,
     updatedAt: now
@@ -465,8 +508,8 @@ function normalizeFaviconUrl(raw, loginUrl = "") {
 
 function upsertAsset(asset) {
   db.prepare(`
-    INSERT INTO assets (id, type, name, provider_id, expires_at, ip, domain, country_code, sort_order, inactive, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO assets (id, type, name, provider_id, expires_at, ip, domain, country_code, sort_order, inactive, category, price, price_currency, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       type = excluded.type,
       name = excluded.name,
@@ -477,8 +520,11 @@ function upsertAsset(asset) {
       country_code = excluded.country_code,
       sort_order = excluded.sort_order,
       inactive = excluded.inactive,
+      category = excluded.category,
+      price = excluded.price,
+      price_currency = excluded.price_currency,
       updated_at = excluded.updated_at
-  `).run(asset.id, asset.type, asset.name, asset.providerId, asset.expiresAt, asset.ip, asset.domain, asset.countryCode, asset.sortOrder, asset.inactive ? 1 : 0, asset.createdAt, asset.updatedAt);
+  `).run(asset.id, asset.type, asset.name, asset.providerId, asset.expiresAt, asset.ip, asset.domain, asset.countryCode, asset.sortOrder, asset.inactive ? 1 : 0, asset.category, asset.price, asset.priceCurrency, asset.createdAt, asset.updatedAt);
   db.prepare("DELETE FROM payments WHERE asset_id = ?").run(asset.id);
   const stmt = db.prepare("INSERT INTO payments (id, asset_id, amount, currency, paid_at, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
   for (const payment of asset.payments || []) {
@@ -1117,6 +1163,11 @@ async function handleApi(req, res, url) {
   }
 
   if (req.method === "GET" && url.pathname === "/api/assets") return sendJson(res, 200, getData());
+  if (req.method === "POST" && url.pathname === "/api/rates/refresh") {
+    await refreshExchangeRates();
+    await logAction(req, "rates.refresh");
+    return sendJson(res, 200, getMeta());
+  }
   if (req.method === "GET" && url.pathname === "/api/logs") return sendJson(res, 200, { items: await readAccessLog() });
   if (req.method === "GET" && url.pathname === "/api/notifications") return sendJson(res, 200, { items: getDueItems() });
   if (req.method === "POST" && url.pathname === "/api/telegram/test") {
@@ -1224,6 +1275,8 @@ async function serveStatic(req, res, url) {
 
 await initDb();
 setInterval(cleanupAuthState, 60 * 60_000).unref();
+refreshExchangeRates().catch((error) => console.warn(error.message));
+setInterval(() => refreshExchangeRates().catch((error) => console.warn(error.message)), EXCHANGE_RATE_INTERVAL_MS).unref();
 
 const server = createServer(async (req, res) => {
   try {

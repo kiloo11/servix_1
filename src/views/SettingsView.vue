@@ -41,6 +41,24 @@
         <p class="hint">{{ app.t("settings.leadsHint") }}</p>
       </form>
 
+      <div class="settings-panel">
+        <div class="settings-card-head">
+          <div class="settings-card-icon"><CoinsIcon :size="18" /></div>
+          <div>
+            <h2>{{ app.t("settings.ratesTitle") }}</h2>
+            <span>{{ app.t("settings.ratesText") }}</span>
+          </div>
+        </div>
+        <div class="rate-display-grid">
+          <div><span>{{ app.t("settings.rateRubPerEur") }}</span><strong>{{ app.formatShort(app.meta.rateRubPerEur) }} RUB</strong></div>
+          <div><span>{{ app.t("settings.rateUsdtPerEur") }}</span><strong>{{ app.formatShort(app.meta.rateUsdtPerEur) }} USDT</strong></div>
+        </div>
+        <div class="settings-inline-footer">
+          <span class="hint">{{ app.meta.rateUpdatedAt ? app.t("settings.ratesUpdated", { value: app.formatDateTime(app.meta.rateUpdatedAt) }) : app.t("settings.ratesNever") }}</span>
+          <button class="secondary-button" type="button" @click="app.refreshRates"><RefreshCwIcon :size="16" />{{ app.t("settings.refreshRates") }}</button>
+        </div>
+      </div>
+
       <form class="settings-panel" @submit.prevent="app.changePassword">
         <div class="settings-card-head">
           <div class="settings-card-icon"><KeyRoundIcon :size="18" /></div>
@@ -91,10 +109,10 @@
 </template>
 
 <script>
-import { KeyRound as KeyRoundIcon, QrCode as QrCodeIcon, Save as SaveIcon, Send as SendIcon, Settings as SettingsIcon, ShieldCheck as ShieldCheckIcon } from "@lucide/vue";
+import { Coins as CoinsIcon, KeyRound as KeyRoundIcon, QrCode as QrCodeIcon, RefreshCw as RefreshCwIcon, Save as SaveIcon, Send as SendIcon, Settings as SettingsIcon, ShieldCheck as ShieldCheckIcon } from "@lucide/vue";
 
 export default {
-  components: { KeyRoundIcon, QrCodeIcon, SaveIcon, SendIcon, SettingsIcon, ShieldCheckIcon },
+  components: { CoinsIcon, KeyRoundIcon, QrCodeIcon, RefreshCwIcon, SaveIcon, SendIcon, SettingsIcon, ShieldCheckIcon },
   props: {
     app: { type: Object, required: true }
   }
