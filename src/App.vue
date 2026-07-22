@@ -18,7 +18,7 @@
     <div v-if="mobileNavOpen" class="sidebar-backdrop" @click="mobileNavOpen = false"></div>
     <aside class="sidebar" :class="{ open: mobileNavOpen }">
       <div class="brand">
-        <div class="brand-mark">{{ t("logo.brand") }}</div>
+        <img class="brand-mark" src="/app-icon.svg" alt="" width="42" height="42">
         <div class="brand-text">
           <strong>{{ meta.siteTitle }}</strong>
           <span>{{ t("logo.subtitle") }}</span>
@@ -213,6 +213,23 @@
         <span></span><button class="secondary-button" type="button" @click="closeModal('provider')">{{ t("common.cancel") }}</button><button class="primary-button" type="submit"><SaveIcon :size="18" />{{ t("common.save") }}</button>
       </div>
     </form>
+    </div>
+  </div>
+
+  <div v-if="confirmDialog.open" class="modal-shell confirm-shell" @mousedown.self="resolveConfirm(false)">
+    <div class="modal-card confirm-card">
+      <div class="confirm-body">
+        <div class="dialog-head">
+          <h2>{{ t("common.confirmTitle") }}</h2>
+          <button class="icon-button" type="button" @click="resolveConfirm(false)"><XIcon :size="20" /></button>
+        </div>
+        <p class="confirm-message">{{ confirmDialog.message }}</p>
+        <div class="dialog-actions">
+          <span></span>
+          <button class="secondary-button" type="button" @click="resolveConfirm(false)">{{ t("common.cancel") }}</button>
+          <button class="danger-button" type="button" @click="resolveConfirm(true)">{{ t("common.confirmYes") }}</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -414,7 +431,8 @@ export default {
       quickPayment: { amount: "", currency: "USDT", paidAt: toLocalInput(new Date()) },
       renewalPayment: { amount: "", currency: "USDT" },
       chartTooltip: null,
-      toasts: []
+      toasts: [],
+      confirmDialog: { open: false, message: "", resolve: null }
     };
   },
   computed: {
@@ -949,7 +967,7 @@ export default {
       await this.load();
     },
     async toggleAssetInactive(asset, inactive = true) {
-      if (inactive && !confirm(this.t("assets.deactivateConfirm", { name: asset.name }))) return;
+      if (inactive && !(await this.confirmAction(this.t("assets.deactivateConfirm", { name: asset.name })))) return;
       await this.updateAsset({ ...asset, inactive });
       this.toast(inactive ? this.t("assets.deactivated") : this.t("assets.activated"));
       await this.load();
@@ -988,7 +1006,7 @@ export default {
       this.toast(this.t("settings.ratesRefreshed"));
     },
     async deleteAsset() {
-      if (!confirm(this.t("assets.deleteConfirm", { name: this.editingAsset.name }))) return;
+      if (!(await this.confirmAction(this.t("assets.deleteConfirm", { name: this.editingAsset.name })))) return;
       await this.api(`/api/assets/${this.editingAsset.id}`, { method: "DELETE" });
       this.closeModal("asset");
       this.toast(this.t("assets.deleted"));
@@ -1027,7 +1045,7 @@ export default {
       await this.load();
     },
     async deleteProvider() {
-      if (!confirm(this.t("providers.deleteConfirm", { name: this.editingProvider.name }))) return;
+      if (!(await this.confirmAction(this.t("providers.deleteConfirm", { name: this.editingProvider.name })))) return;
       await this.api(`/api/providers/${this.editingProvider.id}`, { method: "DELETE" });
       this.closeModal("provider");
       this.toast(this.t("providers.deleted"));
@@ -1383,6 +1401,15 @@ export default {
       if (!field) return;
       field.style.height = "auto";
       field.style.height = `${field.scrollHeight}px`;
+    },
+    confirmAction(message) {
+      return new Promise((resolve) => {
+        this.confirmDialog = { open: true, message, resolve };
+      });
+    },
+    resolveConfirm(result) {
+      this.confirmDialog.resolve?.(result);
+      this.confirmDialog = { open: false, message: "", resolve: null };
     },
     toast(message) {
       const item = { id: makeId(), message };

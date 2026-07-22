@@ -2,7 +2,7 @@
   <div class="login-screen">
     <form class="login-card otp-card" @submit.prevent="app.submitAuth">
       <div class="brand compact">
-        <div class="brand-mark">{{ app.t("logo.brand") }}</div>
+        <img class="brand-mark" src="/app-icon.svg" alt="" width="42" height="42">
         <div>
           <strong>{{ app.t("auth.totpTitle") }}</strong>
           <span>{{ app.t("auth.totpText") }}</span>
