@@ -25,7 +25,9 @@
             <span>{{ app.alertWhen(item) }}</span>
           </div>
         </div>
-        <button class="secondary-button icon-only tooltip" type="button" @click="app.openAsset(app.assetById(item.assetId))" :aria-label="app.t('common.open')" :data-tooltip="app.t('common.open')"><PencilIcon :size="16" /></button>
+        <AppTooltip :label="app.t('common.open')">
+          <button class="secondary-button icon-only" type="button" @click="app.openAsset(app.assetById(item.assetId))" :aria-label="app.t('common.open')"><PencilIcon :size="16" /></button>
+        </AppTooltip>
       </article>
     </div>
     <div v-else class="empty-state visible alert-empty">
@@ -38,9 +40,10 @@
 
 <script>
 import { Bell as BellIcon, CalendarClock as CalendarClockIcon, Pencil as PencilIcon } from "@lucide/vue";
+import AppTooltip from "../components/AppTooltip.vue";
 
 export default {
-  components: { BellIcon, CalendarClockIcon, PencilIcon },
+  components: { AppTooltip, BellIcon, CalendarClockIcon, PencilIcon },
   props: {
     app: { type: Object, required: true }
   }

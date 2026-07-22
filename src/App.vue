@@ -23,19 +23,23 @@
           <strong>{{ meta.siteTitle }}</strong>
           <span>{{ t("logo.subtitle") }}</span>
         </div>
-        <button class="icon-button sidebar-collapse tooltip tooltip-right" type="button" :aria-label="sidebarCollapsed ? t('nav.expandMenu') : t('nav.collapseMenu')" :data-tooltip="sidebarCollapsed ? t('nav.expandMenu') : t('nav.collapseMenu')" @click="toggleSidebar">
-          <PanelLeftOpenIcon v-if="sidebarCollapsed" :size="18" />
-          <PanelLeftCloseIcon v-else :size="18" />
-        </button>
+        <AppTooltip :label="sidebarCollapsed ? t('nav.expandMenu') : t('nav.collapseMenu')" side="right">
+          <button class="icon-button sidebar-collapse" type="button" :aria-label="sidebarCollapsed ? t('nav.expandMenu') : t('nav.collapseMenu')" @click="toggleSidebar">
+            <PanelLeftOpenIcon v-if="sidebarCollapsed" :size="18" />
+            <PanelLeftCloseIcon v-else :size="18" />
+          </button>
+        </AppTooltip>
         <button class="icon-button sidebar-close" type="button" :aria-label="t('common.cancel')" @click="mobileNavOpen = false"><XIcon :size="20" /></button>
       </div>
 
       <nav class="nav-tabs" :aria-label="t('nav.assets')">
-        <button v-for="item in nav" :key="item.view" class="nav-button tooltip-collapsed" :class="{ active: view === item.view }" type="button" :aria-current="view === item.view ? 'page' : undefined" :data-tooltip="t(item.labelKey)" @click="go(item.view)">
-          <span class="nav-icon"><component :is="item.icon" :size="18" /></span>
-          <span class="nav-label">{{ t(item.labelKey) }}</span>
-          <span v-if="item.view === 'alerts' && alerts.length" class="nav-badge">{{ alerts.length }}</span>
-        </button>
+        <AppTooltip v-for="item in nav" :key="item.view" :label="sidebarCollapsed ? t(item.labelKey) : ''" side="right">
+          <button class="nav-button" :class="{ active: view === item.view }" type="button" :aria-current="view === item.view ? 'page' : undefined" @click="go(item.view)">
+            <span class="nav-icon"><component :is="item.icon" :size="18" /></span>
+            <span class="nav-label">{{ t(item.labelKey) }}</span>
+            <span v-if="item.view === 'alerts' && alerts.length" class="nav-badge">{{ alerts.length }}</span>
+          </button>
+        </AppTooltip>
       </nav>
 
       <div class="sidebar-bottom">
@@ -46,7 +50,9 @@
           <div class="summary-wide"><span>{{ t("summary.paid") }}</span><strong>{{ totalPaidDisplay }}</strong></div>
           <div class="summary-wide"><span>{{ t("summary.terms") }}</span><strong>{{ alerts.length }}</strong></div>
         </div>
-        <button class="secondary-button sidebar-logout tooltip-collapsed" type="button" :data-tooltip="t('common.logout')" @click="logout"><LogOutIcon :size="18" /><span>{{ t("common.logout") }}</span></button>
+        <AppTooltip :label="sidebarCollapsed ? t('common.logout') : ''" side="right">
+          <button class="secondary-button sidebar-logout" type="button" @click="logout"><LogOutIcon :size="18" /><span>{{ t("common.logout") }}</span></button>
+        </AppTooltip>
       </div>
     </aside>
 
@@ -62,13 +68,9 @@
     </main>
   </div>
 
-  <div v-if="modals.asset" class="modal-shell" @mousedown.self="closeModal('asset')">
-    <div class="modal-card">
+  <Modal v-model="modals.asset" :close-label="t('common.cancel')">
+    <template #title>{{ editingAsset.id ? t("assets.edit") : t("assets.new") }}</template>
     <form id="assetForm" @submit.prevent="saveAsset">
-      <div class="dialog-head">
-        <h2>{{ editingAsset.id ? t("assets.edit") : t("assets.new") }}</h2>
-        <button class="icon-button" type="button" @click="closeModal('asset')"><XIcon :size="20" /></button>
-      </div>
       <div class="form-grid compact-grid">
         <fieldset class="type-toggle-group">
           <legend>{{ t("common.type") }}</legend>
@@ -78,66 +80,75 @@
           </label>
         </fieldset>
         <label>{{ t("common.name") }}<input v-model="editingAsset.name" type="text" required></label>
-        <label>{{ t("common.provider") }}<select v-model="editingAsset.providerId"><option value="">{{ t("common.providersEmpty") }}</option><option v-for="provider in providers" :key="provider.id" :value="provider.id">{{ provider.name }}</option></select></label>
+        <label>{{ t("common.provider") }}
+          <AppSelect v-model="editingAsset.providerId" :aria-label="t('common.provider')">
+            <AppSelectItem value="">{{ t("common.providersEmpty") }}</AppSelectItem>
+            <AppSelectItem v-for="provider in providers" :key="provider.id" :value="provider.id">{{ provider.name }}</AppSelectItem>
+          </AppSelect>
+        </label>
         <label>{{ t("common.category") }}
-          <select v-model="editingAsset.category">
-            <option value="">{{ t("assets.categoryEmpty") }}</option>
-            <option v-for="category in categoryOptions" :key="category" :value="category">{{ t(`category.${category}`) }}</option>
-          </select>
+          <AppSelect v-model="editingAsset.category" :aria-label="t('common.category')">
+            <AppSelectItem value="">{{ t("assets.categoryEmpty") }}</AppSelectItem>
+            <AppSelectItem v-for="category in categoryOptions" :key="category" :value="category">{{ t(`category.${category}`) }}</AppSelectItem>
+          </AppSelect>
         </label>
         <template v-if="editingAsset.type === 'vps'">
           <label>IP<input v-model="editingAsset.ip" type="text"></label>
           <label>{{ t("common.country") }}
-            <div class="search-select">
-              <button class="search-select-button" type="button" @click="countrySelectOpen = !countrySelectOpen">
-                <span class="country-option">
-                  <img v-if="editingAsset.countryCode" class="flag-icon" :src="countryFlagUrl(editingAsset.countryCode)" alt="">
-                  {{ editingAsset.countryCode ? countryDisplayName(editingAsset.countryCode) : t("common.countryEmpty") }}
-                </span>
-              </button>
-              <div v-if="countrySelectOpen" class="search-select-panel">
-                <input v-model="countrySearch" type="search" :placeholder="t('common.searchCountry')" @keydown.escape="countrySelectOpen = false">
-                <div class="search-select-options">
-                  <button v-for="country in filteredCountries" :key="country.code || 'empty'" type="button" class="country-option" :class="{ active: editingAsset.countryCode === country.code }" @click="selectCountry(country.code)">
-                    <img v-if="country.code" class="flag-icon" :src="countryFlagUrl(country.code)" alt="">
-                    {{ country.code ? countryDisplayName(country.code) : t("common.countryEmpty") }}
-                  </button>
-                  <div v-if="!filteredCountries.length" class="inline-empty">{{ t("common.noCountries") }}</div>
-                </div>
-              </div>
-            </div>
+            <PopoverRoot v-model:open="countrySelectOpen">
+              <PopoverTrigger as-child>
+                <button class="search-select-button" type="button">
+                  <span class="country-option">
+                    <img v-if="editingAsset.countryCode" class="flag-icon" :src="countryFlagUrl(editingAsset.countryCode)" alt="">
+                    {{ editingAsset.countryCode ? countryDisplayName(editingAsset.countryCode) : t("common.countryEmpty") }}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverPortal>
+                <PopoverContent class="search-select-panel" :side-offset="6" align="start">
+                  <input v-model="countrySearch" type="search" :placeholder="t('common.searchCountry')" @keydown.escape="countrySelectOpen = false">
+                  <div class="search-select-options">
+                    <button v-for="country in filteredCountries" :key="country.code || 'empty'" type="button" class="country-option" :class="{ active: editingAsset.countryCode === country.code }" @click="selectCountry(country.code)">
+                      <img v-if="country.code" class="flag-icon" :src="countryFlagUrl(country.code)" alt="">
+                      {{ country.code ? countryDisplayName(country.code) : t("common.countryEmpty") }}
+                    </button>
+                    <div v-if="!filteredCountries.length" class="inline-empty">{{ t("common.noCountries") }}</div>
+                  </div>
+                </PopoverContent>
+              </PopoverPortal>
+            </PopoverRoot>
           </label>
         </template>
         <label v-else>{{ t("common.domain") }}<input v-model="editingAsset.domain" type="text"></label>
         <label>{{ t("common.expiresAt") }}<input v-model="editingAsset.expiresAt" class="datetime-input" type="datetime-local" step="60"></label>
         <label>{{ t("common.price") }}<input v-model.number="editingAsset.price" type="number" min="0" step="0.000001" placeholder="0.00"></label>
         <label>{{ t("common.currency") }}
-          <select v-model="editingAsset.priceCurrency">
-            <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
-          </select>
+          <AppSelect v-model="editingAsset.priceCurrency" :aria-label="t('common.currency')">
+            <AppSelectItem v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</AppSelectItem>
+          </AppSelect>
         </label>
       </div>
       <p v-if="editingAsset.price && editingAsset.priceCurrency !== 'EUR'" class="hint">≈ {{ formatMoney(convertToEur(editingAsset.price, editingAsset.priceCurrency), 'EUR') }}</p>
       <div class="dialog-actions" :class="{ 'has-danger': editingAsset.id }">
-        <button class="danger-button icon-only tooltip" v-if="editingAsset.id" type="button" @click="deleteAsset" :aria-label="t('common.delete')" :data-tooltip="t('common.delete')"><Trash2Icon :size="18" /></button>
+        <AppTooltip v-if="editingAsset.id" :label="t('common.delete')">
+          <button class="danger-button icon-only" type="button" @click="deleteAsset" :aria-label="t('common.delete')"><Trash2Icon :size="18" /></button>
+        </AppTooltip>
         <span></span>
         <button class="secondary-button" type="button" @click="closeModal('asset')">{{ t("common.cancel") }}</button>
         <button class="primary-button" type="submit"><SaveIcon :size="18" />{{ t("common.save") }}</button>
       </div>
     </form>
-    </div>
-  </div>
+  </Modal>
 
-  <div v-if="modals.payments" class="modal-shell" @mousedown.self="closeModal('payments')">
-    <div class="modal-card">
+  <Modal v-model="modals.payments" :close-label="t('common.cancel')">
+    <template #title>{{ t("payments.title", { name: paymentsAsset?.name || "" }) }}</template>
     <form id="paymentsForm" @submit.prevent>
-      <div class="dialog-head"><h2>{{ t("payments.title", { name: paymentsAsset?.name || "" }) }}</h2><button class="icon-button" type="button" @click="closeModal('payments')"><XIcon :size="20" /></button></div>
       <div class="quick-payment">
         <label>{{ t("common.price") }}<input v-model.number="quickPayment.amount" type="number" min="0" step="0.000001" placeholder="0.00"></label>
         <label>{{ t("common.currency") }}
-          <select v-model="quickPayment.currency">
-            <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
-          </select>
+          <AppSelect v-model="quickPayment.currency" :aria-label="t('common.currency')">
+            <AppSelectItem v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</AppSelectItem>
+          </AppSelect>
         </label>
         <label>{{ t("common.dateTime") }}<input v-model="quickPayment.paidAt" class="datetime-input" type="datetime-local" step="60"></label>
         <button class="primary-button quick-add-button" type="button" :aria-label="t('common.addPayment')" @click="addQuickPayment"><PlusIcon :size="18" /></button>
@@ -158,13 +169,11 @@
         </div>
       </div>
     </form>
-    </div>
-  </div>
+  </Modal>
 
-  <div v-if="modals.expire" class="modal-shell" @mousedown.self="closeModal('expire')">
-    <div class="modal-card">
+  <Modal v-model="modals.expire" :close-label="t('common.cancel')">
+    <template #title>{{ t("common.term") }}: {{ expireAsset?.name }}</template>
     <form id="expireForm" @submit.prevent>
-      <div class="dialog-head"><h2>{{ t("common.term") }}: {{ expireAsset?.name }}</h2><button class="icon-button" type="button" @click="closeModal('expire')"><XIcon :size="20" /></button></div>
       <div class="expire-current">
         <span>{{ t("common.currentTerm") }}</span>
         <strong>{{ formatDateTime(expireAsset?.expiresAt) }}</strong>
@@ -172,9 +181,9 @@
       <div class="renewal-price-row">
         <label>{{ t("common.renewalPrice") }}<input v-model.number="renewalPayment.amount" type="number" min="0" step="0.000001" placeholder="0.00"></label>
         <label>{{ t("common.currency") }}
-          <select v-model="renewalPayment.currency">
-            <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
-          </select>
+          <AppSelect v-model="renewalPayment.currency" :aria-label="t('common.currency')">
+            <AppSelectItem v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</AppSelectItem>
+          </AppSelect>
         </label>
       </div>
       <p class="hint">{{ t("common.renewalPriceHint") }}</p>
@@ -193,13 +202,11 @@
         </div>
       </div>
     </form>
-    </div>
-  </div>
+  </Modal>
 
-  <div v-if="modals.provider" class="modal-shell" @mousedown.self="closeModal('provider')">
-    <div class="modal-card">
+  <Modal v-model="modals.provider" :close-label="t('common.cancel')">
+    <template #title>{{ editingProvider.id ? t("providers.edit") : t("providers.new") }}</template>
     <form id="providerForm" @submit.prevent="saveProvider">
-      <div class="dialog-head"><h2>{{ editingProvider.id ? t("providers.edit") : t("providers.new") }}</h2><button class="icon-button" type="button" @click="closeModal('provider')"><XIcon :size="20" /></button></div>
       <div class="form-grid compact-grid">
         <label>{{ t("common.name") }}<input v-model="editingProvider.name" type="text" required></label>
         <label>{{ t("providers.loginUrl") }}<input v-model="editingProvider.loginUrl" type="url" placeholder="https://example.com/login"></label>
@@ -215,38 +222,44 @@
         <label>{{ t("providers.note") }}<textarea ref="providerNote" v-model="editingProvider.note" class="autosize-textarea" rows="1" :placeholder="t('providers.notePlaceholder')" @input="autosizeTextarea"></textarea></label>
       </div>
       <div class="dialog-actions" :class="{ 'has-danger': editingProvider.id }">
-        <button class="danger-button icon-only tooltip" v-if="editingProvider.id" type="button" @click="deleteProvider" :aria-label="t('common.delete')" :data-tooltip="t('common.delete')"><Trash2Icon :size="18" /></button>
+        <AppTooltip v-if="editingProvider.id" :label="t('common.delete')">
+          <button class="danger-button icon-only" type="button" @click="deleteProvider" :aria-label="t('common.delete')"><Trash2Icon :size="18" /></button>
+        </AppTooltip>
         <span></span><button class="secondary-button" type="button" @click="closeModal('provider')">{{ t("common.cancel") }}</button><button class="primary-button" type="submit"><SaveIcon :size="18" />{{ t("common.save") }}</button>
       </div>
     </form>
-    </div>
-  </div>
+  </Modal>
 
-  <div v-if="confirmDialog.open" class="modal-shell confirm-shell" @mousedown.self="resolveConfirm(false)">
-    <div class="modal-card confirm-card">
-      <div class="confirm-body">
-        <div class="dialog-head">
-          <h2>{{ t("common.confirmTitle") }}</h2>
-          <button class="icon-button" type="button" @click="resolveConfirm(false)"><XIcon :size="20" /></button>
-        </div>
-        <p class="confirm-message">{{ confirmDialog.message }}</p>
-        <div class="dialog-actions">
-          <span></span>
-          <button class="secondary-button" type="button" @click="resolveConfirm(false)">{{ t("common.cancel") }}</button>
-          <button class="danger-button" type="button" @click="resolveConfirm(true)">{{ t("common.confirmYes") }}</button>
-        </div>
+  <Modal :model-value="confirmDialog.open" @update:model-value="(open) => !open && resolveConfirm(false)" card-class="confirm-card" :close-label="t('common.cancel')">
+    <template #title>{{ t("common.confirmTitle") }}</template>
+    <div class="confirm-body">
+      <p class="confirm-message">{{ confirmDialog.message }}</p>
+      <div class="dialog-actions">
+        <span></span>
+        <button class="secondary-button" type="button" @click="resolveConfirm(false)">{{ t("common.cancel") }}</button>
+        <button class="danger-button" type="button" @click="resolveConfirm(true)">{{ t("common.confirmYes") }}</button>
       </div>
     </div>
-  </div>
+  </Modal>
 
-  <div class="toast-host" aria-live="polite"><div v-for="toast in toasts" :key="toast.id" class="toast">{{ toast.message }}</div></div>
+  <ToastProvider>
+    <ToastRoot v-for="toast in toasts" :key="toast.id" class="toast" :duration="3200" @update:open="(open) => !open && removeToast(toast.id)">
+      <ToastDescription>{{ toast.message }}</ToastDescription>
+    </ToastRoot>
+    <ToastViewport class="toast-host" />
+  </ToastProvider>
 </template>
 
 <script>
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from "reka-ui";
 import ruLocale from "../locale/ru.json";
 import enLocale from "../locale/en.json";
+import AppSelect from "./components/AppSelect.vue";
+import AppSelectItem from "./components/AppSelectItem.vue";
+import AppTooltip from "./components/AppTooltip.vue";
+import Modal from "./components/Modal.vue";
 import TwoFactorView from "./views/auth/2fa.vue";
 import CreateView from "./views/auth/create.vue";
 import LoginView from "./views/auth/login.vue";
@@ -335,6 +348,9 @@ const CATEGORIES = ["infra", "node", "test"];
 export default {
   components: {
     AlertsView,
+    AppSelect,
+    AppSelectItem,
+    AppTooltip,
     AssetsView,
     BarChartIcon,
     BellIcon,
@@ -354,12 +370,21 @@ export default {
     LogOutIcon,
     LogsView,
     MenuIcon,
+    Modal,
     PanelLeftCloseIcon,
     PanelLeftOpenIcon,
     PencilIcon,
     PlusIcon,
     PnLView,
+    PopoverContent,
+    PopoverPortal,
+    PopoverRoot,
+    PopoverTrigger,
     ProvidersView,
+    ToastDescription,
+    ToastProvider,
+    ToastRoot,
+    ToastViewport,
     QrCodeIcon,
     RotateCcwIcon,
     SaveIcon,
@@ -1428,11 +1453,10 @@ export default {
       this.confirmDialog = { open: false, message: "", resolve: null };
     },
     toast(message) {
-      const item = { id: makeId(), message };
-      this.toasts.push(item);
-      setTimeout(() => {
-        this.toasts = this.toasts.filter((toast) => toast.id !== item.id);
-      }, 3200);
+      this.toasts.push({ id: makeId(), message });
+    },
+    removeToast(id) {
+      this.toasts = this.toasts.filter((toast) => toast.id !== id);
     }
   }
 };

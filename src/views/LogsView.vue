@@ -7,20 +7,20 @@
     <article class="chart-panel table-panel">
       <div class="table-toolbar">
         <input v-model="app.logSearch" type="search" :placeholder="app.t('logs.search')">
-        <select v-model="app.logActionFilter" :aria-label="app.t('logs.action')">
-          <option value="all">{{ app.t("logs.allActions") }}</option>
-          <option v-for="action in app.logActions" :key="action" :value="action">{{ action }}</option>
-        </select>
-        <select v-model="app.logSort" :aria-label="app.t('stats.sort')">
-          <option value="date-desc">{{ app.t("stats.sortDateDesc") }}</option>
-          <option value="date-asc">{{ app.t("stats.sortDateAsc") }}</option>
-        </select>
-        <select v-model.number="app.logPageSize" :aria-label="app.t('logs.pageSize')">
-          <option :value="10">10</option>
-          <option :value="25">25</option>
-          <option :value="50">50</option>
-          <option :value="100">100</option>
-        </select>
+        <AppSelect v-model="app.logActionFilter" :aria-label="app.t('logs.action')">
+          <AppSelectItem value="all">{{ app.t("logs.allActions") }}</AppSelectItem>
+          <AppSelectItem v-for="action in app.logActions" :key="action" :value="action">{{ action }}</AppSelectItem>
+        </AppSelect>
+        <AppSelect v-model="app.logSort" :aria-label="app.t('stats.sort')">
+          <AppSelectItem value="date-desc">{{ app.t("stats.sortDateDesc") }}</AppSelectItem>
+          <AppSelectItem value="date-asc">{{ app.t("stats.sortDateAsc") }}</AppSelectItem>
+        </AppSelect>
+        <AppSelect v-model.number="app.logPageSize" :aria-label="app.t('logs.pageSize')">
+          <AppSelectItem :value="10">10</AppSelectItem>
+          <AppSelectItem :value="25">25</AppSelectItem>
+          <AppSelectItem :value="50">50</AppSelectItem>
+          <AppSelectItem :value="100">100</AppSelectItem>
+        </AppSelect>
       </div>
       <div class="logs-table" v-if="app.paginatedLogs.length">
         <div class="logs-table-head"><span>{{ app.t("logs.time") }}</span><span>{{ app.t("logs.action") }}</span><span>{{ app.t("logs.path") }}</span><span>{{ app.t("logs.ip") }}</span><span>{{ app.t("logs.details") }}</span></div>
@@ -47,9 +47,11 @@
 
 <script>
 import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, ScrollText as ScrollTextIcon } from "@lucide/vue";
+import AppSelect from "../components/AppSelect.vue";
+import AppSelectItem from "../components/AppSelectItem.vue";
 
 export default {
-  components: { ChevronLeftIcon, ChevronRightIcon, ScrollTextIcon },
+  components: { AppSelect, AppSelectItem, ChevronLeftIcon, ChevronRightIcon, ScrollTextIcon },
   props: {
     app: { type: Object, required: true }
   }
