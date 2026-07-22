@@ -73,7 +73,9 @@
     "currency": "Currency",
     "category": "Category",
     "renewalPrice": "Renewal price",
-    "renewalPriceHint": "If you set a price before extending the term, it will be added as a payment."
+    "renewalPriceHint": "If you set a price before extending the term, it will be added as a payment.",
+    "confirmTitle": "Confirmation",
+    "confirmYes": "Confirm"
   },
   "category": {
     "infra": "Infrastructure",
