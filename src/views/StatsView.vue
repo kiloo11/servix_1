@@ -3,14 +3,14 @@
     <div class="section-head">
       <h1>{{ app.t("nav.stats") }}</h1>
       <div class="section-head-actions">
-        <select v-model="app.statsPeriod" class="period-select" :aria-label="app.t('stats.period')">
-          <option value="7d">{{ app.t("stats.period7d") }}</option>
-          <option value="30d">{{ app.t("stats.period30d") }}</option>
-          <option value="90d">{{ app.t("stats.period90d") }}</option>
-          <option value="180d">{{ app.t("stats.period180d") }}</option>
-          <option value="1y">{{ app.t("stats.period1y") }}</option>
-          <option value="all">{{ app.t("stats.periodAll") }}</option>
-        </select>
+        <AppSelect v-model="app.statsPeriod" class="period-select" :aria-label="app.t('stats.period')">
+          <AppSelectItem value="7d">{{ app.t("stats.period7d") }}</AppSelectItem>
+          <AppSelectItem value="30d">{{ app.t("stats.period30d") }}</AppSelectItem>
+          <AppSelectItem value="90d">{{ app.t("stats.period90d") }}</AppSelectItem>
+          <AppSelectItem value="180d">{{ app.t("stats.period180d") }}</AppSelectItem>
+          <AppSelectItem value="1y">{{ app.t("stats.period1y") }}</AppSelectItem>
+          <AppSelectItem value="all">{{ app.t("stats.periodAll") }}</AppSelectItem>
+        </AppSelect>
       </div>
     </div>
     <div class="stats-grid">
@@ -84,25 +84,25 @@
       </div>
       <div class="table-toolbar" v-if="app.periodPayments.length">
         <input v-model="app.paymentTableSearch" type="search" :placeholder="app.t('stats.filter')">
-        <select v-model="app.paymentTableProvider" :aria-label="app.t('stats.providerFilter')">
-          <option value="all">{{ app.t("stats.allProviders") }}</option>
-          <option value="none">{{ app.t("common.providersEmpty") }}</option>
-          <option v-for="provider in app.paymentTableProviders" :key="provider.id" :value="provider.id">{{ provider.name }}</option>
-        </select>
-        <select v-model="app.paymentTableSort" :aria-label="app.t('stats.sort')">
-          <option value="date-desc">{{ app.t("stats.sortDateDesc") }}</option>
-          <option value="date-asc">{{ app.t("stats.sortDateAsc") }}</option>
-          <option value="amount-desc">{{ app.t("stats.sortAmountDesc") }}</option>
-          <option value="amount-asc">{{ app.t("stats.sortAmountAsc") }}</option>
-          <option value="server-asc">{{ app.t("stats.sortServerAsc") }}</option>
-          <option value="provider-asc">{{ app.t("stats.sortProviderAsc") }}</option>
-        </select>
-        <select v-model.number="app.paymentTablePageSize" :aria-label="app.t('stats.pageSize')">
-          <option :value="10">10</option>
-          <option :value="25">25</option>
-          <option :value="50">50</option>
-          <option :value="100">100</option>
-        </select>
+        <AppSelect v-model="app.paymentTableProvider" :aria-label="app.t('stats.providerFilter')">
+          <AppSelectItem value="all">{{ app.t("stats.allProviders") }}</AppSelectItem>
+          <AppSelectItem value="none">{{ app.t("common.providersEmpty") }}</AppSelectItem>
+          <AppSelectItem v-for="provider in app.paymentTableProviders" :key="provider.id" :value="provider.id">{{ provider.name }}</AppSelectItem>
+        </AppSelect>
+        <AppSelect v-model="app.paymentTableSort" :aria-label="app.t('stats.sort')">
+          <AppSelectItem value="date-desc">{{ app.t("stats.sortDateDesc") }}</AppSelectItem>
+          <AppSelectItem value="date-asc">{{ app.t("stats.sortDateAsc") }}</AppSelectItem>
+          <AppSelectItem value="amount-desc">{{ app.t("stats.sortAmountDesc") }}</AppSelectItem>
+          <AppSelectItem value="amount-asc">{{ app.t("stats.sortAmountAsc") }}</AppSelectItem>
+          <AppSelectItem value="server-asc">{{ app.t("stats.sortServerAsc") }}</AppSelectItem>
+          <AppSelectItem value="provider-asc">{{ app.t("stats.sortProviderAsc") }}</AppSelectItem>
+        </AppSelect>
+        <AppSelect v-model.number="app.paymentTablePageSize" :aria-label="app.t('stats.pageSize')">
+          <AppSelectItem :value="10">10</AppSelectItem>
+          <AppSelectItem :value="25">25</AppSelectItem>
+          <AppSelectItem :value="50">50</AppSelectItem>
+          <AppSelectItem :value="100">100</AppSelectItem>
+        </AppSelect>
       </div>
       <div class="payments-table" v-if="app.paginatedPeriodPayments.length">
         <div class="payments-table-head"><span>{{ app.t("common.date") }}</span><span>{{ app.t("type.vps") }}</span><span>{{ app.t("common.provider") }}</span><span>{{ app.t("common.sum") }}</span></div>
@@ -129,9 +129,11 @@
 
 <script>
 import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Download as DownloadIcon, FileText as FileTextIcon } from "@lucide/vue";
+import AppSelect from "../components/AppSelect.vue";
+import AppSelectItem from "../components/AppSelectItem.vue";
 
 export default {
-  components: { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, FileTextIcon },
+  components: { AppSelect, AppSelectItem, ChevronLeftIcon, ChevronRightIcon, DownloadIcon, FileTextIcon },
   props: {
     app: { type: Object, required: true }
   }

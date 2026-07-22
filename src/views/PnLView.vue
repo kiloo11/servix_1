@@ -5,12 +5,12 @@
         <h1>{{ app.t("nav.pnl") }}</h1>
         <span>{{ app.t("pnl.subtitle") }}</span>
       </div>
-      <select v-model.number="app.pnlHorizonDays" class="period-select" :aria-label="app.t('pnl.horizon')">
-        <option :value="30">{{ app.tc("day", 30) }}</option>
-        <option :value="90">{{ app.tc("day", 90) }}</option>
-        <option :value="180">{{ app.tc("day", 180) }}</option>
-        <option :value="365">{{ app.tc("day", 365) }}</option>
-      </select>
+      <AppSelect v-model.number="app.pnlHorizonDays" class="period-select" :aria-label="app.t('pnl.horizon')">
+        <AppSelectItem :value="30">{{ app.tc("day", 30) }}</AppSelectItem>
+        <AppSelectItem :value="90">{{ app.tc("day", 90) }}</AppSelectItem>
+        <AppSelectItem :value="180">{{ app.tc("day", 180) }}</AppSelectItem>
+        <AppSelectItem :value="365">{{ app.tc("day", 365) }}</AppSelectItem>
+      </AppSelect>
     </div>
 
     <div class="stats-grid">
@@ -36,18 +36,18 @@
       </div>
       <div class="table-toolbar pnl-toolbar" v-if="app.pnlRows.length">
         <input v-model="app.pnlSearch" type="search" :placeholder="app.t('pnl.filter')">
-        <select v-model="app.pnlSort" :aria-label="app.t('pnl.sort')">
-          <option value="forecast-desc">{{ app.t("pnl.sortForecastDesc") }}</option>
-          <option value="forecast-asc">{{ app.t("pnl.sortForecastAsc") }}</option>
-          <option value="renewal-asc">{{ app.t("pnl.sortRenewalAsc") }}</option>
-          <option value="renewal-desc">{{ app.t("pnl.sortRenewalDesc") }}</option>
-          <option value="name-asc">{{ app.t("pnl.sortNameAsc") }}</option>
-        </select>
-        <select v-model.number="app.pnlPageSize" :aria-label="app.t('stats.pageSize')">
-          <option :value="10">10</option>
-          <option :value="25">25</option>
-          <option :value="50">50</option>
-        </select>
+        <AppSelect v-model="app.pnlSort" :aria-label="app.t('pnl.sort')">
+          <AppSelectItem value="forecast-desc">{{ app.t("pnl.sortForecastDesc") }}</AppSelectItem>
+          <AppSelectItem value="forecast-asc">{{ app.t("pnl.sortForecastAsc") }}</AppSelectItem>
+          <AppSelectItem value="renewal-asc">{{ app.t("pnl.sortRenewalAsc") }}</AppSelectItem>
+          <AppSelectItem value="renewal-desc">{{ app.t("pnl.sortRenewalDesc") }}</AppSelectItem>
+          <AppSelectItem value="name-asc">{{ app.t("pnl.sortNameAsc") }}</AppSelectItem>
+        </AppSelect>
+        <AppSelect v-model.number="app.pnlPageSize" :aria-label="app.t('stats.pageSize')">
+          <AppSelectItem :value="10">10</AppSelectItem>
+          <AppSelectItem :value="25">25</AppSelectItem>
+          <AppSelectItem :value="50">50</AppSelectItem>
+        </AppSelect>
       </div>
       <div class="payments-table pnl-table" v-if="app.pnlPaginatedRows.length">
         <div class="payments-table-head pnl-table-row">
@@ -81,9 +81,11 @@
 
 <script>
 import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from "@lucide/vue";
+import AppSelect from "../components/AppSelect.vue";
+import AppSelectItem from "../components/AppSelectItem.vue";
 
 export default {
-  components: { ChevronLeftIcon, ChevronRightIcon },
+  components: { AppSelect, AppSelectItem, ChevronLeftIcon, ChevronRightIcon },
   props: {
     app: { type: Object, required: true }
   }

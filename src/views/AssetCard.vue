@@ -44,17 +44,29 @@
       <span>{{ app.tc("payment", asset.payments?.length || 0) }}</span>
     </div>
     <footer>
-      <a v-if="app.providerOf(asset)?.loginUrl" class="secondary-link icon-only tooltip" :href="app.providerOf(asset).loginUrl" target="_blank" rel="noreferrer" :aria-label="app.t('common.cabinet')" :data-tooltip="app.t('common.cabinet')"><ExternalLinkIcon :size="16" /></a>
+      <AppTooltip v-if="app.providerOf(asset)?.loginUrl" :label="app.t('common.cabinet')">
+        <a class="secondary-link icon-only" :href="app.providerOf(asset).loginUrl" target="_blank" rel="noreferrer" :aria-label="app.t('common.cabinet')"><ExternalLinkIcon :size="16" /></a>
+      </AppTooltip>
       <span v-else></span>
       <div class="card-actions">
-        <button class="secondary-button icon-only tooltip" type="button" @click="app.quickRenew(asset)" :aria-label="app.t('assets.quickRenew')" :data-tooltip="app.t('assets.quickRenew')"><ZapIcon :size="16" /></button>
-        <button class="secondary-button icon-only tooltip" type="button" @click="app.openPayments(asset)" :aria-label="app.t('common.payments')" :data-tooltip="app.t('common.payments')"><CreditCardIcon :size="16" /></button>
-        <button class="secondary-button icon-only tooltip" type="button" @click="app.openExpire(asset)" :aria-label="app.t('common.term')" :data-tooltip="app.t('common.term')"><CalendarClockIcon :size="16" /></button>
-        <button class="secondary-button icon-only tooltip" type="button" @click="app.toggleAssetInactive(asset, !asset.inactive)" :aria-label="asset.inactive ? app.t('assets.activate') : app.t('assets.deactivate')" :data-tooltip="asset.inactive ? app.t('assets.activate') : app.t('assets.deactivate')">
-          <RotateCcwIcon v-if="asset.inactive" :size="16" />
-          <ArchiveXIcon v-else :size="16" />
-        </button>
-        <button class="secondary-button icon-only tooltip" type="button" @click="app.openAsset(asset)" :aria-label="app.t('common.open')" :data-tooltip="app.t('common.open')"><PencilIcon :size="16" /></button>
+        <AppTooltip :label="app.t('assets.quickRenew')">
+          <button class="secondary-button icon-only" type="button" @click="app.quickRenew(asset)" :aria-label="app.t('assets.quickRenew')"><ZapIcon :size="16" /></button>
+        </AppTooltip>
+        <AppTooltip :label="app.t('common.payments')">
+          <button class="secondary-button icon-only" type="button" @click="app.openPayments(asset)" :aria-label="app.t('common.payments')"><CreditCardIcon :size="16" /></button>
+        </AppTooltip>
+        <AppTooltip :label="app.t('common.term')">
+          <button class="secondary-button icon-only" type="button" @click="app.openExpire(asset)" :aria-label="app.t('common.term')"><CalendarClockIcon :size="16" /></button>
+        </AppTooltip>
+        <AppTooltip :label="asset.inactive ? app.t('assets.activate') : app.t('assets.deactivate')">
+          <button class="secondary-button icon-only" type="button" @click="app.toggleAssetInactive(asset, !asset.inactive)" :aria-label="asset.inactive ? app.t('assets.activate') : app.t('assets.deactivate')">
+            <RotateCcwIcon v-if="asset.inactive" :size="16" />
+            <ArchiveXIcon v-else :size="16" />
+          </button>
+        </AppTooltip>
+        <AppTooltip :label="app.t('common.open')">
+          <button class="secondary-button icon-only" type="button" @click="app.openAsset(asset)" :aria-label="app.t('common.open')"><PencilIcon :size="16" /></button>
+        </AppTooltip>
       </div>
     </footer>
   </article>
@@ -62,9 +74,10 @@
 
 <script>
 import { ArchiveX as ArchiveXIcon, CalendarClock as CalendarClockIcon, CreditCard as CreditCardIcon, ExternalLink as ExternalLinkIcon, Pencil as PencilIcon, RotateCcw as RotateCcwIcon, Zap as ZapIcon } from "@lucide/vue";
+import AppTooltip from "../components/AppTooltip.vue";
 
 export default {
-  components: { ArchiveXIcon, CalendarClockIcon, CreditCardIcon, ExternalLinkIcon, PencilIcon, RotateCcwIcon, ZapIcon },
+  components: { AppTooltip, ArchiveXIcon, CalendarClockIcon, CreditCardIcon, ExternalLinkIcon, PencilIcon, RotateCcwIcon, ZapIcon },
   props: {
     app: { type: Object, required: true },
     asset: { type: Object, required: true }

@@ -17,20 +17,26 @@
         </div>
         <label>{{ app.t("settings.siteTitle") }}<input v-model="app.settings.siteTitle" type="text" required></label>
         <div class="settings-form-grid">
-          <label>{{ app.t("settings.language") }}<select v-model="app.settings.locale"><option v-for="locale in app.localeOptions" :key="locale" :value="locale">{{ app.t(`language.${locale}`) }}</option></select></label>
+          <label>{{ app.t("settings.language") }}
+            <AppSelect v-model="app.settings.locale" :aria-label="app.t('settings.language')">
+              <AppSelectItem v-for="locale in app.localeOptions" :key="locale" :value="locale">{{ app.t(`language.${locale}`) }}</AppSelectItem>
+            </AppSelect>
+          </label>
           <label>{{ app.t("settings.timezone") }}<input v-model="app.settings.timezone" type="text" placeholder="Europe/Moscow" required></label>
           <label>{{ app.t("settings.currency") }}
-            <select v-model="app.settings.currency">
-              <option v-for="currency in app.currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : app.t(`currency.${currency}`) }}</option>
-            </select>
+            <AppSelect v-model="app.settings.currency" :aria-label="app.t('settings.currency')">
+              <AppSelectItem v-for="currency in app.currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : app.t(`currency.${currency}`) }}</AppSelectItem>
+            </AppSelect>
           </label>
         </div>
         <label>{{ app.t("settings.telegramNotifyUrl") }}
           <span class="input-with-action">
             <input v-model="app.settings.telegramNotifyUrl" type="text" placeholder="tgram://token/chat_id:topic">
-            <button class="input-action-button tooltip tooltip-left" type="button" :aria-label="app.t('settings.testTelegram')" :data-tooltip="app.t('settings.testTelegram')" @click="app.testTelegram(app.settings.telegramNotifyUrl)">
-              <SendIcon :size="16" />
-            </button>
+            <AppTooltip :label="app.t('settings.testTelegram')" side="left">
+              <button class="input-action-button" type="button" :aria-label="app.t('settings.testTelegram')" @click="app.testTelegram(app.settings.telegramNotifyUrl)">
+                <SendIcon :size="16" />
+              </button>
+            </AppTooltip>
           </span>
         </label>
         <label>{{ app.t("settings.leads") }}<input v-model="app.settings.notificationLeads" type="text" placeholder="5m, 2h, 1d, 3d, 5d" required></label>
@@ -111,9 +117,12 @@
 
 <script>
 import { Coins as CoinsIcon, KeyRound as KeyRoundIcon, QrCode as QrCodeIcon, RefreshCw as RefreshCwIcon, Save as SaveIcon, Send as SendIcon, Settings as SettingsIcon, ShieldCheck as ShieldCheckIcon } from "@lucide/vue";
+import AppSelect from "../components/AppSelect.vue";
+import AppSelectItem from "../components/AppSelectItem.vue";
+import AppTooltip from "../components/AppTooltip.vue";
 
 export default {
-  components: { CoinsIcon, KeyRoundIcon, QrCodeIcon, RefreshCwIcon, SaveIcon, SendIcon, SettingsIcon, ShieldCheckIcon },
+  components: { AppSelect, AppSelectItem, AppTooltip, CoinsIcon, KeyRoundIcon, QrCodeIcon, RefreshCwIcon, SaveIcon, SendIcon, SettingsIcon, ShieldCheckIcon },
   props: {
     app: { type: Object, required: true }
   }

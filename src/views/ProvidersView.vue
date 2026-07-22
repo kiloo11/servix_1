@@ -18,9 +18,13 @@
         </header>
         <p v-if="provider.note" class="provider-note">{{ provider.note }}</p>
         <footer>
-          <a v-if="provider.loginUrl" class="secondary-link icon-only tooltip" :href="provider.loginUrl" target="_blank" rel="noreferrer" :aria-label="app.t('common.login')" :data-tooltip="app.t('common.login')"><ExternalLinkIcon :size="16" /></a>
+          <AppTooltip v-if="provider.loginUrl" :label="app.t('common.login')">
+            <a class="secondary-link icon-only" :href="provider.loginUrl" target="_blank" rel="noreferrer" :aria-label="app.t('common.login')"><ExternalLinkIcon :size="16" /></a>
+          </AppTooltip>
           <span v-else></span>
-          <button class="secondary-button icon-only tooltip" type="button" @click="app.openProvider(provider)" :aria-label="app.t('common.open')" :data-tooltip="app.t('common.open')"><PencilIcon :size="16" /></button>
+          <AppTooltip :label="app.t('common.open')">
+            <button class="secondary-button icon-only" type="button" @click="app.openProvider(provider)" :aria-label="app.t('common.open')"><PencilIcon :size="16" /></button>
+          </AppTooltip>
         </footer>
       </article>
     </div>
@@ -33,9 +37,10 @@
 
 <script>
 import { ExternalLink as ExternalLinkIcon, Pencil as PencilIcon, Plus as PlusIcon } from "@lucide/vue";
+import AppTooltip from "../components/AppTooltip.vue";
 
 export default {
-  components: { ExternalLinkIcon, PencilIcon, PlusIcon },
+  components: { AppTooltip, ExternalLinkIcon, PencilIcon, PlusIcon },
   props: {
     app: { type: Object, required: true }
   }
