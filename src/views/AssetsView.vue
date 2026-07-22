@@ -21,57 +21,21 @@
             <h2>{{ group.label }}</h2>
             <span>{{ app.tc("piece", group.items.length) }}</span>
           </div>
-          <div class="asset-grid">
-            <article
-              v-for="asset in group.items"
-              :key="asset.id"
-              class="asset-card"
-              :class="[app.dueStateClass(asset.expiresAt), { dragging: app.draggedAssetId === asset.id }]"
-              draggable="true"
-              @dragstart="app.startAssetDrag(asset, $event)"
-              @dragover.prevent
-              @drop="app.dropAsset(asset)"
-              @dragend="app.endAssetDrag"
-            >
-              <header>
-                <div class="card-title-row">
-                  <img v-if="app.providerOf(asset)?.faviconUrl" class="favicon" :src="app.providerOf(asset).faviconUrl" alt="" referrerpolicy="no-referrer">
-                  <span v-else class="favicon-placeholder">{{ app.providerInitial(asset) }}</span>
-                  <div>
-                    <h2>{{ asset.name }}</h2>
-                    <span v-if="asset.type === 'vps'">{{ app.assetSubtitle(asset) }}</span>
-                    <a v-else-if="asset.domain" class="card-subtitle-link" :href="app.domainHref(asset.domain)" target="_blank" rel="noreferrer">{{ asset.domain }}</a>
-                    <span v-else>{{ app.assetSubtitle(asset) }}</span>
-                  </div>
-                </div>
-                <span class="pill">{{ app.formatDateTime(asset.expiresAt) }}</span>
-              </header>
-              <div class="meta-list">
-                <span>{{ app.t("assets.metaProvider", { value: app.providerOf(asset)?.name || app.t("common.providerEmpty") }) }}</span>
-                <span v-if="asset.type === 'vps' && asset.ip" class="ip-meta">
-                  <span>IP:</span>
-                  <button class="meta-copy-button" type="button" :title="app.t('assets.copyIp')" @click="app.copyIp(asset.ip)">{{ asset.ip }}</button>
-                </span>
-                <span>{{ app.daysText(asset.expiresAt) }}</span>
+
+          <template v-if="group.type === 'vps'">
+            <details v-for="bucket in app.categorySubgroups(group.items)" :key="bucket.category || 'none'" class="category-group" open>
+              <summary>
+                <span class="category-badge" :class="bucket.category ? `category-${bucket.category}` : ''">{{ bucket.label }}</span>
+                <span class="category-group-count">{{ app.tc("piece", bucket.items.length) }}</span>
+                <ChevronDownIcon class="category-group-chevron" :size="16" />
+              </summary>
+              <div class="asset-grid">
+                <AssetCard v-for="asset in bucket.items" :key="asset.id" :app="app" :asset="asset" />
               </div>
-              <div class="payment-strip">
-                <strong>{{ app.formatPaymentTotal(asset.payments) }}</strong>
-                <span>{{ app.tc("payment", asset.payments?.length || 0) }}</span>
-              </div>
-              <footer>
-                <a v-if="app.providerOf(asset)?.loginUrl" class="secondary-link icon-only tooltip" :href="app.providerOf(asset).loginUrl" target="_blank" rel="noreferrer" :aria-label="app.t('common.cabinet')" :data-tooltip="app.t('common.cabinet')"><ExternalLinkIcon :size="16" /></a>
-                <span v-else></span>
-                <div class="card-actions">
-                  <button class="secondary-button icon-only tooltip" type="button" @click="app.openPayments(asset)" :aria-label="app.t('common.payments')" :data-tooltip="app.t('common.payments')"><CreditCardIcon :size="16" /></button>
-                  <button class="secondary-button icon-only tooltip" type="button" @click="app.openExpire(asset)" :aria-label="app.t('common.term')" :data-tooltip="app.t('common.term')"><CalendarClockIcon :size="16" /></button>
-                  <button class="secondary-button icon-only tooltip" type="button" @click="app.toggleAssetInactive(asset, !asset.inactive)" :aria-label="asset.inactive ? app.t('assets.activate') : app.t('assets.deactivate')" :data-tooltip="asset.inactive ? app.t('assets.activate') : app.t('assets.deactivate')">
-                    <RotateCcwIcon v-if="asset.inactive" :size="16" />
-                    <ArchiveXIcon v-else :size="16" />
-                  </button>
-                  <button class="secondary-button icon-only tooltip" type="button" @click="app.openAsset(asset)" :aria-label="app.t('common.open')" :data-tooltip="app.t('common.open')"><PencilIcon :size="16" /></button>
-                </div>
-              </footer>
-            </article>
+            </details>
+          </template>
+          <div v-else class="asset-grid">
+            <AssetCard v-for="asset in group.items" :key="asset.id" :app="app" :asset="asset" />
           </div>
         </section>
       </div>
@@ -85,10 +49,11 @@
 </template>
 
 <script>
-import { ArchiveX as ArchiveXIcon, CalendarClock as CalendarClockIcon, CreditCard as CreditCardIcon, ExternalLink as ExternalLinkIcon, Pencil as PencilIcon, Plus as PlusIcon, RotateCcw as RotateCcwIcon } from "@lucide/vue";
+import { ChevronDown as ChevronDownIcon, Plus as PlusIcon } from "@lucide/vue";
+import AssetCard from "./AssetCard.vue";
 
 export default {
-  components: { ArchiveXIcon, CalendarClockIcon, CreditCardIcon, ExternalLinkIcon, PencilIcon, PlusIcon, RotateCcwIcon },
+  components: { AssetCard, ChevronDownIcon, PlusIcon },
   props: {
     app: { type: Object, required: true }
   }

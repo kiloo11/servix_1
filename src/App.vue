@@ -79,6 +79,12 @@
         </fieldset>
         <label>{{ t("common.name") }}<input v-model="editingAsset.name" type="text" required></label>
         <label>{{ t("common.provider") }}<select v-model="editingAsset.providerId"><option value="">{{ t("common.providersEmpty") }}</option><option v-for="provider in providers" :key="provider.id" :value="provider.id">{{ provider.name }}</option></select></label>
+        <label>{{ t("common.category") }}
+          <select v-model="editingAsset.category">
+            <option value="">{{ t("assets.categoryEmpty") }}</option>
+            <option v-for="category in categoryOptions" :key="category" :value="category">{{ t(`category.${category}`) }}</option>
+          </select>
+        </label>
         <template v-if="editingAsset.type === 'vps'">
           <label>IP<input v-model="editingAsset.ip" type="text"></label>
           <label>{{ t("common.country") }}
@@ -98,15 +104,14 @@
         </template>
         <label v-else>{{ t("common.domain") }}<input v-model="editingAsset.domain" type="text"></label>
         <label>{{ t("common.expiresAt") }}<input v-model="editingAsset.expiresAt" class="datetime-input" type="datetime-local" step="60"></label>
-        <template v-if="!editingAsset.id">
-          <label>{{ t("common.price") }}<input v-model.number="editingAsset.price" type="number" min="0" step="0.000001" placeholder="0.00"></label>
-          <label>{{ t("common.currency") }}
-            <select v-model="editingAsset.priceCurrency">
-              <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
-            </select>
-          </label>
-        </template>
+        <label>{{ t("common.price") }}<input v-model.number="editingAsset.price" type="number" min="0" step="0.000001" placeholder="0.00"></label>
+        <label>{{ t("common.currency") }}
+          <select v-model="editingAsset.priceCurrency">
+            <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency === "USDT" ? "USDT" : t(`currency.${currency}`) }}</option>
+          </select>
+        </label>
       </div>
+      <p v-if="editingAsset.price && editingAsset.priceCurrency !== 'EUR'" class="hint">≈ {{ formatMoney(convertToEur(editingAsset.price, editingAsset.priceCurrency), 'EUR') }}</p>
       <div class="dialog-actions" :class="{ 'has-danger': editingAsset.id }">
         <button class="danger-button icon-only tooltip" v-if="editingAsset.id" type="button" @click="deleteAsset" :aria-label="t('common.delete')" :data-tooltip="t('common.delete')"><Trash2Icon :size="18" /></button>
         <span></span>
@@ -303,6 +308,7 @@ const navItems = [
   { view: "settings", labelKey: "nav.settings", icon: SettingsIcon }
 ];
 const CURRENCIES = ["USDT", "EUR", "RUB"];
+const CATEGORIES = ["infra", "node", "test"];
 export default {
   components: {
     AlertsView,
@@ -351,6 +357,7 @@ export default {
       typeLabels,
       localeOptions,
       currencyOptions: CURRENCIES,
+      categoryOptions: CATEGORIES,
       currentLocale: "ru",
       countries,
       assetTypeOptions: ["vps", "domain", "certificate"],
@@ -367,7 +374,6 @@ export default {
       mobileNavOpen: false,
       sidebarCollapsed: localStorage.getItem("sidebarCollapsed") === "true",
       statsPeriod: "90d",
-      statsCurrency: "USDT",
       paymentTableSearch: "",
       paymentTableProvider: "all",
       paymentTableSort: "date-desc",
@@ -383,7 +389,7 @@ export default {
       draggedAssetId: "",
       countrySearch: "",
       countrySelectOpen: false,
-      meta: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true, telegramConfigured: false, currency: "USDT" },
+      meta: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true, telegramConfigured: false, currency: "USDT", rateRubPerEur: 100, rateUsdtPerEur: 1.08, rateUpdatedAt: "" },
       settings: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true, currency: "USDT" },
       passwordForm: { currentPassword: "", newPassword: "", passwordRepeat: "" },
       security: { login: "", totpEnabled: false, hasPendingTotp: false },
@@ -468,11 +474,6 @@ export default {
     totalPaidDisplay() {
       return this.formatPaymentTotal(this.allPayments);
     },
-    availableCurrencies() {
-      const used = new Set(this.allPayments.map((payment) => payment.currency || "USDT"));
-      used.add(this.settings.currency || "USDT");
-      return CURRENCIES.filter((currency) => used.has(currency));
-    },
     paymentsAsset() {
       return this.assetById(this.paymentsAssetId);
     },
@@ -512,13 +513,14 @@ export default {
       const avg = payments.length ? periodTotal / payments.length : 0;
       const paidVps = new Set(payments.map((payment) => payment.asset?.id)).size;
       const maxPayment = payments.reduce((max, payment) => Math.max(max, Number(payment.amount || 0)), 0);
+      const currency = this.settings.currency || "USDT";
       return [
         { label: this.t("stats.cardServers"), value: this.vpsAssets.length },
         { label: this.t("stats.cardPaidServers"), value: paidVps },
-        { label: this.t("stats.cardPaidPeriod"), value: this.formatMoney(periodTotal, this.statsCurrency) },
+        { label: this.t("stats.cardPaidPeriod"), value: this.formatMoney(periodTotal, currency) },
         { label: this.t("stats.cardPayments"), value: payments.length },
-        { label: this.t("stats.cardAvgPayment"), value: this.formatMoney(avg, this.statsCurrency) },
-        { label: this.t("stats.cardMaxPayment"), value: this.formatMoney(maxPayment, this.statsCurrency) },
+        { label: this.t("stats.cardAvgPayment"), value: this.formatMoney(avg, currency) },
+        { label: this.t("stats.cardMaxPayment"), value: this.formatMoney(maxPayment, currency) },
         { label: this.t("stats.cardSoon"), value: soon },
         { label: this.t("stats.cardOverdue"), value: overdue }
       ];
@@ -636,8 +638,13 @@ export default {
     },
     periodPayments() {
       const since = periodStart(this.statsPeriod);
-      return this.vpsAssets.flatMap((asset) => (asset.payments || []).map((payment) => ({ ...payment, asset })))
-        .filter((payment) => (payment.currency || "USDT") === this.statsCurrency)
+      const currency = this.settings.currency || "USDT";
+      return this.vpsAssets.flatMap((asset) => (asset.payments || []).map((payment) => ({
+        ...payment,
+        amount: this.convertAmount(payment.amount, payment.currency || "USDT", currency),
+        currency,
+        asset
+      })))
         .filter((payment) => {
           if (!since) return true;
           const paidAt = parseAppDate(payment.paidAt);
@@ -727,21 +734,22 @@ export default {
     pnlHistoricalTotalDisplay() {
       return this.formatPaymentTotal(this.pnlRows.flatMap((row) => row.asset.payments || []));
     },
+    pnlHistoricalTotalRubDisplay() {
+      return this.formatMoney(this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), "RUB"), "RUB");
+    },
     pnlForecastTotalDisplay() {
-      const groups = new Map();
-      for (const row of this.pnlRows) {
-        if (!row.forecastAmount) continue;
-        groups.set(row.forecastCurrency, (groups.get(row.forecastCurrency) || 0) + row.forecastAmount);
-      }
-      if (!groups.size) return this.formatMoney(0, this.settings.currency || "USDT");
-      return CURRENCIES.filter((currency) => groups.has(currency))
-        .map((currency) => this.formatMoney(groups.get(currency), currency))
-        .join(" + ");
+      const currency = this.settings.currency || "USDT";
+      const total = this.pnlRows.reduce((sum, row) => sum + this.convertAmount(row.forecastAmount || 0, row.forecastCurrency, currency), 0);
+      return this.formatMoney(total, currency);
+    },
+    pnlForecastTotalRubDisplay() {
+      const total = this.pnlRows.reduce((sum, row) => sum + this.convertAmount(row.forecastAmount || 0, row.forecastCurrency, "RUB"), 0);
+      return this.formatMoney(total, "RUB");
     }
   },
   watch: {
     statsPeriod: "resetPaymentTablePage",
-    statsCurrency: "resetPaymentTablePage",
+    "settings.currency": "resetPaymentTablePage",
     paymentTableSearch: "resetPaymentTablePage",
     paymentTableProvider: "resetPaymentTablePage",
     paymentTableSort: "resetPaymentTablePage",
@@ -893,7 +901,6 @@ export default {
       this.providers = data.providers || [];
       this.assets = data.assets || [];
       this.alerts = (await this.api("/api/notifications")).items || [];
-      if (!this.availableCurrencies.includes(this.statsCurrency)) this.statsCurrency = this.settings.currency;
       document.title = this.meta.siteTitle;
     },
     async loadSecurity() {
@@ -934,8 +941,6 @@ export default {
       if (isNew && price > 0) {
         asset.payments = [...(asset.payments || []), { amount: price, currency: asset.priceCurrency || "USDT", paidAt: toLocalInput(new Date()), note: "" }];
       }
-      delete asset.price;
-      delete asset.priceCurrency;
       const path = asset.id ? `/api/assets/${asset.id}` : "/api/assets";
       const method = asset.id ? "PUT" : "POST";
       await this.api(path, { method, body: JSON.stringify(asset) });
@@ -944,9 +949,43 @@ export default {
       await this.load();
     },
     async toggleAssetInactive(asset, inactive = true) {
+      if (inactive && !confirm(this.t("assets.deactivateConfirm", { name: asset.name }))) return;
       await this.updateAsset({ ...asset, inactive });
       this.toast(inactive ? this.t("assets.deactivated") : this.t("assets.activated"));
       await this.load();
+    },
+    async quickRenew(asset) {
+      const current = parseAppDate(asset.expiresAt);
+      const date = Number.isNaN(current.getTime()) ? new Date() : current;
+      date.setDate(date.getDate() + 30);
+      const updated = { ...asset, expiresAt: toLocalInput(date) };
+      const price = Number(asset.price || 0);
+      if (price > 0) {
+        updated.payments = [...(asset.payments || []), { amount: price, currency: asset.priceCurrency || "USDT", paidAt: toLocalInput(new Date()), note: this.t("assets.quickRenewNote") }];
+      }
+      await this.updateAsset(updated);
+      this.toast(this.t("assets.quickRenewed"));
+      await this.load();
+    },
+    convertToEur(amount, currency) {
+      const value = Number(amount || 0);
+      if (currency === "RUB") return value / (Number(this.meta.rateRubPerEur) || 100);
+      if (currency === "USDT") return value / (Number(this.meta.rateUsdtPerEur) || 1.08);
+      return value;
+    },
+    convertAmount(amount, from, to) {
+      const fromCurrency = from || "USDT";
+      const toCurrency = to || this.settings.currency || "USDT";
+      if (fromCurrency === toCurrency) return Number(amount || 0);
+      const eur = this.convertToEur(amount, fromCurrency);
+      if (toCurrency === "EUR") return eur;
+      if (toCurrency === "RUB") return eur * (Number(this.meta.rateRubPerEur) || 100);
+      if (toCurrency === "USDT") return eur * (Number(this.meta.rateUsdtPerEur) || 1.08);
+      return eur;
+    },
+    async refreshRates() {
+      this.meta = { ...this.meta, ...(await this.api("/api/rates/refresh", { method: "POST" })) };
+      this.toast(this.t("settings.ratesRefreshed"));
     },
     async deleteAsset() {
       if (!confirm(this.t("assets.deleteConfirm", { name: this.editingAsset.name }))) return;
@@ -1118,6 +1157,15 @@ export default {
     logDetails(item) {
       return item.details ? JSON.stringify(item.details) : "";
     },
+    categorySubgroups(items) {
+      return [...this.categoryOptions, ""]
+        .map((category) => ({
+          category,
+          label: category ? this.t(`category.${category}`) : this.t("assets.categoryEmpty"),
+          items: items.filter((asset) => (asset.category || "") === category)
+        }))
+        .filter((bucket) => bucket.items.length);
+    },
     providerOf(asset) {
       return this.providers.find((provider) => provider.id === asset.providerId);
     },
@@ -1174,8 +1222,9 @@ export default {
     exportPaymentsCsv() {
       const rows = this.paymentExportRows();
       if (!rows.length) return;
+      const currency = this.settings.currency || "USDT";
       const escape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
-      const amountHeader = `${this.t("export.amount")} (${this.statsCurrency})`;
+      const amountHeader = `${this.t("export.amount")} (${currency})`;
       const csv = [
         [this.t("export.date"), this.t("export.server"), this.t("export.provider"), amountHeader].map(escape).join(","),
         ...rows.map((row) => [row.date, row.server, row.provider, row.amount].map(escape).join(","))
@@ -1183,22 +1232,23 @@ export default {
       const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `payments-${this.statsPeriod}-${this.statsCurrency}.csv`;
+      link.download = `payments-${this.statsPeriod}-${currency}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
     },
     async exportPaymentsPdf() {
       const rows = this.paymentExportRows();
       if (!rows.length) return;
+      const currency = this.settings.currency || "USDT";
       const doc = new jsPDF({ orientation: "landscape" });
-      const headers = [this.t("export.date"), this.t("export.server"), this.t("export.provider"), `${this.t("export.amount")} (${this.statsCurrency})`];
+      const headers = [this.t("export.date"), this.t("export.server"), this.t("export.provider"), `${this.t("export.amount")} (${currency})`];
       const body = rows.map((row) => [row.date, row.server, row.provider, row.amount.toFixed(6).replace(/\.?0+$/, "")]);
       const pages = buildPdfCanvases(this.t("export.title"), headers, body);
       pages.forEach((canvas, index) => {
         if (index > 0) doc.addPage("a4", "landscape");
         doc.addImage(canvas.toDataURL("image/png"), "PNG", 8, 8, 281, 194);
       });
-      doc.save(`payments-${this.statsPeriod}-${this.statsCurrency}.pdf`);
+      doc.save(`payments-${this.statsPeriod}-${currency}.pdf`);
     },
     countByType(type) {
       return this.assets.filter((asset) => asset.type === type).length;
@@ -1214,18 +1264,11 @@ export default {
       }
       return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 6 }).format(num)} USDT`;
     },
-    groupPaymentsByCurrency(payments = []) {
-      const totals = new Map();
-      for (const payment of payments || []) {
-        const currency = CURRENCIES.includes(payment.currency) ? payment.currency : "USDT";
-        totals.set(currency, (totals.get(currency) || 0) + Number(payment.amount || 0));
-      }
-      return CURRENCIES.filter((currency) => totals.has(currency)).map((currency) => ({ currency, amount: totals.get(currency) }));
+    paymentsTotalIn(payments = [], targetCurrency = this.settings.currency || "USDT") {
+      return (payments || []).reduce((sum, payment) => sum + this.convertAmount(payment.amount, payment.currency || "USDT", targetCurrency), 0);
     },
-    formatPaymentTotal(payments = []) {
-      const groups = this.groupPaymentsByCurrency(payments);
-      if (!groups.length) return this.formatMoney(0, this.settings.currency || "USDT");
-      return groups.map((group) => this.formatMoney(group.amount, group.currency)).join(" + ");
+    formatPaymentTotal(payments = [], currency = this.settings.currency || "USDT") {
+      return this.formatMoney(this.paymentsTotalIn(payments, currency), currency);
     },
     assetLastPayment(asset) {
       const payments = [...(asset.payments || [])].filter((payment) => payment.paidAt);
@@ -1325,8 +1368,8 @@ export default {
         left,
         top,
         label: point.row.label,
-        value: chart === "amount" ? this.formatMoney(point.row.amount, this.statsCurrency) : this.tc("piece", point.row.count),
-        count: chart === "amount" ? this.tc("payment", point.row.count) : this.formatMoney(point.row.amount, this.statsCurrency)
+        value: chart === "amount" ? this.formatMoney(point.row.amount, this.settings.currency || "USDT") : this.tc("piece", point.row.count),
+        count: chart === "amount" ? this.tc("payment", point.row.count) : this.formatMoney(point.row.amount, this.settings.currency || "USDT")
       };
     },
     formatDuration(minutes) {
@@ -1491,7 +1534,7 @@ function pluralIndex(locale, count) {
 }
 
 function emptyAsset() {
-  return { id: "", type: "vps", name: "", providerId: "", ip: "", domain: "", countryCode: "", inactive: false, sortOrder: Date.now(), expiresAt: toLocalInput(new Date()), payments: [], price: "", priceCurrency: "USDT" };
+  return { id: "", type: "vps", name: "", providerId: "", ip: "", domain: "", countryCode: "", category: "", inactive: false, sortOrder: Date.now(), expiresAt: toLocalInput(new Date()), payments: [], price: "", priceCurrency: "USDT" };
 }
 
 function emptyProvider() {

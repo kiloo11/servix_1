@@ -71,8 +71,14 @@
     "addPayment": "Добавить платеж",
     "price": "Цена",
     "currency": "Валюта",
+    "category": "Категория",
     "renewalPrice": "Цена продления",
     "renewalPriceHint": "Если указать цену перед продлением срока, она будет добавлена как платеж."
+  },
+  "category": {
+    "infra": "Инфраструктура",
+    "node": "Ноды",
+    "test": "Тестовые"
   },
   "auth": {
     "title": "Авторизация",
@@ -114,7 +120,13 @@
     "deleteConfirm": "Удалить \"{name}\"?",
     "activate": "Активировать",
     "deactivate": "Деактивировать",
-    "copyIp": "Скопировать IP"
+    "copyIp": "Скопировать IP",
+    "categoryAll": "Все категории",
+    "categoryEmpty": "Без категории",
+    "deactivateConfirm": "Деактивировать \"{name}\"?",
+    "quickRenew": "Быстро +30 дней",
+    "quickRenewed": "Продлено на 30 дней",
+    "quickRenewNote": "Быстрое продление +30 дней"
   },
   "providers": {
     "add": "Добавить провайдера",
@@ -230,6 +242,14 @@
     "telegramNotifyUrl": "URL уведомлений",
     "notifyOnStart": "Отправлять уведомления при старте",
     "currency": "Валюта по умолчанию",
+    "ratesTitle": "Курс валют",
+    "ratesText": "Курсы RUB и USDT к EUR обновляются автоматически из открытого источника.",
+    "rateRubPerEur": "1 EUR =",
+    "rateUsdtPerEur": "1 EUR =",
+    "ratesUpdated": "Обновлено: {value}",
+    "ratesNever": "Курс еще не загружен",
+    "ratesRefreshed": "Курс обновлен",
+    "refreshRates": "Обновить курс",
     "saved": "Настройки сохранены",
     "testTelegram": "Проверить Telegram"
   },

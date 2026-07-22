@@ -15,8 +15,16 @@
 
     <div class="stats-grid">
       <article class="stat-card"><span>{{ app.t("pnl.cardRecords") }}</span><strong>{{ app.pnlRows.length }}</strong></article>
-      <article class="stat-card"><span>{{ app.t("pnl.cardHistorical") }}</span><strong>{{ app.pnlHistoricalTotalDisplay }}</strong></article>
-      <article class="stat-card"><span>{{ app.t("pnl.cardForecast", { days: app.pnlHorizonDays }) }}</span><strong>{{ app.pnlForecastTotalDisplay }}</strong></article>
+      <article class="stat-card">
+        <span>{{ app.t("pnl.cardHistorical") }}</span>
+        <strong>{{ app.pnlHistoricalTotalDisplay }}</strong>
+        <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.pnlHistoricalTotalRubDisplay }}</small>
+      </article>
+      <article class="stat-card">
+        <span>{{ app.t("pnl.cardForecast", { days: app.pnlHorizonDays }) }}</span>
+        <strong>{{ app.pnlForecastTotalDisplay }}</strong>
+        <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.pnlForecastTotalRubDisplay }}</small>
+      </article>
     </div>
 
     <article class="chart-panel table-panel">

@@ -71,8 +71,14 @@
     "addPayment": "Add payment",
     "price": "Price",
     "currency": "Currency",
+    "category": "Category",
     "renewalPrice": "Renewal price",
     "renewalPriceHint": "If you set a price before extending the term, it will be added as a payment."
+  },
+  "category": {
+    "infra": "Infrastructure",
+    "node": "Nodes",
+    "test": "Test"
   },
   "auth": {
     "title": "Auth",
@@ -100,6 +106,12 @@
     "activate": "Activate",
     "deactivate": "Deactivate",
     "copyIp": "Copy IP",
+    "categoryAll": "All categories",
+    "categoryEmpty": "No category",
+    "deactivateConfirm": "Deactivate \"{name}\"?",
+    "quickRenew": "Quick +30 days",
+    "quickRenewed": "Extended by 30 days",
+    "quickRenewNote": "Quick renewal +30 days",
     "add": "Add record",
     "emptyTitle": "Add your first record",
     "emptyText": "The expiration time can be set down to hours and minutes.",
@@ -230,6 +242,14 @@
     "telegramNotifyUrl": "Notification URL",
     "notifyOnStart": "Send notifications on start",
     "currency": "Default currency",
+    "ratesTitle": "Exchange rates",
+    "ratesText": "RUB and USDT rates to EUR are refreshed automatically from an open source.",
+    "rateRubPerEur": "1 EUR =",
+    "rateUsdtPerEur": "1 EUR =",
+    "ratesUpdated": "Updated: {value}",
+    "ratesNever": "Rate not loaded yet",
+    "ratesRefreshed": "Rate refreshed",
+    "refreshRates": "Refresh rate",
     "saved": "Settings saved",
     "testTelegram": "Test Telegram"
   },
