@@ -217,7 +217,9 @@
     "cardNetMonth": "Net profit (30d)",
     "botPaymentsTitle": "All bot top-ups",
     "botPaymentMethod": "Payment method",
-    "botPaymentsEmpty": "No top-ups yet"
+    "botPaymentsEmpty": "No top-ups yet",
+    "monthlyProfitTitle": "Monthly profit",
+    "monthlyProfitEmpty": "Not enough data for a chart yet"
   },
   "alerts": {
     "emptyTitle": "No terms",

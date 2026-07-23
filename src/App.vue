@@ -433,6 +433,7 @@ export default {
       pnlPage: 1,
       pnlPageSize: 10,
       botRevenue: { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" },
+      botRevenueMonthly: [],
       pnlBotPage: 1,
       pnlBotPageSize: 10,
       search: "",
@@ -845,6 +846,37 @@ export default {
       const costRub = this.paymentsTotalIn(this.pnlMonthPayments, "RUB");
       return this.formatMoney((this.botRevenue.monthRub || 0) - costRub, "RUB");
     },
+    pnlMonthlySeries() {
+      const currency = this.settings.currency || "USDT";
+      const monthsBack = 6;
+      const now = new Date();
+      const revenueByMonth = new Map((this.botRevenueMonthly || []).map((row) => [row.month, row.totalRub]));
+      const costByMonth = new Map();
+      for (const payment of this.pnlRows.flatMap((row) => row.asset.payments || [])) {
+        const key = String(payment.paidAt || "").slice(0, 7);
+        if (!key) continue;
+        const amount = this.convertAmount(payment.amount, payment.currency || "USDT", currency);
+        costByMonth.set(key, (costByMonth.get(key) || 0) + amount);
+      }
+      const intlLocale = this.currentLocale === "en" ? "en-US" : "ru-RU";
+      const rows = [];
+      for (let i = monthsBack - 1; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const revenue = this.convertAmount(revenueByMonth.get(key) || 0, "RUB", currency);
+        const cost = costByMonth.get(key) || 0;
+        rows.push({
+          month: key,
+          label: new Intl.DateTimeFormat(intlLocale, { month: "short" }).format(date),
+          monthLabel: new Intl.DateTimeFormat(intlLocale, { month: "long", year: "numeric" }).format(date),
+          revenue,
+          cost,
+          net: revenue - cost
+        });
+      }
+      const maxAbs = Math.max(1, ...rows.map((row) => Math.abs(row.net)));
+      return rows.map((row) => ({ ...row, heightPercent: Math.round((Math.abs(row.net) / maxAbs) * 100) }));
+    },
     pnlBotItems() {
       return this.botRevenue.items || [];
     },
@@ -894,8 +926,11 @@ export default {
       if (!this.needsLogin) {
         await this.load();
         await this.loadSecurity();
-        await this.loadBotRevenue();
         if (this.view === "logs") await this.loadLogs();
+        if (this.view === "pnl") {
+          await this.loadBotRevenue();
+          await this.loadBotRevenueMonthly();
+        }
       }
     } catch {
       this.needsLogin = true;
@@ -1027,6 +1062,10 @@ export default {
       const path = pathFromView(view);
       if (location.pathname !== path) history.pushState({}, "", path);
       if (view === "logs") this.loadLogs();
+      if (view === "pnl") {
+        this.loadBotRevenue();
+        this.loadBotRevenueMonthly();
+      }
     },
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
@@ -1110,6 +1149,13 @@ export default {
         this.botRevenue = await this.api(`/api/bot/revenue${refresh ? "?refresh=1" : ""}`);
       } catch {
         this.botRevenue = { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
+      }
+    },
+    async loadBotRevenueMonthly() {
+      try {
+        this.botRevenueMonthly = (await this.api("/api/bot/revenue/monthly")).months || [];
+      } catch {
+        this.botRevenueMonthly = [];
       }
     },
     async deleteAsset() {

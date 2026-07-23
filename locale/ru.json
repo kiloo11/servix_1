@@ -217,7 +217,9 @@
     "cardNetMonth": "Чистая прибыль за месяц",
     "botPaymentsTitle": "Все пополнения от бота",
     "botPaymentMethod": "Способ оплаты",
-    "botPaymentsEmpty": "Пополнений пока нет"
+    "botPaymentsEmpty": "Пополнений пока нет",
+    "monthlyProfitTitle": "Прибыль по месяцам",
+    "monthlyProfitEmpty": "Пока недостаточно данных для графика"
   },
   "alerts": {
     "emptyTitle": "Сроков нет",

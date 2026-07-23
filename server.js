@@ -20,7 +20,7 @@ const LOCALE_DIR = path.join(__dirname, "locale");
 const TELEGRAM_NOTIFY_URL = String(process.env.TELEGRAM_NOTIFY_URL || "");
 const BEDOLAGA_API_URL = String(process.env.BEDOLAGA_API_URL || "").trim().replace(/\/+$/, "");
 const BEDOLAGA_API_KEY = String(process.env.BEDOLAGA_API_KEY || "").trim();
-const BOT_REVENUE_CACHE_MS = 5 * 60_000;
+const BOT_REVENUE_CACHE_MS = 12 * 60 * 60_000;
 const NOTIFY_ON_START = String(process.env.NOTIFY_ON_START || "true") === "true";
 const APP_TIMEZONE = String(process.env.APP_TIMEZONE || "Europe/Moscow");
 const MAX_TIMEOUT_MS = 2_147_483_647;
@@ -148,6 +148,12 @@ async function initDb() {
       event_id TEXT PRIMARY KEY,
       sent_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS bot_revenue_monthly (
+      month TEXT PRIMARY KEY,
+      total_kopeks INTEGER NOT NULL DEFAULT 0,
+      count INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       login TEXT NOT NULL UNIQUE,
@@ -256,6 +262,24 @@ let botRevenueCache = null;
 const BOT_REVENUE_MAX_ITEMS = 300;
 const BOT_REVENUE_MONTH_MS = 30 * 24 * 60 * 60_000;
 
+function upsertBotRevenueMonthly(monthTotals) {
+  if (!monthTotals.size) return;
+  const now = new Date().toISOString();
+  const stmt = db.prepare(`
+    INSERT INTO bot_revenue_monthly (month, total_kopeks, count, updated_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(month) DO UPDATE SET total_kopeks = excluded.total_kopeks, count = excluded.count, updated_at = excluded.updated_at
+  `);
+  for (const [month, bucket] of monthTotals) {
+    stmt.run(month, bucket.kopeks, bucket.count, now);
+  }
+}
+
+function getBotRevenueMonthly(monthsBack = 12) {
+  const rows = db.prepare("SELECT month, total_kopeks AS totalKopeks, count FROM bot_revenue_monthly ORDER BY month DESC LIMIT ?").all(monthsBack);
+  return rows.reverse().map((row) => ({ month: row.month, totalRub: row.totalKopeks / 100, count: row.count }));
+}
+
 async function fetchBotRevenue(force = false) {
   if (!BEDOLAGA_API_URL || !BEDOLAGA_API_KEY) {
     return { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
@@ -274,6 +298,7 @@ async function fetchBotRevenue(force = false) {
     let count = 0;
     let monthCount = 0;
     const items = [];
+    const monthTotals = new Map();
     for (let page = 0; page < maxPages && offset < total; page++) {
       const url = new URL(`${BEDOLAGA_API_URL}/transactions`);
       url.searchParams.set("limit", String(limit));
@@ -306,12 +331,20 @@ async function fetchBotRevenue(force = false) {
           description: String(item.description || ""),
           createdAt
         });
+        const monthKey = createdAt.slice(0, 7);
+        if (/^\d{4}-\d{2}$/.test(monthKey)) {
+          const bucket = monthTotals.get(monthKey) || { kopeks: 0, count: 0 };
+          bucket.kopeks += kopeks;
+          bucket.count += 1;
+          monthTotals.set(monthKey, bucket);
+        }
       }
       total = Number(data.total ?? pageItems.length);
       offset += limit;
       if (!pageItems.length) break;
     }
     items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    upsertBotRevenueMonthly(monthTotals);
     const result = {
       configured: true,
       totalRub: totalKopeks / 100,
@@ -1251,6 +1284,9 @@ async function handleApi(req, res, url) {
   }
   if (req.method === "GET" && url.pathname === "/api/bot/revenue") {
     return sendJson(res, 200, await fetchBotRevenue(url.searchParams.get("refresh") === "1"));
+  }
+  if (req.method === "GET" && url.pathname === "/api/bot/revenue/monthly") {
+    return sendJson(res, 200, { months: getBotRevenueMonthly(12) });
   }
   if (req.method === "GET" && url.pathname === "/api/logs") return sendJson(res, 200, { items: await readAccessLog() });
   if (req.method === "GET" && url.pathname === "/api/notifications") return sendJson(res, 200, { items: getDueItems() });
