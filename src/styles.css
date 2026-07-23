@@ -2317,6 +2317,10 @@ label {
   text-align: right;
 }
 
+.payments-table-head span:last-child {
+  text-align: right;
+}
+
 .logs-table {
   display: grid;
   gap: 8px;
