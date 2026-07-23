@@ -730,11 +730,18 @@ export default {
       return this.filteredLogs.slice((page - 1) * size, page * size);
     },
     pnlRows() {
+      const currency = this.settings.currency || "USDT";
       return this.assets
         .filter((asset) => !asset.inactive)
         .map((asset) => {
           const last = this.assetLastPayment(asset);
           const forecast = this.assetForecast(asset, this.pnlHorizonDays);
+          const cycleDays = this.assetCycleDays(asset);
+          const monthlyCost = this.convertAmount(
+            (Number(asset.price || 0) / (cycleDays || 30)) * 30,
+            asset.priceCurrency || "USDT",
+            currency
+          );
           return {
             id: asset.id,
             asset,
@@ -745,11 +752,13 @@ export default {
             lastAmount: last ? Number(last.amount || 0) : 0,
             lastCurrency: last ? (last.currency || "USDT") : (this.settings.currency || "USDT"),
             lastDate: last ? last.paidAt : "",
-            cycleDays: this.assetCycleDays(asset),
+            cycleDays,
             expiresAt: asset.expiresAt,
-            forecastAmount: forecast.amount,
-            forecastCurrency: forecast.currency,
-            forecastOccurrences: forecast.occurrences
+            forecastAmount: this.convertAmount(forecast.amount, forecast.currency, currency),
+            forecastCurrency: currency,
+            forecastOccurrences: forecast.occurrences,
+            monthlyCost,
+            monthlyCostDisplay: this.formatMoney(monthlyCost, currency)
           };
         });
     },

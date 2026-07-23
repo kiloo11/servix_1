@@ -206,6 +206,7 @@
     "sortRenewalDesc": "Продление сначала дальше",
     "sortNameAsc": "Название А-Я",
     "colTotal": "Всего уплачено",
+    "colMonthly": "Стоимость/мес",
     "colRenewal": "Следующее продление",
     "colForecast": "Прогноз",
     "noForecast": "Недостаточно данных",
