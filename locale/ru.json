@@ -212,7 +212,10 @@
     "noForecast": "Недостаточно данных",
     "empty": "Пока нет активных записей для расчета P&L",
     "cardRevenue": "Доход от бота",
-    "cardNet": "Чистая прибыль"
+    "cardNet": "Чистая прибыль",
+    "botPaymentsTitle": "Все пополнения от бота",
+    "botPaymentMethod": "Способ оплаты",
+    "botPaymentsEmpty": "Пополнений пока нет"
   },
   "alerts": {
     "emptyTitle": "Сроков нет",

@@ -432,7 +432,9 @@ export default {
       pnlSort: "forecast-desc",
       pnlPage: 1,
       pnlPageSize: 10,
-      botRevenue: { configured: false, totalRub: 0, count: 0, updatedAt: "" },
+      botRevenue: { configured: false, totalRub: 0, count: 0, items: [], updatedAt: "" },
+      pnlBotPage: 1,
+      pnlBotPageSize: 10,
       search: "",
       typeFilter: "all",
       draggedAssetId: "",
@@ -811,6 +813,20 @@ export default {
       const currency = this.settings.currency || "USDT";
       const cost = this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), currency);
       return this.formatMoney(this.pnlRevenueTotal - cost, currency);
+    },
+    pnlBotItems() {
+      return this.botRevenue.items || [];
+    },
+    pnlBotPages() {
+      return Math.max(1, Math.ceil(this.pnlBotItems.length / Number(this.pnlBotPageSize || 10)));
+    },
+    pnlBotCurrentPage() {
+      return Math.min(this.pnlBotPage, this.pnlBotPages);
+    },
+    pnlBotPaginatedItems() {
+      const page = this.pnlBotCurrentPage;
+      const size = Number(this.pnlBotPageSize || 10);
+      return this.pnlBotItems.slice((page - 1) * size, page * size);
     }
   },
   watch: {
@@ -827,7 +843,8 @@ export default {
     pnlSearch: "resetPnlPage",
     pnlSort: "resetPnlPage",
     pnlHorizonDays: "resetPnlPage",
-    pnlPageSize: "resetPnlPage"
+    pnlPageSize: "resetPnlPage",
+    pnlBotPageSize: "resetPnlBotPage"
   },
   async mounted() {
     this.view = viewFromPath(location.pathname);
@@ -1061,7 +1078,7 @@ export default {
       try {
         this.botRevenue = await this.api(`/api/bot/revenue${refresh ? "?refresh=1" : ""}`);
       } catch {
-        this.botRevenue = { configured: false, totalRub: 0, count: 0, updatedAt: "" };
+        this.botRevenue = { configured: false, totalRub: 0, count: 0, items: [], updatedAt: "" };
       }
     },
     async deleteAsset() {
@@ -1382,6 +1399,12 @@ export default {
     },
     setPnlPage(page) {
       this.pnlPage = Math.min(this.pnlPages, Math.max(1, Number(page || 1)));
+    },
+    resetPnlBotPage() {
+      this.pnlBotPage = 1;
+    },
+    setPnlBotPage(page) {
+      this.pnlBotPage = Math.min(this.pnlBotPages, Math.max(1, Number(page || 1)));
     },
     formatShort(value) {
       return new Intl.NumberFormat(this.currentLocale === "en" ? "en-US" : "ru-RU", { maximumFractionDigits: 2 }).format(Number(value || 0));

@@ -212,7 +212,10 @@
     "noForecast": "Not enough data",
     "empty": "No active records yet to calculate P&L",
     "cardRevenue": "Bot revenue",
-    "cardNet": "Net profit"
+    "cardNet": "Net profit",
+    "botPaymentsTitle": "All bot top-ups",
+    "botPaymentMethod": "Payment method",
+    "botPaymentsEmpty": "No top-ups yet"
   },
   "alerts": {
     "emptyTitle": "No terms",

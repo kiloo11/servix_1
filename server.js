@@ -253,10 +253,11 @@ async function refreshExchangeRates() {
 }
 
 let botRevenueCache = null;
+const BOT_REVENUE_MAX_ITEMS = 300;
 
 async function fetchBotRevenue(force = false) {
   if (!BEDOLAGA_API_URL || !BEDOLAGA_API_KEY) {
-    return { configured: false, totalRub: 0, count: 0, updatedAt: "" };
+    return { configured: false, totalRub: 0, count: 0, items: [], updatedAt: "" };
   }
   if (!force && botRevenueCache && Date.now() - botRevenueCache.fetchedAt < BOT_REVENUE_CACHE_MS) {
     return botRevenueCache.data;
@@ -268,6 +269,7 @@ async function fetchBotRevenue(force = false) {
     let total = Infinity;
     let totalKopeks = 0;
     let count = 0;
+    const items = [];
     for (let page = 0; page < maxPages && offset < total; page++) {
       const url = new URL(`${BEDOLAGA_API_URL}/transactions`);
       url.searchParams.set("limit", String(limit));
@@ -280,20 +282,37 @@ async function fetchBotRevenue(force = false) {
       });
       if (!response.ok) throw new Error(`Bedolaga API HTTP ${response.status}`);
       const data = await response.json();
-      const items = Array.isArray(data.items) ? data.items : [];
-      for (const item of items) totalKopeks += Number(item.amount_kopeks || 0);
-      count += items.length;
-      total = Number(data.total ?? items.length);
+      const pageItems = Array.isArray(data.items) ? data.items : [];
+      for (const item of pageItems) {
+        totalKopeks += Number(item.amount_kopeks || 0);
+        items.push({
+          id: item.id,
+          userId: item.user_id,
+          amountRub: Number(item.amount_rubles ?? Number(item.amount_kopeks || 0) / 100),
+          paymentMethod: String(item.payment_method || ""),
+          description: String(item.description || ""),
+          createdAt: item.completed_at || item.created_at || ""
+        });
+      }
+      count += pageItems.length;
+      total = Number(data.total ?? pageItems.length);
       offset += limit;
-      if (!items.length) break;
+      if (!pageItems.length) break;
     }
-    const result = { configured: true, totalRub: totalKopeks / 100, count, updatedAt: new Date().toISOString() };
+    items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    const result = {
+      configured: true,
+      totalRub: totalKopeks / 100,
+      count,
+      items: items.slice(0, BOT_REVENUE_MAX_ITEMS),
+      updatedAt: new Date().toISOString()
+    };
     botRevenueCache = { data: result, fetchedAt: Date.now() };
     return result;
   } catch (error) {
     console.warn(`Bedolaga revenue fetch failed: ${error.message}`);
     if (botRevenueCache) return botRevenueCache.data;
-    return { configured: true, totalRub: 0, count: 0, updatedAt: "", error: error.message };
+    return { configured: true, totalRub: 0, count: 0, items: [], updatedAt: "", error: error.message };
   }
 }
 
