@@ -735,9 +735,9 @@ export default {
         .filter((asset) => !asset.inactive)
         .map((asset) => {
           const last = this.assetLastPayment(asset);
-          const forecast = this.assetForecast(asset, this.pnlHorizonDays);
           const cycleDays = this.assetCycleDays(asset);
           const monthlyCost = this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
+          const forecastAmount = monthlyCost * (this.pnlHorizonDays / 30);
           return {
             id: asset.id,
             asset,
@@ -750,9 +750,8 @@ export default {
             lastDate: last ? last.paidAt : "",
             cycleDays,
             expiresAt: asset.expiresAt,
-            forecastAmount: this.convertAmount(forecast.amount, forecast.currency, currency),
+            forecastAmount,
             forecastCurrency: currency,
-            forecastOccurrences: forecast.occurrences,
             monthlyCost,
             monthlyCostDisplay: this.formatMoney(monthlyCost, currency)
           };
@@ -1356,33 +1355,6 @@ export default {
       const initial = (expires - created) / 86_400_000;
       if (Number.isFinite(initial) && initial > 0) return Math.round(initial);
       return 30;
-    },
-    assetForecast(asset, horizonDays) {
-      const last = this.assetLastPayment(asset);
-      const currency = last ? (last.currency || "USDT") : (this.settings.currency || "USDT");
-      const amount = last ? Number(last.amount || 0) : 0;
-      const cycleDays = this.assetCycleDays(asset);
-      const expiresAt = parseAppDate(asset.expiresAt);
-      if (!amount || asset.inactive || Number.isNaN(expiresAt.getTime())) {
-        return { occurrences: 0, amount: 0, currency, next: null, cycleDays };
-      }
-      const now = new Date();
-      const horizonEnd = new Date(now.getTime() + horizonDays * 86_400_000);
-      let occurrence = new Date(expiresAt);
-      let occurrences = 0;
-      let total = 0;
-      let next = null;
-      let guard = 0;
-      while (occurrence <= horizonEnd && guard < 1000) {
-        if (occurrence >= now) {
-          if (!next) next = new Date(occurrence);
-          occurrences += 1;
-          total += amount;
-        }
-        occurrence = new Date(occurrence.getTime() + cycleDays * 86_400_000);
-        guard += 1;
-      }
-      return { occurrences, amount: total, currency, next, cycleDays };
     },
     resetPnlPage() {
       this.pnlPage = 1;
