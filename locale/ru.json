@@ -219,7 +219,10 @@
     "botPaymentMethod": "Способ оплаты",
     "botPaymentsEmpty": "Пополнений пока нет",
     "monthlyProfitTitle": "Прибыль по месяцам",
-    "monthlyProfitEmpty": "Пока недостаточно данных для графика"
+    "monthlyProfitEmpty": "Пока недостаточно данных для графика",
+    "monthlyRevenue": "Доход",
+    "monthlyCost": "Расход",
+    "monthlyNet": "Чистая прибыль"
   },
   "alerts": {
     "emptyTitle": "Сроков нет",

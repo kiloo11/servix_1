@@ -219,7 +219,10 @@
     "botPaymentMethod": "Payment method",
     "botPaymentsEmpty": "No top-ups yet",
     "monthlyProfitTitle": "Monthly profit",
-    "monthlyProfitEmpty": "Not enough data for a chart yet"
+    "monthlyProfitEmpty": "Not enough data for a chart yet",
+    "monthlyRevenue": "Revenue",
+    "monthlyCost": "Expense",
+    "monthlyNet": "Net profit"
   },
   "alerts": {
     "emptyTitle": "No terms",
