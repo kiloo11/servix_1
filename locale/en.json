@@ -210,7 +210,9 @@
     "colRenewal": "Next renewal",
     "colForecast": "Forecast",
     "noForecast": "Not enough data",
-    "empty": "No active records yet to calculate P&L"
+    "empty": "No active records yet to calculate P&L",
+    "cardRevenue": "Bot revenue",
+    "cardNet": "Net profit"
   },
   "alerts": {
     "emptyTitle": "No terms",

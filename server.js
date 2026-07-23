@@ -18,6 +18,9 @@ const LEGACY_JSON_FILE = path.join(DATA_DIR, "assets.json");
 const PUBLIC_DIR = path.join(__dirname, "dist");
 const LOCALE_DIR = path.join(__dirname, "locale");
 const TELEGRAM_NOTIFY_URL = String(process.env.TELEGRAM_NOTIFY_URL || "");
+const BEDOLAGA_API_URL = String(process.env.BEDOLAGA_API_URL || "").trim().replace(/\/+$/, "");
+const BEDOLAGA_API_KEY = String(process.env.BEDOLAGA_API_KEY || "").trim();
+const BOT_REVENUE_CACHE_MS = 5 * 60_000;
 const NOTIFY_ON_START = String(process.env.NOTIFY_ON_START || "true") === "true";
 const APP_TIMEZONE = String(process.env.APP_TIMEZONE || "Europe/Moscow");
 const MAX_TIMEOUT_MS = 2_147_483_647;
@@ -246,6 +249,51 @@ async function refreshExchangeRates() {
     }
   } catch (error) {
     console.warn(`Exchange rate refresh failed: ${error.message}`);
+  }
+}
+
+let botRevenueCache = null;
+
+async function fetchBotRevenue(force = false) {
+  if (!BEDOLAGA_API_URL || !BEDOLAGA_API_KEY) {
+    return { configured: false, totalRub: 0, count: 0, updatedAt: "" };
+  }
+  if (!force && botRevenueCache && Date.now() - botRevenueCache.fetchedAt < BOT_REVENUE_CACHE_MS) {
+    return botRevenueCache.data;
+  }
+  try {
+    const limit = 200;
+    const maxPages = 25;
+    let offset = 0;
+    let total = Infinity;
+    let totalKopeks = 0;
+    let count = 0;
+    for (let page = 0; page < maxPages && offset < total; page++) {
+      const url = new URL(`${BEDOLAGA_API_URL}/transactions`);
+      url.searchParams.set("limit", String(limit));
+      url.searchParams.set("offset", String(offset));
+      url.searchParams.set("type", "payment");
+      url.searchParams.set("is_completed", "true");
+      const response = await fetch(url, {
+        headers: { "X-API-Key": BEDOLAGA_API_KEY },
+        signal: AbortSignal.timeout(10_000)
+      });
+      if (!response.ok) throw new Error(`Bedolaga API HTTP ${response.status}`);
+      const data = await response.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      for (const item of items) totalKopeks += Number(item.amount_kopeks || 0);
+      count += items.length;
+      total = Number(data.total ?? items.length);
+      offset += limit;
+      if (!items.length) break;
+    }
+    const result = { configured: true, totalRub: totalKopeks / 100, count, updatedAt: new Date().toISOString() };
+    botRevenueCache = { data: result, fetchedAt: Date.now() };
+    return result;
+  } catch (error) {
+    console.warn(`Bedolaga revenue fetch failed: ${error.message}`);
+    if (botRevenueCache) return botRevenueCache.data;
+    return { configured: true, totalRub: 0, count: 0, updatedAt: "", error: error.message };
   }
 }
 
@@ -1167,6 +1215,9 @@ async function handleApi(req, res, url) {
     await refreshExchangeRates();
     await logAction(req, "rates.refresh");
     return sendJson(res, 200, getMeta());
+  }
+  if (req.method === "GET" && url.pathname === "/api/bot/revenue") {
+    return sendJson(res, 200, await fetchBotRevenue(url.searchParams.get("refresh") === "1"));
   }
   if (req.method === "GET" && url.pathname === "/api/logs") return sendJson(res, 200, { items: await readAccessLog() });
   if (req.method === "GET" && url.pathname === "/api/notifications") return sendJson(res, 200, { items: getDueItems() });

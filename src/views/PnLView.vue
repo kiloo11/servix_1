@@ -25,6 +25,14 @@
         <strong>{{ app.pnlForecastTotalDisplay }}</strong>
         <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.pnlForecastTotalRubDisplay }}</small>
       </article>
+      <article class="stat-card" v-if="app.botRevenue.configured">
+        <span>{{ app.t("pnl.cardRevenue") }}</span>
+        <strong>{{ app.pnlRevenueTotalDisplay }}</strong>
+      </article>
+      <article class="stat-card" v-if="app.botRevenue.configured">
+        <span>{{ app.t("pnl.cardNet") }}</span>
+        <strong>{{ app.pnlNetTotalDisplay }}</strong>
+      </article>
     </div>
 
     <article class="chart-panel table-panel">

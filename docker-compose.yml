@@ -10,6 +10,8 @@ services:
       # TZ: "Europe/Moscow"
       # TELEGRAM_NOTIFY_URL: "tgram://TOKEN/CHAT_ID:TOPIC_ID"
       # NOTIFY_ON_START: "true"
+      # BEDOLAGA_API_URL: "https://vpnbot.postq.space"
+      # BEDOLAGA_API_KEY: ""
     volumes:
       - ./data:/app/data
     restart: unless-stopped
