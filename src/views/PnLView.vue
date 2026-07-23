@@ -51,27 +51,8 @@
       <div class="chart-title-row">
         <h2>{{ app.t("pnl.monthlyProfitTitle") }}</h2>
       </div>
-      <div class="month-profit-chart" v-if="app.pnlMonthlySeries.some((row) => row.revenue || row.cost)" @mouseleave="hideMonthTooltip">
-        <div class="month-profit-baseline"></div>
-        <div v-for="row in app.pnlMonthlySeries" :key="row.month" class="month-profit-track">
-          <div class="month-profit-bar-wrap">
-            <div
-              class="month-profit-bar"
-              :class="row.net >= 0 ? 'is-positive' : 'is-negative'"
-              :style="{ height: Math.max(row.heightPercent, row.net !== 0 ? 3 : 0) + '%' }"
-              tabindex="0"
-              @mouseenter="showMonthTooltip(row, $event)"
-              @mousemove="showMonthTooltip(row, $event)"
-              @focus="showMonthTooltip(row, $event)"
-              @blur="hideMonthTooltip"
-            ></div>
-          </div>
-          <span class="month-profit-label">{{ row.label }}</span>
-        </div>
-        <div v-if="monthTooltip" class="chart-tooltip" :style="{ left: monthTooltip.left + 'px', top: monthTooltip.top + 'px' }">
-          <strong>{{ monthTooltip.label }}</strong>
-          <span>{{ monthTooltip.value }}</span>
-        </div>
+      <div class="month-profit-chart-wrap" v-if="app.pnlMonthlySeries.some((row) => row.revenue || row.cost)">
+        <canvas ref="monthChartCanvas"></canvas>
       </div>
       <div v-else class="inline-empty">{{ app.t("pnl.monthlyProfitEmpty") }}</div>
     </article>
@@ -167,33 +148,94 @@
 </template>
 
 <script>
+import { Chart } from "chart.js/auto";
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from "reka-ui";
 import { ChevronDown as ChevronDownIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from "@lucide/vue";
 import AppSelect from "../components/AppSelect.vue";
 import AppSelectItem from "../components/AppSelectItem.vue";
+
+const COLOR_LINE = "#ef4bc8";
+const COLOR_LINE_FILL = "rgba(239, 75, 200, 0.12)";
+const COLOR_GOOD = "#35d488";
+const COLOR_DANGER = "#ff6f9e";
+const COLOR_MUTED = "#9a8fb3";
+const COLOR_GRID = "rgba(154, 143, 179, 0.14)";
 
 export default {
   components: { AppSelect, AppSelectItem, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, CollapsibleContent, CollapsibleRoot, CollapsibleTrigger },
   props: {
     app: { type: Object, required: true }
   },
-  data() {
-    return { monthTooltip: null };
+  watch: {
+    "app.pnlMonthlySeries": {
+      deep: true,
+      handler() {
+        this.renderMonthChart();
+      }
+    }
+  },
+  mounted() {
+    this.renderMonthChart();
+  },
+  beforeUnmount() {
+    this.monthChart?.destroy();
   },
   methods: {
-    showMonthTooltip(row, event) {
-      const rect = event.currentTarget.closest(".month-profit-chart").getBoundingClientRect();
-      const left = Math.min(rect.width - 130, Math.max(10, event.currentTarget.getBoundingClientRect().left - rect.left - 40));
-      const top = Math.max(10, event.currentTarget.getBoundingClientRect().top - rect.top - 46);
-      this.monthTooltip = {
-        left,
-        top,
-        label: row.monthLabel,
-        value: this.app.formatMoney(row.net, this.app.settings.currency || "USDT")
-      };
-    },
-    hideMonthTooltip() {
-      this.monthTooltip = null;
+    renderMonthChart() {
+      const canvas = this.$refs.monthChartCanvas;
+      this.monthChart?.destroy();
+      this.monthChart = null;
+      if (!canvas) return;
+      const rows = this.app.pnlMonthlySeries;
+      if (!rows.some((row) => row.revenue || row.cost)) return;
+      const currency = this.app.settings.currency || "USDT";
+      this.monthChart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: rows.map((row) => row.label),
+          datasets: [{
+            label: this.app.t("pnl.monthlyProfitTitle"),
+            data: rows.map((row) => row.net),
+            borderColor: COLOR_LINE,
+            backgroundColor: COLOR_LINE_FILL,
+            pointBackgroundColor: rows.map((row) => (row.net >= 0 ? COLOR_GOOD : COLOR_DANGER)),
+            pointBorderColor: rows.map((row) => (row.net >= 0 ? COLOR_GOOD : COLOR_DANGER)),
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            borderWidth: 2,
+            tension: 0.3,
+            fill: "origin"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              displayColors: false,
+              callbacks: {
+                title: (items) => rows[items[0].dataIndex]?.monthLabel || "",
+                label: (item) => this.app.formatMoney(item.parsed.y, currency)
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: COLOR_GRID },
+              ticks: { color: COLOR_MUTED }
+            },
+            y: {
+              grid: { color: COLOR_GRID },
+              ticks: {
+                color: COLOR_MUTED,
+                callback: (value) => this.app.formatShort(value)
+              }
+            }
+          }
+        }
+      });
     }
   }
 };

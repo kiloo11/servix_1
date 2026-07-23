@@ -827,69 +827,9 @@ label {
   transform: rotate(180deg);
 }
 
-.month-profit-chart {
+.month-profit-chart-wrap {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.month-profit-track {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.month-profit-bar-wrap {
-  position: relative;
-  width: 100%;
-  height: 120px;
-}
-
-.month-profit-bar {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 22px;
-  max-width: 60%;
-  background: var(--good);
-  border-radius: 4px 4px 0 0;
-  transition: height 160ms ease;
-}
-
-.month-profit-bar.is-negative {
-  top: 50%;
-  background: var(--danger);
-  border-radius: 0 0 4px 4px;
-}
-
-.month-profit-bar.is-positive {
-  bottom: 50%;
-}
-
-.month-profit-bar:focus-visible {
-  outline: 2px solid var(--accent-strong);
-  outline-offset: 2px;
-}
-
-.month-profit-baseline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 60px;
-  height: 1px;
-  background: var(--line);
-  pointer-events: none;
-}
-
-.month-profit-label {
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
-  text-transform: capitalize;
+  height: 240px;
 }
 
 .provider-grid {
