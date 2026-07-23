@@ -16,6 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "@lucide/vue": "^1.17.0",
+    "chart.js": "^4.5.1",
     "jspdf": "^4.2.1",
     "qrcode": "^1.5.4",
     "reka-ui": "^2.10.1",
