@@ -214,6 +214,7 @@
     "cardRevenue": "Доход от бота",
     "cardRevenueMonth": "Доход за месяц",
     "cardNet": "Чистая прибыль",
+    "cardNetMonth": "Чистая прибыль за месяц",
     "botPaymentsTitle": "Все пополнения от бота",
     "botPaymentMethod": "Способ оплаты",
     "botPaymentsEmpty": "Пополнений пока нет"

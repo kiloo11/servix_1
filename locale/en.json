@@ -214,6 +214,7 @@
     "cardRevenue": "Bot revenue",
     "cardRevenueMonth": "Revenue (30d)",
     "cardNet": "Net profit",
+    "cardNetMonth": "Net profit (30d)",
     "botPaymentsTitle": "All bot top-ups",
     "botPaymentMethod": "Payment method",
     "botPaymentsEmpty": "No top-ups yet"
