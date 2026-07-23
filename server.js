@@ -1104,7 +1104,7 @@ function formatMoney(value, currency = "USDT", locale = "ru") {
   if (currency === "EUR" || currency === "RUB") {
     return new Intl.NumberFormat(intlLocale, { style: "currency", currency, maximumFractionDigits: 2 }).format(num);
   }
-  return `${new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 6 }).format(num)} USDT`;
+  return `${new Intl.NumberFormat(intlLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num)} USDT`;
 }
 
 function groupPaymentsByCurrency(payments = []) {

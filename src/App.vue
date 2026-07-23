@@ -1405,7 +1405,7 @@ export default {
       const amountHeader = `${this.t("export.amount")} (${currency})`;
       const csv = [
         [this.t("export.date"), this.t("export.server"), this.t("export.provider"), amountHeader].map(escape).join(","),
-        ...rows.map((row) => [row.date, row.server, row.provider, row.amount].map(escape).join(","))
+        ...rows.map((row) => [row.date, row.server, row.provider, row.amount.toFixed(2)].map(escape).join(","))
       ].join("\n");
       const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
       const link = document.createElement("a");
@@ -1420,7 +1420,7 @@ export default {
       const currency = this.settings.currency || "USDT";
       const doc = new jsPDF({ orientation: "landscape" });
       const headers = [this.t("export.date"), this.t("export.server"), this.t("export.provider"), `${this.t("export.amount")} (${currency})`];
-      const body = rows.map((row) => [row.date, row.server, row.provider, row.amount.toFixed(6).replace(/\.?0+$/, "")]);
+      const body = rows.map((row) => [row.date, row.server, row.provider, row.amount.toFixed(2)]);
       const pages = buildPdfCanvases(this.t("export.title"), headers, body);
       pages.forEach((canvas, index) => {
         if (index > 0) doc.addPage("a4", "landscape");
@@ -1440,7 +1440,7 @@ export default {
       if (currency === "EUR" || currency === "RUB") {
         return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 2 }).format(num);
       }
-      return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 6 }).format(num)} USDT`;
+      return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num)} USDT`;
     },
     paymentsTotalIn(payments = [], targetCurrency = this.settings.currency || "USDT") {
       return (payments || []).reduce((sum, payment) => sum + this.convertAmount(payment.amount, payment.currency || "USDT", targetCurrency), 0);
