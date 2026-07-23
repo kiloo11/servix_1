@@ -35,6 +35,39 @@
       </article>
     </div>
 
+    <CollapsibleRoot v-if="app.botRevenue.configured" class="category-group pnl-bot-payments">
+      <CollapsibleTrigger class="category-group-summary">
+        <span>{{ app.t("pnl.botPaymentsTitle") }}</span>
+        <span class="category-group-count">{{ app.tc("payment", app.botRevenue.count) }}</span>
+        <ChevronDownIcon class="category-group-chevron" :size="16" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div class="category-group-body">
+          <div class="payments-table" v-if="app.pnlBotPaginatedItems.length">
+            <div class="payments-table-head">
+              <span>{{ app.t("common.date") }}</span>
+              <span>{{ app.t("pnl.botPaymentMethod") }}</span>
+              <span>{{ app.t("common.sum") }}</span>
+            </div>
+            <div v-for="item in app.pnlBotPaginatedItems" :key="item.id" class="payments-table-row">
+              <span>{{ app.formatDateTime(item.createdAt) }}</span>
+              <span>{{ item.paymentMethod || app.t("common.providerEmpty") }}</span>
+              <strong>{{ app.formatMoney(item.amountRub, "RUB") }}</strong>
+            </div>
+          </div>
+          <div v-else class="inline-empty">{{ app.t("pnl.botPaymentsEmpty") }}</div>
+          <div class="table-footer" v-if="app.pnlBotItems.length">
+            <span>{{ app.t("pnl.cardRevenue") }}: {{ app.pnlRevenueTotalDisplay }}</span>
+            <div class="pagination">
+              <button class="secondary-button icon-only" type="button" @click="app.setPnlBotPage(app.pnlBotPage - 1)" :disabled="app.pnlBotPage <= 1" :aria-label="app.t('stats.prevPage')"><ChevronLeftIcon :size="16" /></button>
+              <strong>{{ app.pnlBotCurrentPage }} / {{ app.pnlBotPages }}</strong>
+              <button class="secondary-button icon-only" type="button" @click="app.setPnlBotPage(app.pnlBotPage + 1)" :disabled="app.pnlBotPage >= app.pnlBotPages" :aria-label="app.t('stats.nextPage')"><ChevronRightIcon :size="16" /></button>
+            </div>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </CollapsibleRoot>
+
     <article class="chart-panel table-panel">
       <div class="table-title-row">
         <div>
@@ -90,12 +123,13 @@
 </template>
 
 <script>
-import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from "@lucide/vue";
+import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from "reka-ui";
+import { ChevronDown as ChevronDownIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from "@lucide/vue";
 import AppSelect from "../components/AppSelect.vue";
 import AppSelectItem from "../components/AppSelectItem.vue";
 
 export default {
-  components: { AppSelect, AppSelectItem, ChevronLeftIcon, ChevronRightIcon },
+  components: { AppSelect, AppSelectItem, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, CollapsibleContent, CollapsibleRoot, CollapsibleTrigger },
   props: {
     app: { type: Object, required: true }
   }

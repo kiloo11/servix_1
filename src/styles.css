@@ -784,6 +784,10 @@ label {
   padding: 10px;
 }
 
+.category-group-body {
+  padding: 10px;
+}
+
 .provider-grid {
   column-count: 3;
   column-gap: 14px;
