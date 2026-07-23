@@ -274,7 +274,7 @@ async function fetchBotRevenue(force = false) {
       const url = new URL(`${BEDOLAGA_API_URL}/transactions`);
       url.searchParams.set("limit", String(limit));
       url.searchParams.set("offset", String(offset));
-      url.searchParams.set("type", "payment");
+      url.searchParams.set("type", "deposit");
       url.searchParams.set("is_completed", "true");
       const response = await fetch(url, {
         headers: { "X-API-Key": BEDOLAGA_API_KEY },
@@ -284,6 +284,7 @@ async function fetchBotRevenue(force = false) {
       const data = await response.json();
       const pageItems = Array.isArray(data.items) ? data.items : [];
       for (const item of pageItems) {
+        if (!item.payment_method) continue;
         totalKopeks += Number(item.amount_kopeks || 0);
         items.push({
           id: item.id,
@@ -294,7 +295,7 @@ async function fetchBotRevenue(force = false) {
           createdAt: item.completed_at || item.created_at || ""
         });
       }
-      count += pageItems.length;
+      count += pageItems.filter((item) => item.payment_method).length;
       total = Number(data.total ?? pageItems.length);
       offset += limit;
       if (!pageItems.length) break;
