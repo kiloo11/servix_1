@@ -212,6 +212,7 @@
     "noForecast": "Недостаточно данных",
     "empty": "Пока нет активных записей для расчета P&L",
     "cardRevenue": "Доход от бота",
+    "cardRevenueMonth": "Доход за месяц",
     "cardNet": "Чистая прибыль",
     "botPaymentsTitle": "Все пополнения от бота",
     "botPaymentMethod": "Способ оплаты",
