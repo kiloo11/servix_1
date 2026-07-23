@@ -432,6 +432,7 @@ export default {
       pnlSort: "forecast-desc",
       pnlPage: 1,
       pnlPageSize: 10,
+      botRevenue: { configured: false, totalRub: 0, count: 0, updatedAt: "" },
       search: "",
       typeFilter: "all",
       draggedAssetId: "",
@@ -798,6 +799,18 @@ export default {
     pnlForecastTotalRubDisplay() {
       const total = this.pnlRows.reduce((sum, row) => sum + this.convertAmount(row.forecastAmount || 0, row.forecastCurrency, "RUB"), 0);
       return this.formatMoney(total, "RUB");
+    },
+    pnlRevenueTotal() {
+      const currency = this.settings.currency || "USDT";
+      return this.convertAmount(this.botRevenue.totalRub || 0, "RUB", currency);
+    },
+    pnlRevenueTotalDisplay() {
+      return this.formatMoney(this.pnlRevenueTotal, this.settings.currency || "USDT");
+    },
+    pnlNetTotalDisplay() {
+      const currency = this.settings.currency || "USDT";
+      const cost = this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), currency);
+      return this.formatMoney(this.pnlRevenueTotal - cost, currency);
     }
   },
   watch: {
@@ -833,6 +846,7 @@ export default {
       if (!this.needsLogin) {
         await this.load();
         await this.loadSecurity();
+        await this.loadBotRevenue();
         if (this.view === "logs") await this.loadLogs();
       }
     } catch {
@@ -1042,6 +1056,13 @@ export default {
     async refreshRates() {
       this.meta = { ...this.meta, ...(await this.api("/api/rates/refresh", { method: "POST" })) };
       this.toast(this.t("settings.ratesRefreshed"));
+    },
+    async loadBotRevenue(refresh = false) {
+      try {
+        this.botRevenue = await this.api(`/api/bot/revenue${refresh ? "?refresh=1" : ""}`);
+      } catch {
+        this.botRevenue = { configured: false, totalRub: 0, count: 0, updatedAt: "" };
+      }
     },
     async deleteAsset() {
       if (!(await this.confirmAction(this.t("assets.deleteConfirm", { name: this.editingAsset.name })))) return;

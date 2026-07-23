@@ -5,10 +5,10 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --env-file-if-exists=.env server.js",
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "server": "node server.js"
+    "server": "node --env-file-if-exists=.env server.js"
   },
   "engines": {
     "node": ">=24"
