@@ -737,11 +737,7 @@ export default {
           const last = this.assetLastPayment(asset);
           const forecast = this.assetForecast(asset, this.pnlHorizonDays);
           const cycleDays = this.assetCycleDays(asset);
-          const monthlyCost = this.convertAmount(
-            (Number(asset.price || 0) / (cycleDays || 30)) * 30,
-            asset.priceCurrency || "USDT",
-            currency
-          );
+          const monthlyCost = this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
           return {
             id: asset.id,
             asset,
