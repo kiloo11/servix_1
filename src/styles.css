@@ -2308,8 +2308,8 @@ label {
 }
 
 .pnl-table-row {
-  grid-template-columns: minmax(160px, 1.1fr) minmax(140px, 0.8fr) minmax(150px, 0.9fr) 150px 170px;
-  min-width: 820px;
+  grid-template-columns: minmax(160px, 1.1fr) minmax(140px, 0.8fr) minmax(150px, 0.9fr) minmax(120px, 0.7fr) 150px 170px;
+  min-width: 960px;
 }
 
 .payments-table-row strong:last-child {

@@ -206,6 +206,7 @@
     "sortRenewalDesc": "Renewal latest first",
     "sortNameAsc": "Name A-Z",
     "colTotal": "Total paid",
+    "colMonthly": "Cost/mo",
     "colRenewal": "Next renewal",
     "colForecast": "Forecast",
     "noForecast": "Not enough data",

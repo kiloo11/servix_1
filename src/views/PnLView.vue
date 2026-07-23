@@ -54,6 +54,7 @@
           <span>{{ app.t("common.name") }}</span>
           <span>{{ app.t("common.provider") }}</span>
           <span>{{ app.t("pnl.colTotal") }}</span>
+          <span>{{ app.t("pnl.colMonthly") }}</span>
           <span>{{ app.t("pnl.colRenewal") }}</span>
           <span>{{ app.t("pnl.colForecast") }}</span>
         </div>
@@ -61,6 +62,7 @@
           <span>{{ row.name }}</span>
           <span>{{ row.provider }}</span>
           <strong>{{ row.totalDisplay }}</strong>
+          <span>{{ row.monthlyCost ? row.monthlyCostDisplay : app.t("pnl.noForecast") }}</span>
           <span>{{ app.formatDateTime(row.expiresAt) }}</span>
           <strong>{{ row.forecastAmount ? app.formatMoney(row.forecastAmount, row.forecastCurrency) : app.t("pnl.noForecast") }}</strong>
         </div>
