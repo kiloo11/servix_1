@@ -28,14 +28,22 @@
       <article class="stat-card" v-if="app.botRevenue.configured">
         <span>{{ app.t("pnl.cardRevenue") }}</span>
         <strong>{{ app.pnlRevenueTotalDisplay }}</strong>
+        <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.pnlRevenueTotalRubDisplay }}</small>
       </article>
       <article class="stat-card" v-if="app.botRevenue.configured">
         <span>{{ app.t("pnl.cardRevenueMonth") }}</span>
         <strong>{{ app.pnlRevenueMonthDisplay }}</strong>
+        <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.pnlRevenueMonthRubDisplay }}</small>
       </article>
       <article class="stat-card" v-if="app.botRevenue.configured">
         <span>{{ app.t("pnl.cardNet") }}</span>
         <strong>{{ app.pnlNetTotalDisplay }}</strong>
+        <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.pnlNetTotalRubDisplay }}</small>
+      </article>
+      <article class="stat-card" v-if="app.botRevenue.configured">
+        <span>{{ app.t("pnl.cardNetMonth") }}</span>
+        <strong>{{ app.pnlNetMonthDisplay }}</strong>
+        <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.pnlNetMonthRubDisplay }}</small>
       </article>
     </div>
 

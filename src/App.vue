@@ -809,14 +809,41 @@ export default {
     pnlRevenueTotalDisplay() {
       return this.formatMoney(this.pnlRevenueTotal, this.settings.currency || "USDT");
     },
+    pnlRevenueTotalRubDisplay() {
+      return this.formatMoney(this.botRevenue.totalRub || 0, "RUB");
+    },
     pnlRevenueMonthDisplay() {
       const currency = this.settings.currency || "USDT";
       return this.formatMoney(this.convertAmount(this.botRevenue.monthRub || 0, "RUB", currency), currency);
+    },
+    pnlRevenueMonthRubDisplay() {
+      return this.formatMoney(this.botRevenue.monthRub || 0, "RUB");
     },
     pnlNetTotalDisplay() {
       const currency = this.settings.currency || "USDT";
       const cost = this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), currency);
       return this.formatMoney(this.pnlRevenueTotal - cost, currency);
+    },
+    pnlNetTotalRubDisplay() {
+      const costRub = this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), "RUB");
+      return this.formatMoney((this.botRevenue.totalRub || 0) - costRub, "RUB");
+    },
+    pnlMonthPayments() {
+      const since = periodStart("30d");
+      return this.pnlRows.flatMap((row) => row.asset.payments || []).filter((payment) => {
+        const paidAt = parseAppDate(payment.paidAt);
+        return !Number.isNaN(paidAt.getTime()) && paidAt >= since;
+      });
+    },
+    pnlNetMonthDisplay() {
+      const currency = this.settings.currency || "USDT";
+      const revenue = this.convertAmount(this.botRevenue.monthRub || 0, "RUB", currency);
+      const cost = this.paymentsTotalIn(this.pnlMonthPayments, currency);
+      return this.formatMoney(revenue - cost, currency);
+    },
+    pnlNetMonthRubDisplay() {
+      const costRub = this.paymentsTotalIn(this.pnlMonthPayments, "RUB");
+      return this.formatMoney((this.botRevenue.monthRub || 0) - costRub, "RUB");
     },
     pnlBotItems() {
       return this.botRevenue.items || [];
