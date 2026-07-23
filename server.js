@@ -254,10 +254,11 @@ async function refreshExchangeRates() {
 
 let botRevenueCache = null;
 const BOT_REVENUE_MAX_ITEMS = 300;
+const BOT_REVENUE_MONTH_MS = 30 * 24 * 60 * 60_000;
 
 async function fetchBotRevenue(force = false) {
   if (!BEDOLAGA_API_URL || !BEDOLAGA_API_KEY) {
-    return { configured: false, totalRub: 0, count: 0, items: [], updatedAt: "" };
+    return { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
   }
   if (!force && botRevenueCache && Date.now() - botRevenueCache.fetchedAt < BOT_REVENUE_CACHE_MS) {
     return botRevenueCache.data;
@@ -265,10 +266,13 @@ async function fetchBotRevenue(force = false) {
   try {
     const limit = 200;
     const maxPages = 25;
+    const monthAgo = Date.now() - BOT_REVENUE_MONTH_MS;
     let offset = 0;
     let total = Infinity;
     let totalKopeks = 0;
+    let monthKopeks = 0;
     let count = 0;
+    let monthCount = 0;
     const items = [];
     for (let page = 0; page < maxPages && offset < total; page++) {
       const url = new URL(`${BEDOLAGA_API_URL}/transactions`);
@@ -285,17 +289,24 @@ async function fetchBotRevenue(force = false) {
       const pageItems = Array.isArray(data.items) ? data.items : [];
       for (const item of pageItems) {
         if (!item.payment_method) continue;
-        totalKopeks += Number(item.amount_kopeks || 0);
+        const kopeks = Number(item.amount_kopeks || 0);
+        const createdAt = item.completed_at || item.created_at || "";
+        const isRecent = Date.parse(createdAt) >= monthAgo;
+        totalKopeks += kopeks;
+        count += 1;
+        if (isRecent) {
+          monthKopeks += kopeks;
+          monthCount += 1;
+        }
         items.push({
           id: item.id,
           userId: item.user_id,
-          amountRub: Number(item.amount_rubles ?? Number(item.amount_kopeks || 0) / 100),
+          amountRub: Number(item.amount_rubles ?? kopeks / 100),
           paymentMethod: String(item.payment_method || ""),
           description: String(item.description || ""),
-          createdAt: item.completed_at || item.created_at || ""
+          createdAt
         });
       }
-      count += pageItems.filter((item) => item.payment_method).length;
       total = Number(data.total ?? pageItems.length);
       offset += limit;
       if (!pageItems.length) break;
@@ -304,7 +315,9 @@ async function fetchBotRevenue(force = false) {
     const result = {
       configured: true,
       totalRub: totalKopeks / 100,
+      monthRub: monthKopeks / 100,
       count,
+      monthCount,
       items: items.slice(0, BOT_REVENUE_MAX_ITEMS),
       updatedAt: new Date().toISOString()
     };
@@ -313,7 +326,7 @@ async function fetchBotRevenue(force = false) {
   } catch (error) {
     console.warn(`Bedolaga revenue fetch failed: ${error.message}`);
     if (botRevenueCache) return botRevenueCache.data;
-    return { configured: true, totalRub: 0, count: 0, items: [], updatedAt: "", error: error.message };
+    return { configured: true, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "", error: error.message };
   }
 }
 

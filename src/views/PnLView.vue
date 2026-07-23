@@ -30,6 +30,10 @@
         <strong>{{ app.pnlRevenueTotalDisplay }}</strong>
       </article>
       <article class="stat-card" v-if="app.botRevenue.configured">
+        <span>{{ app.t("pnl.cardRevenueMonth") }}</span>
+        <strong>{{ app.pnlRevenueMonthDisplay }}</strong>
+      </article>
+      <article class="stat-card" v-if="app.botRevenue.configured">
         <span>{{ app.t("pnl.cardNet") }}</span>
         <strong>{{ app.pnlNetTotalDisplay }}</strong>
       </article>

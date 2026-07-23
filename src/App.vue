@@ -432,7 +432,7 @@ export default {
       pnlSort: "forecast-desc",
       pnlPage: 1,
       pnlPageSize: 10,
-      botRevenue: { configured: false, totalRub: 0, count: 0, items: [], updatedAt: "" },
+      botRevenue: { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" },
       pnlBotPage: 1,
       pnlBotPageSize: 10,
       search: "",
@@ -809,6 +809,10 @@ export default {
     pnlRevenueTotalDisplay() {
       return this.formatMoney(this.pnlRevenueTotal, this.settings.currency || "USDT");
     },
+    pnlRevenueMonthDisplay() {
+      const currency = this.settings.currency || "USDT";
+      return this.formatMoney(this.convertAmount(this.botRevenue.monthRub || 0, "RUB", currency), currency);
+    },
     pnlNetTotalDisplay() {
       const currency = this.settings.currency || "USDT";
       const cost = this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), currency);
@@ -1078,7 +1082,7 @@ export default {
       try {
         this.botRevenue = await this.api(`/api/bot/revenue${refresh ? "?refresh=1" : ""}`);
       } catch {
-        this.botRevenue = { configured: false, totalRub: 0, count: 0, items: [], updatedAt: "" };
+        this.botRevenue = { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
       }
     },
     async deleteAsset() {
