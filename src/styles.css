@@ -222,7 +222,7 @@ button, a {
   color: var(--text);
   text-align: left;
   padding: 0 10px;
-  font-weight: 800;
+  font-weight: 400;
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
