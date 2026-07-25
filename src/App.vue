@@ -521,6 +521,14 @@ export default {
         }))
         .filter((group) => group.items.length);
     },
+    defaultAssetAccordionValue() {
+      for (const group of this.assetGroups) {
+        if (group.type !== "vps" && group.type !== "domain") continue;
+        const bucket = this.categorySubgroups(group.items)[0];
+        if (bucket) return `${group.type}:${bucket.category || "none"}`;
+      }
+      return "";
+    },
     allPayments() {
       return this.assets.flatMap((asset) => asset.payments || []);
     },
