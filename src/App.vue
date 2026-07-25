@@ -1366,11 +1366,13 @@ export default {
     },
     providerAssetBuckets(providerId) {
       const items = this.providerAssets(providerId);
-      const buckets = this.categorySubgroups(items.filter((asset) => asset.type === "vps"));
-      buckets.push(...this.domainBucket(items.filter((asset) => asset.type === "domain")));
-      const certItems = items.filter((asset) => asset.type === "certificate");
-      if (certItems.length) buckets.push({ category: "certificate", label: this.typeLabel("certificate"), items: certItems });
-      return buckets;
+      return ["vps", "domain", "certificate"]
+        .map((type) => ({
+          category: type,
+          label: this.t(`typePlural.${type}`),
+          items: items.filter((asset) => asset.type === type)
+        }))
+        .filter((bucket) => bucket.items.length);
     },
     providerMonthlyCost(providerId, currency = this.settings.currency || "USDT") {
       return this.providerAssets(providerId).reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
