@@ -1539,11 +1539,7 @@ export default {
         }
         if (diffs.length) return Math.round(diffs.reduce((sum, diff) => sum + diff, 0) / diffs.length);
       }
-      const created = parseAppDate(asset.createdAt);
-      const expires = parseAppDate(asset.expiresAt);
-      const initial = (expires - created) / DAY_MS;
-      if (Number.isFinite(initial) && initial > 0) return Math.round(initial);
-      return 30;
+      return asset.type === "vps" ? 30 : 365;
     },
     assetNextPaymentDate(asset) {
       const expires = parseAppDate(asset.expiresAt);
