@@ -524,7 +524,7 @@ export default {
     defaultAssetAccordionValue() {
       for (const group of this.assetGroups) {
         if (group.type !== "vps" && group.type !== "domain") continue;
-        const bucket = this.categorySubgroups(group.items)[0];
+        const bucket = this.assetGroupBuckets(group)[0];
         if (bucket) return `${group.type}:${bucket.category || "none"}`;
       }
       return "";
@@ -1345,6 +1345,14 @@ export default {
         }))
         .filter((bucket) => bucket.items.length);
     },
+    domainBucket(items) {
+      return items.length ? [{ category: "domain", label: this.t("category.domain"), items }] : [];
+    },
+    assetGroupBuckets(group) {
+      if (group.type === "vps") return this.categorySubgroups(group.items);
+      if (group.type === "domain") return this.domainBucket(group.items);
+      return [];
+    },
     providerOf(asset) {
       return this.providers.find((provider) => provider.id === asset.providerId);
     },
@@ -1355,6 +1363,14 @@ export default {
       const order = ["infra", "node", "test"];
       const present = new Set(this.providerAssets(providerId).map((asset) => asset.category).filter(Boolean));
       return order.filter((category) => present.has(category));
+    },
+    providerAssetBuckets(providerId) {
+      const items = this.providerAssets(providerId);
+      const buckets = this.categorySubgroups(items.filter((asset) => asset.type === "vps"));
+      buckets.push(...this.domainBucket(items.filter((asset) => asset.type === "domain")));
+      const certItems = items.filter((asset) => asset.type === "certificate");
+      if (certItems.length) buckets.push({ category: "certificate", label: this.typeLabel("certificate"), items: certItems });
+      return buckets;
     },
     providerMonthlyCost(providerId, currency = this.settings.currency || "USDT") {
       return this.providerAssets(providerId).reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);

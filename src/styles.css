@@ -1202,6 +1202,10 @@ label {
   gap: 4px;
 }
 
+.category-group .provider-asset-list {
+  padding: 0 10px 10px;
+}
+
 .provider-asset-name {
   overflow-wrap: anywhere;
 }
