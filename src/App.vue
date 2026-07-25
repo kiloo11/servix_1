@@ -1356,7 +1356,9 @@ export default {
         .map((asset) => asset.expiresAt)
         .filter(Boolean);
       if (!dates.length) return "";
-      return dates.sort((a, b) => parseAppDate(a) - parseAppDate(b))[0];
+      const nearest = parseAppDate(dates.sort((a, b) => parseAppDate(a) - parseAppDate(b))[0]);
+      if (Number.isNaN(nearest.getTime())) return "";
+      return this.formatDate(new Date(nearest.getTime() - 86_400_000));
     },
     providerStyle(provider) {
       const color = provider?.color || providerFallbackColor(provider?.id || provider?.name || "default");
@@ -1531,6 +1533,14 @@ export default {
       return new Intl.DateTimeFormat(this.currentLocale === "en" ? "en-US" : "ru-RU", {
         dateStyle: "short",
         timeStyle: "short",
+        timeZone: this.meta.timezone || "Europe/Moscow"
+      }).format(date);
+    },
+    formatDate(value) {
+      const date = value instanceof Date ? value : parseAppDate(value);
+      if (Number.isNaN(date.getTime())) return this.t("common.notSpecified");
+      return new Intl.DateTimeFormat(this.currentLocale === "en" ? "en-US" : "ru-RU", {
+        dateStyle: "short",
         timeZone: this.meta.timezone || "Europe/Moscow"
       }).format(date);
     },
