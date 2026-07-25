@@ -1351,12 +1351,12 @@ export default {
     providerMonthlyCost(providerId, currency = this.settings.currency || "USDT") {
       return this.providerAssets(providerId).reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
     },
-    providerFirstPaymentDate(providerId) {
-      const payments = this.providerAssets(providerId)
-        .flatMap((asset) => asset.payments || [])
-        .filter((payment) => payment.paidAt);
-      if (!payments.length) return "";
-      return payments.sort((a, b) => parseAppDate(a.paidAt) - parseAppDate(b.paidAt))[0].paidAt;
+    providerRecommendedPaymentDate(providerId) {
+      const dates = this.providerAssets(providerId)
+        .map((asset) => asset.expiresAt)
+        .filter(Boolean);
+      if (!dates.length) return "";
+      return dates.sort((a, b) => parseAppDate(a) - parseAppDate(b))[0];
     },
     providerStyle(provider) {
       const color = provider?.color || providerFallbackColor(provider?.id || provider?.name || "default");

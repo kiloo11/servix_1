@@ -147,7 +147,7 @@
     "deleted": "Провайдер удален",
     "deleteConfirm": "Удалить провайдера \"{name}\"?",
     "noRecords": "Нет привязанных записей",
-    "firstPayment": "Первый платёж: {date}"
+    "recommendedPayment": "Рекомендуемый платёж: {date}"
   },
   "stats": {
     "currencyFilter": "Валюта статистики",

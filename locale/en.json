@@ -147,7 +147,7 @@
     "deleted": "Provider deleted",
     "deleteConfirm": "Delete provider \"{name}\"?",
     "noRecords": "No linked records",
-    "firstPayment": "First payment: {date}"
+    "recommendedPayment": "Recommended payment: {date}"
   },
   "stats": {
     "currencyFilter": "Statistics currency",
