@@ -768,7 +768,7 @@ export default {
           const last = this.assetLastPayment(asset);
           const cycleDays = this.assetCycleDays(asset);
           const cyclePrice = this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
-          const monthlyCost = (cyclePrice / Math.max(1, cycleDays)) * 30;
+          const monthlyCost = asset.type === "vps" ? cyclePrice : (cyclePrice / Math.max(1, cycleDays)) * 30;
           const forecastAmount = monthlyCost * (this.pnlHorizonDays / 30);
           return {
             id: asset.id,
@@ -1394,7 +1394,7 @@ export default {
     providerTypeCost(items, currency = this.settings.currency || "USDT") {
       return items.reduce((sum, asset) => {
         const cyclePrice = this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
-        return sum + (cyclePrice / Math.max(1, this.assetCycleDays(asset))) * 30;
+        return sum + (asset.type === "vps" ? cyclePrice : (cyclePrice / Math.max(1, this.assetCycleDays(asset))) * 30);
       }, 0);
     },
     providerRecommendedDateFor(items) {
