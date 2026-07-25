@@ -1141,16 +1141,13 @@ label {
 .payment-strip span { color: var(--muted); font-size: 13px; }
 
 .provider-category-list {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
+  display: block;
 }
 
 .provider-category-tag {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
-  opacity: 0.75;
+  opacity: 0.55;
 }
 
 .provider-category-tag.provider-category-infra {
@@ -1163,6 +1160,12 @@ label {
 
 .provider-category-tag.provider-category-test {
   color: var(--warn);
+}
+
+.provider-category-sep {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.55;
 }
 
 .provider-note {

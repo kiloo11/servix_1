@@ -13,12 +13,9 @@
             <div>
               <h2>{{ provider.name }}</h2>
               <span v-if="app.providerCategories(provider.id).length" class="provider-category-list">
-                <span
-                  v-for="cat in app.providerCategories(provider.id)"
-                  :key="cat"
-                  class="provider-category-tag"
-                  :class="`provider-category-${cat}`"
-                >{{ app.t(`category.${cat}`) }}</span>
+                <template v-for="(cat, index) in app.providerCategories(provider.id)" :key="cat">
+                  <span class="provider-category-tag" :class="`provider-category-${cat}`">{{ app.t(`category.${cat}`) }}</span><span v-if="index < app.providerCategories(provider.id).length - 1" class="provider-category-sep">, </span>
+                </template>
               </span>
             </div>
           </div>
