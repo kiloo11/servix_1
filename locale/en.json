@@ -147,7 +147,6 @@
     "saved": "Provider saved",
     "deleted": "Provider deleted",
     "deleteConfirm": "Delete provider \"{name}\"?",
-    "noRecords": "No linked records",
     "recommendedPayment": "Recommended payment: {date}"
   },
   "stats": {
