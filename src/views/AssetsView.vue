@@ -23,7 +23,7 @@
           </div>
 
           <template v-if="group.type === 'vps' || group.type === 'domain'">
-            <AccordionItem v-for="bucket in app.categorySubgroups(group.items)" :key="bucket.category || 'none'" :value="`${group.type}:${bucket.category || 'none'}`" class="category-group">
+            <AccordionItem v-for="bucket in app.assetGroupBuckets(group)" :key="bucket.category || 'none'" :value="`${group.type}:${bucket.category || 'none'}`" class="category-group">
               <AccordionHeader>
                 <AccordionTrigger class="category-group-summary">
                   <span class="category-badge" :class="bucket.category ? `category-${bucket.category}` : ''">{{ bucket.label }}</span>

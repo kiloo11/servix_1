@@ -80,7 +80,8 @@
   "category": {
     "infra": "Infrastructure",
     "node": "Nodes",
-    "test": "Test"
+    "test": "Test",
+    "domain": "Domains"
   },
   "auth": {
     "title": "Auth",
