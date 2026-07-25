@@ -1343,6 +1343,11 @@ export default {
     providerAssets(providerId) {
       return this.assets.filter((asset) => asset.providerId === providerId && !asset.inactive);
     },
+    providerCategories(providerId) {
+      const order = ["infra", "node", "test"];
+      const present = new Set(this.providerAssets(providerId).map((asset) => asset.category).filter(Boolean));
+      return order.filter((category) => present.has(category));
+    },
     providerMonthlyCost(providerId, currency = this.settings.currency || "USDT") {
       return this.providerAssets(providerId).reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
     },
