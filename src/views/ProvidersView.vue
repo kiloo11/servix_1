@@ -26,6 +26,7 @@
           <strong>{{ app.formatMoney(app.providerMonthlyCost(provider.id), app.settings.currency) }}</strong>
           <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.formatMoney(app.providerMonthlyCost(provider.id, 'RUB'), 'RUB') }}</small>
         </div>
+        <span v-if="app.providerFirstPaymentDate(provider.id)" class="stat-card-sub">{{ app.t("providers.firstPayment", { date: app.formatDateTime(app.providerFirstPaymentDate(provider.id)) }) }}</span>
         <div v-if="app.providerAssets(provider.id).length" class="provider-asset-list">
           <span v-for="asset in app.providerAssets(provider.id)" :key="asset.id" class="stat-card-sub provider-asset-name">{{ asset.name }}</span>
         </div>

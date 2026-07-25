@@ -128,7 +128,8 @@
     "deactivateConfirm": "Деактивировать \"{name}\"?",
     "quickRenew": "Быстро +30 дней",
     "quickRenewed": "Продлено на 30 дней",
-    "quickRenewNote": "Быстрое продление +30 дней"
+    "quickRenewNote": "Быстрое продление +30 дней",
+    "lastPayment": "Платёж: {date}"
   },
   "providers": {
     "add": "Добавить провайдера",
@@ -145,7 +146,8 @@
     "saved": "Провайдер сохранен",
     "deleted": "Провайдер удален",
     "deleteConfirm": "Удалить провайдера \"{name}\"?",
-    "noRecords": "Нет привязанных записей"
+    "noRecords": "Нет привязанных записей",
+    "firstPayment": "Первый платёж: {date}"
   },
   "stats": {
     "currencyFilter": "Валюта статистики",
