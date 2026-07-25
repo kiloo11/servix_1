@@ -259,6 +259,8 @@
     "timezone": "Таймзона",
     "telegramNotifyUrl": "URL уведомлений",
     "notifyOnStart": "Отправлять уведомления при старте",
+    "testMonthlyReport": "Отправить отчёт за прошлый месяц",
+    "monthlyReportHint": "1-го числа каждого месяца в Telegram автоматически придёт отчёт за прошлый месяц: доход, расход, чистая прибыль.",
     "currency": "Валюта по умолчанию",
     "ratesTitle": "Курс валют",
     "ratesText": "Курсы RUB и USDT к EUR обновляются автоматически из открытого источника.",
@@ -508,7 +510,11 @@
     "trigger": "Триггер",
     "triggerBefore": "за {lead}",
     "paidTotal": "Оплачено всего",
-    "paymentButton": "Перейти к оплате"
+    "paymentButton": "Перейти к оплате",
+    "monthlyReportTitle": "📊 <b>Финансовый отчёт за {month}</b>",
+    "income": "Доход",
+    "expense": "Расход",
+    "net": "Чистая прибыль"
   },
   "toast": {
     "login": "Вход выполнен",

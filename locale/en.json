@@ -259,6 +259,8 @@
     "timezone": "Timezone",
     "telegramNotifyUrl": "Notification URL",
     "notifyOnStart": "Send notifications on start",
+    "testMonthlyReport": "Send last month's report",
+    "monthlyReportHint": "On the 1st of each month, Telegram automatically receives a report for the previous month: income, expense, net profit.",
     "currency": "Default currency",
     "ratesTitle": "Exchange rates",
     "ratesText": "RUB and USDT rates to EUR are refreshed automatically from an open source.",
@@ -508,7 +510,11 @@
     "trigger": "Trigger",
     "triggerBefore": "{lead} before",
     "paidTotal": "Paid total",
-    "paymentButton": "Go to payment"
+    "paymentButton": "Go to payment",
+    "monthlyReportTitle": "📊 <b>Financial report for {month}</b>",
+    "income": "Income",
+    "expense": "Expense",
+    "net": "Net profit"
   },
   "toast": {
     "login": "Logged in",

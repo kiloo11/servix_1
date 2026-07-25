@@ -37,6 +37,7 @@ const sessions = new Map();
 const authAttempts = new Map();
 let db;
 let notificationTimer = null;
+let monthlyReportTimer = null;
 const locales = loadLocales();
 const countryFlags = {
   "": "🌐", RU: "🇷🇺", DE: "🇩🇪", NL: "🇳🇱", FI: "🇫🇮", FR: "🇫🇷", GB: "🇬🇧", US: "🇺🇸", CA: "🇨🇦", PL: "🇵🇱", CZ: "🇨🇿",
@@ -280,6 +281,37 @@ function upsertBotRevenueMonthly(monthTotals) {
 function getBotRevenueMonthly(monthsBack = 12) {
   const rows = db.prepare("SELECT month, total_kopeks AS totalKopeks, count FROM bot_revenue_monthly ORDER BY month DESC LIMIT ?").all(monthsBack);
   return rows.reverse().map((row) => ({ month: row.month, totalRub: row.totalKopeks / 100, count: row.count }));
+}
+
+function getBotRevenueForMonth(monthKey) {
+  const row = db.prepare("SELECT total_kopeks AS totalKopeks FROM bot_revenue_monthly WHERE month = ?").get(monthKey);
+  return row ? row.totalKopeks / 100 : 0;
+}
+
+function monthKeyOf(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function convertToEurAmount(amount, currency, meta) {
+  const value = Number(amount || 0);
+  if (currency === "RUB") return value / (Number(meta.rateRubPerEur) || 100);
+  if (currency === "USDT") return value / (Number(meta.rateUsdtPerEur) || 1.08);
+  return value;
+}
+
+function convertAmount(amount, from, to, meta) {
+  const fromCurrency = from || "USDT";
+  if (fromCurrency === to) return Number(amount || 0);
+  const eur = convertToEurAmount(amount, fromCurrency, meta);
+  if (to === "EUR") return eur;
+  if (to === "RUB") return eur * (Number(meta.rateRubPerEur) || 100);
+  if (to === "USDT") return eur * (Number(meta.rateUsdtPerEur) || 1.08);
+  return eur;
+}
+
+function getExpenseForMonth(monthKey, meta) {
+  const rows = db.prepare("SELECT amount, currency FROM payments WHERE substr(paid_at, 1, 7) = ?").all(monthKey);
+  return rows.reduce((sum, row) => sum + convertAmount(row.amount, row.currency, "RUB", meta), 0);
 }
 
 async function fetchBedolagaTransactionPages() {
@@ -1135,6 +1167,50 @@ function formatPaymentTotal(payments = [], locale = "ru") {
   return groups.map((group) => formatMoney(group.amount, group.currency, locale)).join(" + ");
 }
 
+function monthlyReportText(monthKey, monthDate, locale = "ru") {
+  const meta = getMeta();
+  const incomeRub = getBotRevenueForMonth(monthKey);
+  const expenseRub = getExpenseForMonth(monthKey, meta);
+  const netRub = incomeRub - expenseRub;
+  const intlLocale = locale === "en" ? "en-US" : "ru-RU";
+  const monthLabel = new Intl.DateTimeFormat(intlLocale, { month: "long", year: "numeric" }).format(monthDate);
+  const lines = [
+    t(locale, "telegram.monthlyReportTitle", { month: monthLabel }),
+    "",
+    `<b>${escapeTelegram(t(locale, "telegram.income"))}:</b> ${escapeTelegram(formatMoney(incomeRub, "RUB", locale))}`,
+    `<b>${escapeTelegram(t(locale, "telegram.expense"))}:</b> ${escapeTelegram(formatMoney(expenseRub, "RUB", locale))}`,
+    `<b>${escapeTelegram(t(locale, "telegram.net"))}:</b> ${escapeTelegram(formatMoney(netRub, "RUB", locale))}`
+  ];
+  return lines.join("\n");
+}
+
+function previousMonthDate(from = new Date()) {
+  return new Date(from.getFullYear(), from.getMonth() - 1, 1);
+}
+
+async function sendMonthlyReport() {
+  if (!telegramNotifyUrl()) return scheduleMonthlyReport();
+  const locale = getMeta().locale || "ru";
+  const monthDate = previousMonthDate();
+  const monthKey = monthKeyOf(monthDate);
+  if (BEDOLAGA_API_URL && BEDOLAGA_API_KEY) await fetchBotRevenue(true);
+  await sendTelegramMessage(monthlyReportText(monthKey, monthDate, locale));
+  scheduleMonthlyReport();
+}
+
+function scheduleMonthlyReport() {
+  if (monthlyReportTimer) clearTimeout(monthlyReportTimer);
+  if (!telegramNotifyUrl()) return;
+  const now = new Date();
+  let next = new Date(now.getFullYear(), now.getMonth(), 1, 9, 0, 0, 0);
+  if (next <= now) next = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9, 0, 0, 0);
+  const delay = Math.max(0, Math.min(MAX_TIMEOUT_MS, next - now));
+  monthlyReportTimer = setTimeout(() => sendMonthlyReport().catch((error) => {
+    console.warn(error.message);
+    scheduleMonthlyReport();
+  }), delay);
+}
+
 function wasSent(eventIdValue) {
   return Boolean(db.prepare("SELECT event_id FROM telegram_sent WHERE event_id = ?").get(eventIdValue));
 }
@@ -1310,6 +1386,14 @@ async function handleApi(req, res, url) {
     const result = await sendTelegramMessage(t(locale, "alerts.testMessage"), { notifyUrl });
     return sendJson(res, 200, { ok: true, skipped: Boolean(result?.skipped), reason: result?.reason || "" });
   }
+  if (req.method === "POST" && url.pathname === "/api/telegram/monthly-report/test") {
+    const locale = getMeta().locale || "ru";
+    const monthDate = previousMonthDate();
+    const monthKey = monthKeyOf(monthDate);
+    if (BEDOLAGA_API_URL && BEDOLAGA_API_KEY) await fetchBotRevenue(true);
+    const result = await sendTelegramMessage(monthlyReportText(monthKey, monthDate, locale));
+    return sendJson(res, 200, { ok: true, skipped: Boolean(result?.skipped), reason: result?.reason || "" });
+  }
   if (req.method === "PUT" && url.pathname === "/api/settings") {
     const body = await readBody(req);
     setMeta("siteTitle", String(body.siteTitle || SITE_TITLE).trim());
@@ -1321,6 +1405,7 @@ async function handleApi(req, res, url) {
     setMeta("currency", normalizeCurrency(body.currency));
     process.env.TZ = getMeta().timezone;
     scheduleNotifications();
+    scheduleMonthlyReport();
     await logAction(req, "settings.update", { locale: body.locale, timezone: body.timezone, telegramConfigured: Boolean(body.telegramNotifyUrl) });
     return sendJson(res, 200, getMeta());
   }
@@ -1430,4 +1515,5 @@ server.listen(PORT, () => {
   } else {
     scheduleNotifications();
   }
+  scheduleMonthlyReport();
 });
