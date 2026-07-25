@@ -200,6 +200,7 @@
     "cardRecords": "Active records",
     "cardHistorical": "Total spent",
     "cardForecast": "Forecast for {days} d",
+    "cardCostMonth": "Expenses this month",
     "tableTitle": "Spend by record",
     "filter": "Filter: name, provider, type",
     "sort": "Sorting",
