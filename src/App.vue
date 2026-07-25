@@ -1341,7 +1341,7 @@ export default {
       return this.providers.find((provider) => provider.id === asset.providerId);
     },
     providerAssets(providerId) {
-      return this.assets.filter((asset) => asset.providerId === providerId);
+      return this.assets.filter((asset) => asset.providerId === providerId && !asset.inactive);
     },
     providerMonthlyCost(providerId, currency = this.settings.currency || "USDT") {
       return this.providerAssets(providerId).reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
