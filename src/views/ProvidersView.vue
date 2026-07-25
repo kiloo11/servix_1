@@ -27,13 +27,15 @@
           <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.formatMoney(app.providerMonthlyCost(provider.id, 'RUB'), 'RUB') }}</small>
         </div>
         <span v-if="app.providerRecommendedPaymentDate(provider.id)" class="stat-card-sub">{{ app.t("providers.recommendedPayment", { date: app.providerRecommendedPaymentDate(provider.id) }) }}</span>
-        <AccordionRoot v-if="app.providerAssetBuckets(provider.id).length" type="single" collapsible class="category-group-list">
-          <AccordionItem v-for="bucket in app.providerAssetBuckets(provider.id)" :key="bucket.category || 'none'" :value="bucket.category || 'none'" class="category-group">
+        <AccordionRoot v-if="app.providerAssetBuckets(provider.id).length" type="single" collapsible class="provider-type-list">
+          <AccordionItem v-for="bucket in app.providerAssetBuckets(provider.id)" :key="bucket.category" :value="bucket.category" class="provider-type-group">
             <AccordionHeader>
-              <AccordionTrigger class="category-group-summary">
-                <span class="category-badge" :class="bucket.category ? `category-${bucket.category}` : ''">{{ bucket.label }}</span>
-                <span class="category-group-count">{{ app.tc("piece", bucket.items.length) }}</span>
-                <ChevronDownIcon class="category-group-chevron" :size="16" />
+              <AccordionTrigger class="asset-type-head provider-type-head">
+                <h2>{{ bucket.label }}</h2>
+                <span class="provider-type-head-right">
+                  {{ app.tc("piece", bucket.items.length) }}
+                  <ChevronDownIcon class="category-group-chevron" :size="16" />
+                </span>
               </AccordionTrigger>
             </AccordionHeader>
             <AccordionContent>
