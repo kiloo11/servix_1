@@ -128,7 +128,8 @@
     "activated": "Record activated",
     "ipCopied": "IP copied",
     "copyFailed": "Could not copy",
-    "deleteConfirm": "Delete \"{name}\"?"
+    "deleteConfirm": "Delete \"{name}\"?",
+    "lastPayment": "Payment: {date}"
   },
   "providers": {
     "add": "Add provider",
@@ -145,7 +146,8 @@
     "saved": "Provider saved",
     "deleted": "Provider deleted",
     "deleteConfirm": "Delete provider \"{name}\"?",
-    "noRecords": "No linked records"
+    "noRecords": "No linked records",
+    "firstPayment": "First payment: {date}"
   },
   "stats": {
     "currencyFilter": "Statistics currency",
