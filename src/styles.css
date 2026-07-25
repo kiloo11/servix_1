@@ -1140,6 +1140,31 @@ label {
 .payment-strip strong { color: var(--accent-strong); }
 .payment-strip span { color: var(--muted); font-size: 13px; }
 
+.provider-category-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.provider-category-tag {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.provider-category-tag.provider-category-infra {
+  color: var(--danger);
+}
+
+.provider-category-tag.provider-category-node {
+  color: #4bb4ef;
+}
+
+.provider-category-tag.provider-category-test {
+  color: var(--warn);
+}
+
 .provider-note {
   margin: 0;
   border: 1px solid var(--line);

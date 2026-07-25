@@ -12,7 +12,14 @@
             <span v-else class="favicon-placeholder provider-color-mark">{{ provider.name.slice(0, 1).toUpperCase() }}</span>
             <div>
               <h2>{{ provider.name }}</h2>
-              <span>{{ provider.loginUrl || app.t("providers.loginUrlEmpty") }}</span>
+              <span v-if="app.providerCategories(provider.id).length" class="provider-category-list">
+                <span
+                  v-for="cat in app.providerCategories(provider.id)"
+                  :key="cat"
+                  class="provider-category-tag"
+                  :class="`provider-category-${cat}`"
+                >{{ app.t(`category.${cat}`) }}</span>
+              </span>
             </div>
           </div>
           <span class="pill">{{ app.providerAssets(provider.id).length }}</span>
