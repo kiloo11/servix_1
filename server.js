@@ -30,6 +30,8 @@ const AUTH_RATE_MAX_ATTEMPTS = 8;
 const TOTP_RATE_MAX_ATTEMPTS = 6;
 const CURRENCIES = ["USDT", "EUR", "RUB"];
 const CATEGORIES = ["infra", "node", "test"];
+const ASSET_TYPES = ["vps", "domain", "certificate"];
+const FETCH_TIMEOUT_MS = 10_000;
 
 const sessions = new Map();
 const authAttempts = new Map();
@@ -243,7 +245,7 @@ const EXCHANGE_RATE_INTERVAL_MS = 6 * 60 * 60_000;
 
 async function refreshExchangeRates() {
   try {
-    const response = await fetch(EXCHANGE_RATE_URL, { signal: AbortSignal.timeout(10_000) });
+    const response = await fetch(EXCHANGE_RATE_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     const rub = Number(data?.rates?.RUB);
@@ -280,6 +282,70 @@ function getBotRevenueMonthly(monthsBack = 12) {
   return rows.reverse().map((row) => ({ month: row.month, totalRub: row.totalKopeks / 100, count: row.count }));
 }
 
+async function fetchBedolagaTransactionPages() {
+  const limit = 200;
+  const maxPages = 25;
+  let offset = 0;
+  let total = Infinity;
+  const rawItems = [];
+  for (let page = 0; page < maxPages && offset < total; page++) {
+    const url = new URL(`${BEDOLAGA_API_URL}/transactions`);
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", String(offset));
+    url.searchParams.set("type", "deposit");
+    url.searchParams.set("is_completed", "true");
+    const response = await fetch(url, {
+      headers: { "X-API-Key": BEDOLAGA_API_KEY },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    });
+    if (!response.ok) throw new Error(`Bedolaga API HTTP ${response.status}`);
+    const data = await response.json();
+    const pageItems = Array.isArray(data.items) ? data.items : [];
+    rawItems.push(...pageItems);
+    total = Number(data.total ?? pageItems.length);
+    offset += limit;
+    if (!pageItems.length) break;
+  }
+  return rawItems;
+}
+
+function aggregateBotTransactions(rawItems, monthAgo) {
+  let totalKopeks = 0;
+  let monthKopeks = 0;
+  let count = 0;
+  let monthCount = 0;
+  const items = [];
+  const monthTotals = new Map();
+  for (const item of rawItems) {
+    if (!item.payment_method) continue;
+    const kopeks = Number(item.amount_kopeks || 0);
+    const createdAt = item.completed_at || item.created_at || "";
+    const isRecent = Date.parse(createdAt) >= monthAgo;
+    totalKopeks += kopeks;
+    count += 1;
+    if (isRecent) {
+      monthKopeks += kopeks;
+      monthCount += 1;
+    }
+    items.push({
+      id: item.id,
+      userId: item.user_id,
+      amountRub: Number(item.amount_rubles ?? kopeks / 100),
+      paymentMethod: String(item.payment_method || ""),
+      description: String(item.description || ""),
+      createdAt
+    });
+    const monthKey = createdAt.slice(0, 7);
+    if (/^\d{4}-\d{2}$/.test(monthKey)) {
+      const bucket = monthTotals.get(monthKey) || { kopeks: 0, count: 0 };
+      bucket.kopeks += kopeks;
+      bucket.count += 1;
+      monthTotals.set(monthKey, bucket);
+    }
+  }
+  return { totalKopeks, monthKopeks, count, monthCount, items, monthTotals };
+}
+
 async function fetchBotRevenue(force = false) {
   if (!BEDOLAGA_API_URL || !BEDOLAGA_API_KEY) {
     return { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
@@ -288,61 +354,9 @@ async function fetchBotRevenue(force = false) {
     return botRevenueCache.data;
   }
   try {
-    const limit = 200;
-    const maxPages = 25;
     const monthAgo = Date.now() - BOT_REVENUE_MONTH_MS;
-    let offset = 0;
-    let total = Infinity;
-    let totalKopeks = 0;
-    let monthKopeks = 0;
-    let count = 0;
-    let monthCount = 0;
-    const items = [];
-    const monthTotals = new Map();
-    for (let page = 0; page < maxPages && offset < total; page++) {
-      const url = new URL(`${BEDOLAGA_API_URL}/transactions`);
-      url.searchParams.set("limit", String(limit));
-      url.searchParams.set("offset", String(offset));
-      url.searchParams.set("type", "deposit");
-      url.searchParams.set("is_completed", "true");
-      const response = await fetch(url, {
-        headers: { "X-API-Key": BEDOLAGA_API_KEY },
-        signal: AbortSignal.timeout(10_000)
-      });
-      if (!response.ok) throw new Error(`Bedolaga API HTTP ${response.status}`);
-      const data = await response.json();
-      const pageItems = Array.isArray(data.items) ? data.items : [];
-      for (const item of pageItems) {
-        if (!item.payment_method) continue;
-        const kopeks = Number(item.amount_kopeks || 0);
-        const createdAt = item.completed_at || item.created_at || "";
-        const isRecent = Date.parse(createdAt) >= monthAgo;
-        totalKopeks += kopeks;
-        count += 1;
-        if (isRecent) {
-          monthKopeks += kopeks;
-          monthCount += 1;
-        }
-        items.push({
-          id: item.id,
-          userId: item.user_id,
-          amountRub: Number(item.amount_rubles ?? kopeks / 100),
-          paymentMethod: String(item.payment_method || ""),
-          description: String(item.description || ""),
-          createdAt
-        });
-        const monthKey = createdAt.slice(0, 7);
-        if (/^\d{4}-\d{2}$/.test(monthKey)) {
-          const bucket = monthTotals.get(monthKey) || { kopeks: 0, count: 0 };
-          bucket.kopeks += kopeks;
-          bucket.count += 1;
-          monthTotals.set(monthKey, bucket);
-        }
-      }
-      total = Number(data.total ?? pageItems.length);
-      offset += limit;
-      if (!pageItems.length) break;
-    }
+    const rawItems = await fetchBedolagaTransactionPages();
+    const { totalKopeks, monthKopeks, count, monthCount, items, monthTotals } = aggregateBotTransactions(rawItems, monthAgo);
     items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     upsertBotRevenueMonthly(monthTotals);
     const result = {
@@ -502,7 +516,7 @@ function readBody(req) {
 
 function normalizeAsset(input, previous = {}) {
   const now = new Date().toISOString();
-  const type = ["vps", "domain", "certificate"].includes(input.type) ? input.type : "vps";
+  const type = ASSET_TYPES.includes(input.type) ? input.type : "vps";
   const name = String(input.name || "").trim();
   if (!name) throw new Error("Название обязательно");
   const base = {
@@ -649,7 +663,7 @@ function upsertAsset(asset) {
 }
 
 function reorderAssets(type, ids, inactive = false) {
-  const assetType = ["vps", "domain", "certificate"].includes(type) ? type : "";
+  const assetType = ASSET_TYPES.includes(type) ? type : "";
   if (!assetType || !Array.isArray(ids)) throw new Error("Invalid reorder request");
   const inactiveValue = inactive ? 1 : 0;
   const existing = db.prepare("SELECT id FROM assets WHERE type = ? AND inactive = ?").all(assetType, inactiveValue).map((row) => row.id);
@@ -1042,11 +1056,10 @@ async function sendTelegramMessage(text, options = {}) {
 }
 
 function alertText(item, locale = "ru") {
-  const when = item.minutesLeft < 0
-    ? t(locale, "duration.overdueLower", { duration: formatDuration(Math.abs(item.minutesLeft), locale) })
-    : item.minutesLeft === 0
-      ? t(locale, "common.now")
-      : t(locale, "duration.in", { duration: formatDuration(item.minutesLeft, locale) });
+  let when;
+  if (item.minutesLeft < 0) when = t(locale, "duration.overdueLower", { duration: formatDuration(Math.abs(item.minutesLeft), locale) });
+  else if (item.minutesLeft === 0) when = t(locale, "common.now");
+  else when = t(locale, "duration.in", { duration: formatDuration(item.minutesLeft, locale) });
   const asset = item.asset;
   const provider = item.provider;
   const target = asset.type === "vps" ? asset.ip : asset.domain;

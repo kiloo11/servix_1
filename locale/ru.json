@@ -130,7 +130,7 @@
     "quickRenew": "Быстро +30 дней",
     "quickRenewed": "Продлено на 30 дней",
     "quickRenewNote": "Быстрое продление +30 дней",
-    "lastPayment": "Платёж: {date}"
+    "nextPayment": "Платёж: {date}"
   },
   "providers": {
     "add": "Добавить провайдера",
