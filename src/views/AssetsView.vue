@@ -15,32 +15,34 @@
     </section>
 
     <section class="view active">
-      <div class="asset-sections" v-if="app.filteredAssets.length">
+      <AccordionRoot type="single" collapsible :default-value="app.defaultAssetAccordionValue" class="asset-sections" v-if="app.filteredAssets.length">
         <section v-for="group in app.assetGroups" :key="group.type" class="asset-type-section">
           <div v-if="app.typeFilter === 'all'" class="asset-type-head">
             <h2>{{ group.label }}</h2>
             <span>{{ app.tc("piece", group.items.length) }}</span>
           </div>
 
-          <template v-if="group.type === 'vps'">
-            <CollapsibleRoot v-for="bucket in app.categorySubgroups(group.items)" :key="bucket.category || 'none'" default-open class="category-group">
-              <CollapsibleTrigger class="category-group-summary">
-                <span class="category-badge" :class="bucket.category ? `category-${bucket.category}` : ''">{{ bucket.label }}</span>
-                <span class="category-group-count">{{ app.tc("piece", bucket.items.length) }}</span>
-                <ChevronDownIcon class="category-group-chevron" :size="16" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <template v-if="group.type === 'vps' || group.type === 'domain'">
+            <AccordionItem v-for="bucket in app.categorySubgroups(group.items)" :key="bucket.category || 'none'" :value="`${group.type}:${bucket.category || 'none'}`" class="category-group">
+              <AccordionHeader>
+                <AccordionTrigger class="category-group-summary">
+                  <span class="category-badge" :class="bucket.category ? `category-${bucket.category}` : ''">{{ bucket.label }}</span>
+                  <span class="category-group-count">{{ app.tc("piece", bucket.items.length) }}</span>
+                  <ChevronDownIcon class="category-group-chevron" :size="16" />
+                </AccordionTrigger>
+              </AccordionHeader>
+              <AccordionContent>
                 <div class="asset-grid">
                   <AssetCard v-for="asset in bucket.items" :key="asset.id" :app="app" :asset="asset" />
                 </div>
-              </CollapsibleContent>
-            </CollapsibleRoot>
+              </AccordionContent>
+            </AccordionItem>
           </template>
           <div v-else class="asset-grid">
             <AssetCard v-for="asset in group.items" :key="asset.id" :app="app" :asset="asset" />
           </div>
         </section>
-      </div>
+      </AccordionRoot>
       <div v-else class="empty-state visible">
         <h1>{{ app.t("assets.emptyTitle") }}</h1>
         <p>{{ app.t("assets.emptyText") }}</p>
@@ -51,14 +53,14 @@
 </template>
 
 <script>
-import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from "reka-ui";
+import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from "reka-ui";
 import { ChevronDown as ChevronDownIcon, Plus as PlusIcon } from "@lucide/vue";
 import AppSelect from "../components/AppSelect.vue";
 import AppSelectItem from "../components/AppSelectItem.vue";
 import AssetCard from "./AssetCard.vue";
 
 export default {
-  components: { AppSelect, AppSelectItem, AssetCard, ChevronDownIcon, CollapsibleContent, CollapsibleRoot, CollapsibleTrigger, PlusIcon },
+  components: { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger, AppSelect, AppSelectItem, AssetCard, ChevronDownIcon, PlusIcon },
   props: {
     app: { type: Object, required: true }
   }
