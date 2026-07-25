@@ -1065,9 +1065,9 @@ label {
 }
 
 .category-badge.category-infra {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  color: var(--accent-strong);
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 34%, transparent);
 }
 
 .category-badge.category-node {
