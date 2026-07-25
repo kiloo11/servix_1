@@ -144,7 +144,8 @@
     "edit": "Edit provider",
     "saved": "Provider saved",
     "deleted": "Provider deleted",
-    "deleteConfirm": "Delete provider \"{name}\"?"
+    "deleteConfirm": "Delete provider \"{name}\"?",
+    "noRecords": "No linked records"
   },
   "stats": {
     "currencyFilter": "Statistics currency",
