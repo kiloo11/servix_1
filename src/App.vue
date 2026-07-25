@@ -529,6 +529,20 @@ export default {
       }
       return "";
     },
+    providerTypeGroups() {
+      return ["vps", "domain", "certificate"]
+        .map((type) => ({
+          type,
+          label: this.t(`typePlural.${type}`),
+          providers: this.providers
+            .map((provider) => ({
+              provider,
+              items: this.providerAssets(provider.id).filter((asset) => asset.type === type)
+            }))
+            .filter((entry) => entry.items.length)
+        }))
+        .filter((group) => group.providers.length);
+    },
     allPayments() {
       return this.assets.flatMap((asset) => asset.payments || []);
     },
@@ -1359,28 +1373,16 @@ export default {
     providerAssets(providerId) {
       return this.assets.filter((asset) => asset.providerId === providerId && !asset.inactive);
     },
-    providerCategories(providerId) {
+    providerCategoriesFor(items) {
       const order = ["infra", "node", "test"];
-      const present = new Set(this.providerAssets(providerId).map((asset) => asset.category).filter(Boolean));
+      const present = new Set(items.map((asset) => asset.category).filter(Boolean));
       return order.filter((category) => present.has(category));
     },
-    providerAssetBuckets(providerId) {
-      const items = this.providerAssets(providerId);
-      return ["vps", "domain", "certificate"]
-        .map((type) => ({
-          category: type,
-          label: this.t(`typePlural.${type}`),
-          items: items.filter((asset) => asset.type === type)
-        }))
-        .filter((bucket) => bucket.items.length);
+    providerTypeCost(items, currency = this.settings.currency || "USDT") {
+      return items.reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
     },
-    providerMonthlyCost(providerId, currency = this.settings.currency || "USDT") {
-      return this.providerAssets(providerId).reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
-    },
-    providerRecommendedPaymentDate(providerId) {
-      const dates = this.providerAssets(providerId)
-        .map((asset) => asset.expiresAt)
-        .filter(Boolean);
+    providerRecommendedDateFor(items) {
+      const dates = items.map((asset) => asset.expiresAt).filter(Boolean);
       if (!dates.length) return "";
       const nearest = parseAppDate(dates.sort((a, b) => parseAppDate(a) - parseAppDate(b))[0]);
       if (Number.isNaN(nearest.getTime())) return "";

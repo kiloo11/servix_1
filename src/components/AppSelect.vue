@@ -19,6 +19,7 @@
 <script>
 import { SelectContent, SelectIcon, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectTrigger, SelectValue, SelectViewport } from "reka-ui";
 import { ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from "@lucide/vue";
+import { EMPTY_SELECT_VALUE } from "./appSelectEmptyValue.js";
 
 export default {
   inheritAttrs: false,
@@ -31,12 +32,14 @@ export default {
   emits: ["update:modelValue"],
   computed: {
     stringValue() {
-      return this.modelValue === null || this.modelValue === undefined ? "" : String(this.modelValue);
+      const value = this.modelValue === null || this.modelValue === undefined ? "" : String(this.modelValue);
+      return value === "" ? EMPTY_SELECT_VALUE : value;
     }
   },
   methods: {
     handleUpdate(value) {
-      this.$emit("update:modelValue", this.modelModifiers.number ? Number(value) : value);
+      const raw = value === EMPTY_SELECT_VALUE ? "" : value;
+      this.$emit("update:modelValue", this.modelModifiers.number ? Number(raw) : raw);
     }
   }
 };

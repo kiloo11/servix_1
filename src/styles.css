@@ -708,6 +708,10 @@ label {
   gap: 18px;
 }
 
+.asset-sections.provider-sections {
+  gap: 8px;
+}
+
 .asset-type-section {
   display: grid;
   gap: 10px;
@@ -929,6 +933,10 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.dialog-head {
+  padding: 18px 18px 0;
 }
 
 .asset-card header, .provider-card header { align-items: flex-start; }
@@ -1181,11 +1189,6 @@ label {
   white-space: pre-wrap;
 }
 
-.provider-note-empty {
-  margin: 0;
-  text-align: center;
-}
-
 .provider-total {
   display: flex;
   align-items: baseline;
@@ -1210,11 +1213,6 @@ label {
   overflow-wrap: anywhere;
 }
 
-.provider-type-list {
-  display: grid;
-  gap: 10px;
-}
-
 .provider-type-head {
   width: 100%;
   cursor: pointer;
@@ -1231,10 +1229,6 @@ label {
 
 .provider-type-head[data-state="open"] .category-group-chevron {
   transform: rotate(180deg);
-}
-
-.provider-type-group .provider-asset-list {
-  padding: 10px 2px 0;
 }
 
 .empty-state {
