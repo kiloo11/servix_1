@@ -1340,6 +1340,12 @@ export default {
     providerOf(asset) {
       return this.providers.find((provider) => provider.id === asset.providerId);
     },
+    providerAssets(providerId) {
+      return this.assets.filter((asset) => asset.providerId === providerId);
+    },
+    providerMonthlyCost(providerId, currency = this.settings.currency || "USDT") {
+      return this.providerAssets(providerId).reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
+    },
     providerStyle(provider) {
       const color = provider?.color || providerFallbackColor(provider?.id || provider?.name || "default");
       return { "--provider-color": color };

@@ -1153,6 +1153,31 @@ label {
   white-space: pre-wrap;
 }
 
+.provider-note-empty {
+  margin: 0;
+  text-align: center;
+}
+
+.provider-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 16px;
+}
+
+.provider-total strong {
+  color: var(--text);
+}
+
+.provider-asset-list {
+  display: grid;
+  gap: 4px;
+}
+
+.provider-asset-name {
+  overflow-wrap: anywhere;
+}
+
 .empty-state {
   display: none;
   place-items: center;

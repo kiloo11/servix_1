@@ -15,8 +15,17 @@
               <span>{{ provider.loginUrl || app.t("providers.loginUrlEmpty") }}</span>
             </div>
           </div>
+          <span class="pill">{{ app.providerAssets(provider.id).length }}</span>
         </header>
         <p v-if="provider.note" class="provider-note">{{ provider.note }}</p>
+        <div v-if="app.providerMonthlyCost(provider.id) > 0" class="provider-total">
+          <strong>{{ app.formatMoney(app.providerMonthlyCost(provider.id), app.settings.currency) }}</strong>
+          <small v-if="app.settings.currency !== 'RUB'" class="stat-card-sub">≈ {{ app.formatMoney(app.providerMonthlyCost(provider.id, 'RUB'), 'RUB') }}</small>
+        </div>
+        <div v-if="app.providerAssets(provider.id).length" class="provider-asset-list">
+          <span v-for="asset in app.providerAssets(provider.id)" :key="asset.id" class="stat-card-sub provider-asset-name">{{ asset.name }}</span>
+        </div>
+        <p v-else class="stat-card-sub provider-note-empty">{{ app.t("providers.noRecords") }}</p>
         <footer>
           <AppTooltip v-if="provider.loginUrl" :label="app.t('common.login')">
             <a class="secondary-link icon-only" :href="provider.loginUrl" target="_blank" rel="noreferrer" :aria-label="app.t('common.login')"><ExternalLinkIcon :size="16" /></a>
