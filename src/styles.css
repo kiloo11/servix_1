@@ -1210,6 +1210,33 @@ label {
   overflow-wrap: anywhere;
 }
 
+.provider-type-list {
+  display: grid;
+  gap: 10px;
+}
+
+.provider-type-head {
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+}
+
+.provider-type-head-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.provider-type-head[data-state="open"] .category-group-chevron {
+  transform: rotate(180deg);
+}
+
+.provider-type-group .provider-asset-list {
+  padding: 10px 2px 0;
+}
+
 .empty-state {
   display: none;
   place-items: center;
