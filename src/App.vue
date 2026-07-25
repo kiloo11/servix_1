@@ -767,7 +767,8 @@ export default {
         .map((asset) => {
           const last = this.assetLastPayment(asset);
           const cycleDays = this.assetCycleDays(asset);
-          const monthlyCost = this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
+          const cyclePrice = this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
+          const monthlyCost = (cyclePrice / Math.max(1, cycleDays)) * 30;
           const forecastAmount = monthlyCost * (this.pnlHorizonDays / 30);
           return {
             id: asset.id,
@@ -1384,7 +1385,10 @@ export default {
       return CATEGORIES.filter((category) => present.has(category));
     },
     providerTypeCost(items, currency = this.settings.currency || "USDT") {
-      return items.reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
+      return items.reduce((sum, asset) => {
+        const cyclePrice = this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
+        return sum + (cyclePrice / Math.max(1, this.assetCycleDays(asset))) * 30;
+      }, 0);
     },
     providerRecommendedDateFor(items) {
       const dates = items.map((asset) => asset.expiresAt).filter(Boolean);
