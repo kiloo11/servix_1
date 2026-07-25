@@ -1345,6 +1345,10 @@ export default {
       const result = await this.api("/api/telegram/test", { method: "POST", body: JSON.stringify({ telegramNotifyUrl }) });
       this.toast(result.skipped ? this.t("alerts.testSkipped") : this.t("alerts.testSent"));
     },
+    async testMonthlyReport() {
+      const result = await this.api("/api/telegram/monthly-report/test", { method: "POST" });
+      this.toast(result.skipped ? this.t("alerts.testSkipped") : this.t("alerts.testSent"));
+    },
     async loadLogs() {
       const data = await this.api("/api/logs");
       this.logs = data.items || [];

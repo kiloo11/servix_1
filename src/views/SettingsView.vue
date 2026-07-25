@@ -45,6 +45,10 @@
           <button class="primary-button" type="submit"><SaveIcon :size="18" />{{ app.t("common.save") }}</button>
         </div>
         <p class="hint">{{ app.t("settings.leadsHint") }}</p>
+        <div class="settings-inline-footer">
+          <p class="hint">{{ app.t("settings.monthlyReportHint") }}</p>
+          <button class="secondary-button" type="button" @click="app.testMonthlyReport"><SendIcon :size="16" />{{ app.t("settings.testMonthlyReport") }}</button>
+        </div>
       </form>
 
       <div class="settings-panel">
