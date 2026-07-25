@@ -877,6 +877,13 @@ export default {
       const costRub = this.paymentsTotalIn(this.pnlMonthPayments, "RUB");
       return this.formatMoney((this.botRevenue.monthRub || 0) - costRub, "RUB");
     },
+    pnlCostMonthDisplay() {
+      const currency = this.settings.currency || "USDT";
+      return this.formatMoney(this.paymentsTotalIn(this.pnlMonthPayments, currency), currency);
+    },
+    pnlCostMonthRubDisplay() {
+      return this.formatMoney(this.paymentsTotalIn(this.pnlMonthPayments, "RUB"), "RUB");
+    },
     pnlMonthlySeries() {
       const currency = this.settings.currency || "USDT";
       const monthsBack = 6;

@@ -200,6 +200,7 @@
     "cardRecords": "Активных записей",
     "cardHistorical": "Всего потрачено",
     "cardForecast": "Прогноз на {days} дн.",
+    "cardCostMonth": "Расходы за месяц",
     "tableTitle": "Расходы по записям",
     "filter": "Фильтр: название, провайдер, тип",
     "sort": "Сортировка",
