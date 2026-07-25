@@ -1535,11 +1535,9 @@ export default {
       return 30;
     },
     assetNextPaymentDate(asset) {
-      const last = this.assetLastPayment(asset);
-      if (!last) return "";
-      const base = parseAppDate(last.paidAt);
-      if (Number.isNaN(base.getTime())) return "";
-      return this.formatDateTime(new Date(base.getTime() + this.assetCycleDays(asset) * DAY_MS));
+      const expires = parseAppDate(asset.expiresAt);
+      if (!expires || Number.isNaN(expires.getTime())) return "";
+      return this.formatDate(new Date(expires.getTime() - DAY_MS));
     },
     resetPnlPage() {
       this.pnlPage = 1;
