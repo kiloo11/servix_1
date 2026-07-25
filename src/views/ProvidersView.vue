@@ -25,9 +25,9 @@
                     <span v-else class="favicon-placeholder provider-color-mark">{{ entry.provider.name.slice(0, 1).toUpperCase() }}</span>
                     <div>
                       <h2>{{ entry.provider.name }}</h2>
-                      <span v-if="app.providerCategoriesFor(entry.items).length" class="provider-category-list">
-                        <template v-for="(cat, index) in app.providerCategoriesFor(entry.items)" :key="cat">
-                          <span class="provider-category-tag" :class="`provider-category-${cat}`">{{ app.t(`category.${cat}`) }}</span><span v-if="index < app.providerCategoriesFor(entry.items).length - 1" class="provider-category-sep">, </span>
+                      <span v-if="entry.categories.length" class="provider-category-list">
+                        <template v-for="(cat, index) in entry.categories" :key="cat">
+                          <span class="provider-category-tag" :class="`provider-category-${cat}`">{{ app.t(`category.${cat}`) }}</span><span v-if="index < entry.categories.length - 1" class="provider-category-sep">, </span>
                         </template>
                       </span>
                     </div>

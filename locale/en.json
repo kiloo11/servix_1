@@ -130,7 +130,7 @@
     "ipCopied": "IP copied",
     "copyFailed": "Could not copy",
     "deleteConfirm": "Delete \"{name}\"?",
-    "lastPayment": "Payment: {date}"
+    "nextPayment": "Payment: {date}"
   },
   "providers": {
     "add": "Add provider",

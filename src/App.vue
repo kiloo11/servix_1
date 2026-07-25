@@ -345,6 +345,9 @@ const navItems = [
 ];
 const CURRENCIES = ["USDT", "EUR", "RUB"];
 const CATEGORIES = ["infra", "node", "test"];
+const ASSET_TYPES = ["vps", "domain", "certificate"];
+const DAY_MS = 86_400_000;
+const WEEK_MINUTES = 7 * 1440;
 export default {
   components: {
     AlertsView,
@@ -408,7 +411,7 @@ export default {
       categoryOptions: CATEGORIES,
       currentLocale: "ru",
       countries,
-      assetTypeOptions: ["vps", "domain", "certificate"],
+      assetTypeOptions: ASSET_TYPES,
       expirePresetDays: [1, 3, 5, 10, 20, 30, 60, 90],
       bootstrapped: false,
       needsLogin: false,
@@ -477,6 +480,9 @@ export default {
     vpsAssets() {
       return this.assets.filter((asset) => asset.type === "vps");
     },
+    overdueVpsCount() {
+      return this.vpsAssets.filter((asset) => this.minutesUntil(asset.expiresAt) < 0).length;
+    },
     filteredAssets() {
       const query = this.search.trim().toLowerCase();
       return this.assets.filter((asset) => {
@@ -512,8 +518,7 @@ export default {
       ].join(" ").toLowerCase().includes(query));
     },
     assetGroups() {
-      const groupTypes = this.typeFilter === "inactive" ? ["vps", "domain", "certificate"] : ["vps", "domain", "certificate"];
-      return groupTypes
+      return ASSET_TYPES
         .map((type) => ({
           type,
           label: this.typeLabel(type),
@@ -530,15 +535,15 @@ export default {
       return "";
     },
     providerTypeGroups() {
-      return ["vps", "domain", "certificate"]
+      return ASSET_TYPES
         .map((type) => ({
           type,
           label: this.t(`typePlural.${type}`),
           providers: this.providers
-            .map((provider) => ({
-              provider,
-              items: this.providerAssets(provider.id).filter((asset) => asset.type === type)
-            }))
+            .map((provider) => {
+              const items = this.providerAssets(provider.id).filter((asset) => asset.type === type);
+              return { provider, items, categories: this.providerCategoriesFor(items) };
+            })
             .filter((entry) => entry.items.length)
         }))
         .filter((group) => group.providers.length);
@@ -579,7 +584,7 @@ export default {
     statCards() {
       const payments = this.periodPayments;
       const periodTotal = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-      const overdue = this.vpsAssets.filter((asset) => this.minutesUntil(asset.expiresAt) < 0).length;
+      const overdue = this.overdueVpsCount;
       const maxLeadMinutes = maxNotificationLeadMinutes(this.meta.notificationLeads);
       const soon = this.vpsAssets.filter((asset) => {
         const minutes = this.minutesUntil(asset.expiresAt);
@@ -641,12 +646,12 @@ export default {
     },
     typeSegments() {
       const rows = [
-        { type: "ok", label: this.t("stats.segmentStable"), count: this.vpsAssets.filter((asset) => this.minutesUntil(asset.expiresAt) > 7 * 1440).length, className: "seg-0" },
+        { type: "ok", label: this.t("stats.segmentStable"), count: this.vpsAssets.filter((asset) => this.minutesUntil(asset.expiresAt) > WEEK_MINUTES).length, className: "seg-0" },
         { type: "soon", label: this.t("stats.segmentSoon"), count: this.vpsAssets.filter((asset) => {
           const minutes = this.minutesUntil(asset.expiresAt);
-          return minutes >= 0 && minutes <= 7 * 1440;
+          return minutes >= 0 && minutes <= WEEK_MINUTES;
         }).length, className: "seg-1" },
-        { type: "overdue", label: this.t("stats.segmentOverdue"), count: this.vpsAssets.filter((asset) => this.minutesUntil(asset.expiresAt) < 0).length, className: "seg-2" }
+        { type: "overdue", label: this.t("stats.segmentOverdue"), count: this.overdueVpsCount, className: "seg-2" }
       ];
       const total = Math.max(1, rows.reduce((sum, item) => sum + item.count, 0));
       let offset = 0;
@@ -810,11 +815,14 @@ export default {
       const size = Number(this.pnlPageSize || 10);
       return this.pnlSortedRows.slice((page - 1) * size, page * size);
     },
+    pnlAllPayments() {
+      return this.pnlRows.flatMap((row) => row.asset.payments || []);
+    },
     pnlHistoricalTotalDisplay() {
-      return this.formatPaymentTotal(this.pnlRows.flatMap((row) => row.asset.payments || []));
+      return this.formatPaymentTotal(this.pnlAllPayments);
     },
     pnlHistoricalTotalRubDisplay() {
-      return this.formatMoney(this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), "RUB"), "RUB");
+      return this.formatMoney(this.paymentsTotalIn(this.pnlAllPayments, "RUB"), "RUB");
     },
     pnlForecastTotalDisplay() {
       const currency = this.settings.currency || "USDT";
@@ -844,16 +852,16 @@ export default {
     },
     pnlNetTotalDisplay() {
       const currency = this.settings.currency || "USDT";
-      const cost = this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), currency);
+      const cost = this.paymentsTotalIn(this.pnlAllPayments, currency);
       return this.formatMoney(this.pnlRevenueTotal - cost, currency);
     },
     pnlNetTotalRubDisplay() {
-      const costRub = this.paymentsTotalIn(this.pnlRows.flatMap((row) => row.asset.payments || []), "RUB");
+      const costRub = this.paymentsTotalIn(this.pnlAllPayments, "RUB");
       return this.formatMoney((this.botRevenue.totalRub || 0) - costRub, "RUB");
     },
     pnlMonthPayments() {
       const since = periodStart("30d");
-      return this.pnlRows.flatMap((row) => row.asset.payments || []).filter((payment) => {
+      return this.pnlAllPayments.filter((payment) => {
         const paidAt = parseAppDate(payment.paidAt);
         return !Number.isNaN(paidAt.getTime()) && paidAt >= since;
       });
@@ -873,13 +881,7 @@ export default {
       const monthsBack = 6;
       const now = new Date();
       const revenueByMonth = new Map((this.botRevenueMonthly || []).map((row) => [row.month, row.totalRub]));
-      const costByMonth = new Map();
-      for (const payment of this.pnlRows.flatMap((row) => row.asset.payments || [])) {
-        const key = String(payment.paidAt || "").slice(0, 7);
-        if (!key) continue;
-        const amount = this.convertAmount(payment.amount, payment.currency || "USDT", currency);
-        costByMonth.set(key, (costByMonth.get(key) || 0) + amount);
-      }
+      const costByMonth = this.pnlCostByMonth(currency);
       const intlLocale = this.currentLocale === "en" ? "en-US" : "ru-RU";
       const rows = [];
       for (let i = monthsBack - 1; i >= 0; i--) {
@@ -1374,9 +1376,8 @@ export default {
       return this.assets.filter((asset) => asset.providerId === providerId && !asset.inactive);
     },
     providerCategoriesFor(items) {
-      const order = ["infra", "node", "test"];
       const present = new Set(items.map((asset) => asset.category).filter(Boolean));
-      return order.filter((category) => present.has(category));
+      return CATEGORIES.filter((category) => present.has(category));
     },
     providerTypeCost(items, currency = this.settings.currency || "USDT") {
       return items.reduce((sum, asset) => sum + this.convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency), 0);
@@ -1386,7 +1387,7 @@ export default {
       if (!dates.length) return "";
       const nearest = parseAppDate(dates.sort((a, b) => parseAppDate(a) - parseAppDate(b))[0]);
       if (Number.isNaN(nearest.getTime())) return "";
-      return this.formatDate(new Date(nearest.getTime() - 86_400_000));
+      return this.formatDate(new Date(nearest.getTime() - DAY_MS));
     },
     providerStyle(provider) {
       const color = provider?.color || providerFallbackColor(provider?.id || provider?.name || "default");
@@ -1496,6 +1497,16 @@ export default {
     formatPaymentTotal(payments = [], currency = this.settings.currency || "USDT") {
       return this.formatMoney(this.paymentsTotalIn(payments, currency), currency);
     },
+    pnlCostByMonth(currency) {
+      const costByMonth = new Map();
+      for (const payment of this.pnlAllPayments) {
+        const key = String(payment.paidAt || "").slice(0, 7);
+        if (!key) continue;
+        const amount = this.convertAmount(payment.amount, payment.currency || "USDT", currency);
+        costByMonth.set(key, (costByMonth.get(key) || 0) + amount);
+      }
+      return costByMonth;
+    },
     assetLastPayment(asset) {
       const payments = [...(asset.payments || [])].filter((payment) => payment.paidAt);
       if (!payments.length) return null;
@@ -1508,16 +1519,23 @@ export default {
       if (payments.length >= 2) {
         const diffs = [];
         for (let index = 1; index < payments.length; index += 1) {
-          const diff = (parseAppDate(payments[index].paidAt) - parseAppDate(payments[index - 1].paidAt)) / 86_400_000;
+          const diff = (parseAppDate(payments[index].paidAt) - parseAppDate(payments[index - 1].paidAt)) / DAY_MS;
           if (diff > 0) diffs.push(diff);
         }
         if (diffs.length) return Math.round(diffs.reduce((sum, diff) => sum + diff, 0) / diffs.length);
       }
       const created = parseAppDate(asset.createdAt);
       const expires = parseAppDate(asset.expiresAt);
-      const initial = (expires - created) / 86_400_000;
+      const initial = (expires - created) / DAY_MS;
       if (Number.isFinite(initial) && initial > 0) return Math.round(initial);
       return 30;
+    },
+    assetNextPaymentDate(asset) {
+      const last = this.assetLastPayment(asset);
+      if (!last) return "";
+      const base = parseAppDate(last.paidAt);
+      if (Number.isNaN(base.getTime())) return "";
+      return this.formatDateTime(new Date(base.getTime() + this.assetCycleDays(asset) * DAY_MS));
     },
     resetPnlPage() {
       this.pnlPage = 1;
@@ -1537,7 +1555,7 @@ export default {
     dueStateClass(value) {
       const diff = this.minutesUntil(value);
       if (diff < 0) return "is-overdue";
-      if (diff <= 7 * 1440) return "is-soon";
+      if (diff <= WEEK_MINUTES) return "is-soon";
       return "";
     },
     minutesUntil(value) {

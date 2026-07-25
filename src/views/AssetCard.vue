@@ -34,7 +34,7 @@
         <button class="meta-copy-button" type="button" :title="app.t('assets.copyIp')" @click="app.copyIp(asset.ip)">{{ asset.ip }}</button>
       </span>
       <span>{{ app.daysText(asset.expiresAt) }}</span>
-      <span v-if="app.assetLastPayment(asset)" class="stat-card-sub">{{ app.t("assets.lastPayment", { date: app.formatDateTime(app.assetLastPayment(asset).paidAt) }) }}</span>
+      <span v-if="app.assetNextPaymentDate(asset)" class="stat-card-sub">{{ app.t("assets.nextPayment", { date: app.assetNextPaymentDate(asset) }) }}</span>
     </div>
     <div v-if="asset.price" class="price-strip">
       <strong>{{ app.formatMoney(asset.price, asset.priceCurrency) }}</strong>
