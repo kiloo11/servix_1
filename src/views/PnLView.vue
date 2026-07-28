@@ -178,8 +178,20 @@ export default {
     app: { type: Object, required: true }
   },
   watch: {
+    // flush: "post" обязателен: панель с canvas стоит под v-if, и данные приезжают
+    // асинхронно уже после mounted (вид живёт под v-show и не перемонтируется).
+    // Обычный watcher срабатывает до патча DOM — canvas ещё нет, и график не строится
+    // до перезагрузки страницы.
     "app.pnlMonthlySeries": {
       deep: true,
+      flush: "post",
+      handler() {
+        this.renderMonthChart();
+      }
+    },
+    // Панель целиком появляется по configured, а серия при этом может не измениться.
+    "app.botRevenue.configured": {
+      flush: "post",
       handler() {
         this.renderMonthChart();
       }
