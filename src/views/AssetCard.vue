@@ -50,8 +50,8 @@
       </AppTooltip>
       <span v-else></span>
       <div class="card-actions">
-        <AppTooltip :label="app.t('assets.quickRenew')">
-          <button class="secondary-button icon-only" type="button" @click="app.quickRenew(asset)" :aria-label="app.t('assets.quickRenew')"><ZapIcon :size="16" /></button>
+        <AppTooltip :label="app.quickRenewLabel(asset)">
+          <button class="secondary-button icon-only" type="button" @click="app.quickRenew(asset)" :aria-label="app.quickRenewLabel(asset)"><ZapIcon :size="16" /></button>
         </AppTooltip>
         <AppTooltip :label="app.t('common.payments')">
           <button class="secondary-button icon-only" type="button" @click="app.openPayments(asset)" :aria-label="app.t('common.payments')"><CreditCardIcon :size="16" /></button>

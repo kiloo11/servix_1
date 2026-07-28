@@ -1,4 +1,5 @@
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
+import os from "node:os";
 import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -32,6 +33,14 @@ const CURRENCIES = ["USDT", "EUR", "RUB"];
 const CATEGORIES = ["infra", "node", "test"];
 const ASSET_TYPES = ["vps", "domain", "certificate"];
 const FETCH_TIMEOUT_MS = 10_000;
+// Версия панели — из package.json: он копируется в финальный образ, отдельного файла с версией не нужно.
+const APP_VERSION = readPackageVersion();
+const UPDATE_REPO = String(process.env.UPDATE_REPO || "kiloo11/servix_1").trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/+$/, "");
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60_000;
+const DOCKER_SOCKET = String(process.env.DOCKER_SOCKET || "/var/run/docker.sock");
+// Имя контейнера панели. Внутри Docker hostname — это короткий id контейнера, его хватает для inspect.
+const UPDATE_CONTAINER = String(process.env.UPDATE_CONTAINER || "").trim();
+const UPDATE_HELPER_IMAGE = String(process.env.UPDATE_HELPER_IMAGE || "containrrr/watchtower:latest").trim();
 
 const sessions = new Map();
 const authAttempts = new Map();
@@ -56,6 +65,14 @@ const mimeTypes = {
   ".png": "image/png",
   ".ico": "image/x-icon"
 };
+
+function readPackageVersion() {
+  try {
+    return String(JSON.parse(readFileSync(path.join(__dirname, "package.json"), "utf8")).version || "0.0.0");
+  } catch {
+    return "0.0.0";
+  }
+}
 
 function loadLocales() {
   const result = {};
@@ -227,6 +244,7 @@ function getMeta() {
   const rows = db.prepare("SELECT key, value FROM meta").all();
   const meta = Object.fromEntries(rows.map((row) => [row.key, row.value]));
   return {
+    version: APP_VERSION,
     siteTitle: meta.siteTitle || SITE_TITLE,
     notificationLeads: meta.notificationLeads || "5m,2h,1d,3d,5d",
     locale: locales[meta.locale] ? meta.locale : "ru",
@@ -412,6 +430,7 @@ async function fetchBotRevenue(force = false) {
 function getPublicMeta() {
   const meta = getMeta();
   return {
+    version: APP_VERSION,
     siteTitle: meta.siteTitle,
     locale: meta.locale,
     timezone: meta.timezone,
@@ -1268,6 +1287,188 @@ function scheduleNotifications() {
   }), delay);
 }
 
+let updateCheck = { checkedAt: 0, version: "", releaseUrl: "", notes: "", publishedAt: "", error: "" };
+let updateRun = { status: "idle", startedAt: "", finishedAt: "", message: "", log: [] };
+
+function parseVersion(value) {
+  const match = String(value || "").trim().match(/^v?(\d+)\.(\d+)\.(\d+)/);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+// Возвращает 1, 0, -1 или null, если хотя бы одну сторону не удалось разобрать:
+// «не смогли сравнить» и «версии равны» — разные случаи, иначе панель предложит несуществующее обновление.
+function compareVersions(a, b) {
+  const left = parseVersion(a);
+  const right = parseVersion(b);
+  if (!left || !right) return null;
+  for (let i = 0; i < 3; i++) {
+    if (left[i] !== right[i]) return left[i] > right[i] ? 1 : -1;
+  }
+  return 0;
+}
+
+function githubHeaders() {
+  const headers = { accept: "application/vnd.github+json", "user-agent": `servix/${APP_VERSION}` };
+  if (process.env.GITHUB_TOKEN) headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  return headers;
+}
+
+async function fetchLatestRelease() {
+  const response = await fetch(`https://api.github.com/repos/${UPDATE_REPO}/releases/latest`, {
+    headers: githubHeaders(),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+  });
+  // Пока в репозитории нет ни одного релиза, GitHub отдаёт 404 — тогда смотрим на теги.
+  if (response.status === 404) return fetchLatestTag();
+  if (!response.ok) throw new Error(`GitHub HTTP ${response.status}`);
+  const data = await response.json();
+  return {
+    version: String(data.tag_name || data.name || "").replace(/^v/, ""),
+    releaseUrl: String(data.html_url || ""),
+    notes: String(data.body || "").slice(0, 4000),
+    publishedAt: String(data.published_at || "")
+  };
+}
+
+async function fetchLatestTag() {
+  const response = await fetch(`https://api.github.com/repos/${UPDATE_REPO}/tags?per_page=100`, {
+    headers: githubHeaders(),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+  });
+  if (!response.ok) throw new Error(`GitHub HTTP ${response.status}`);
+  const tags = await response.json();
+  // Теги приходят в порядке репозитория, а не по версии — выбираем максимальную сами.
+  let best = "";
+  for (const tag of Array.isArray(tags) ? tags : []) {
+    const name = String(tag?.name || "").replace(/^v/, "");
+    if (!parseVersion(name)) continue;
+    if (!best || compareVersions(name, best) > 0) best = name;
+  }
+  return {
+    version: best,
+    releaseUrl: best ? `https://github.com/${UPDATE_REPO}/releases/tag/${best}` : `https://github.com/${UPDATE_REPO}`,
+    notes: "",
+    publishedAt: ""
+  };
+}
+
+function dockerAvailable() {
+  return existsSync(DOCKER_SOCKET);
+}
+
+function updateStatus() {
+  const latest = updateCheck.version || "";
+  const diff = compareVersions(latest, APP_VERSION);
+  return {
+    version: APP_VERSION,
+    latest,
+    repo: UPDATE_REPO,
+    updateAvailable: diff !== null && diff > 0,
+    releaseUrl: updateCheck.releaseUrl || `https://github.com/${UPDATE_REPO}/releases`,
+    notes: updateCheck.notes || "",
+    publishedAt: updateCheck.publishedAt || "",
+    checkedAt: updateCheck.checkedAt ? new Date(updateCheck.checkedAt).toISOString() : "",
+    error: updateCheck.error || "",
+    canApply: dockerAvailable(),
+    apply: { ...updateRun, log: [...updateRun.log] }
+  };
+}
+
+async function checkForUpdate(force = false) {
+  if (!force && updateCheck.checkedAt && Date.now() - updateCheck.checkedAt < UPDATE_CHECK_INTERVAL_MS) return updateStatus();
+  try {
+    const release = await fetchLatestRelease();
+    updateCheck = { checkedAt: Date.now(), ...release, error: "" };
+  } catch (error) {
+    updateCheck = { ...updateCheck, checkedAt: Date.now(), error: error.message };
+  }
+  return updateStatus();
+}
+
+function updateLog(message) {
+  updateRun.log = [...updateRun.log, { at: new Date().toISOString(), message }].slice(-40);
+  console.log(`Update: ${message}`);
+}
+
+// Обмен с Docker Engine API через unix-сокет: docker CLI в образе нет и не нужен.
+function dockerRequest(method, pathname, body = null, timeoutMs = 120_000) {
+  return new Promise((resolve, reject) => {
+    const payload = body === null ? null : Buffer.from(JSON.stringify(body));
+    const request = httpRequest({
+      socketPath: DOCKER_SOCKET,
+      path: pathname,
+      method,
+      headers: {
+        host: "docker",
+        ...(payload ? { "content-type": "application/json", "content-length": payload.length } : {})
+      }
+    }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => {
+        const text = Buffer.concat(chunks).toString("utf8");
+        if (response.statusCode >= 400) {
+          return reject(new Error(`Docker ${method} ${pathname}: HTTP ${response.statusCode} ${text.slice(0, 200)}`));
+        }
+        let data = null;
+        // Ответ на pull — поток JSON-строк, разбирать его целиком нельзя, оставляем текстом.
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          data = null;
+        }
+        resolve({ status: response.statusCode, data, text });
+      });
+    });
+    request.setTimeout(timeoutMs, () => request.destroy(new Error(`Docker ${method} ${pathname}: таймаут`)));
+    request.on("error", reject);
+    if (payload) request.write(payload);
+    request.end();
+  });
+}
+
+// Пересоздать себя изнутри контейнера нельзя: как только daemon остановит нас, обновление оборвётся
+// на середине. Поэтому запускаем отдельный одноразовый контейнер watchtower — он переживёт нашу смерть,
+// сам вытянет новый образ и поднимет контейнер панели с теми же настройками.
+async function runDockerUpdate() {
+  await dockerRequest("GET", "/_ping", null, 10_000);
+  const self = UPDATE_CONTAINER || os.hostname();
+  const info = await dockerRequest("GET", `/containers/${encodeURIComponent(self)}/json`, null, 15_000);
+  const name = String(info.data?.Name || "").replace(/^\//, "") || self;
+  const image = String(info.data?.Config?.Image || "");
+  updateLog(`Контейнер: ${name}${image ? `, образ: ${image}` : ""}`);
+
+  const [helperImage, helperTag = "latest"] = UPDATE_HELPER_IMAGE.split(":");
+  updateLog(`Загружаю образ обновлятора ${helperImage}:${helperTag}`);
+  await dockerRequest("POST", `/images/create?fromImage=${encodeURIComponent(helperImage)}&tag=${encodeURIComponent(helperTag)}`, null, 300_000);
+
+  const created = await dockerRequest("POST", `/containers/create?name=servix-updater-${Date.now()}`, {
+    Image: UPDATE_HELPER_IMAGE,
+    Cmd: ["--run-once", "--cleanup", name],
+    HostConfig: { AutoRemove: true, Binds: [`${DOCKER_SOCKET}:/var/run/docker.sock`] }
+  }, 30_000);
+  const helperId = String(created.data?.Id || "");
+  if (!helperId) throw new Error("Docker не вернул id контейнера обновления");
+
+  await dockerRequest("POST", `/containers/${helperId}/start`, null, 30_000);
+  updateLog("Обновлятор запущен, панель перезапустится через несколько минут");
+}
+
+function startUpdate() {
+  if (updateRun.status === "running") throw new Error("Обновление уже запущено");
+  if (!dockerAvailable()) throw new Error(`Docker-сокет ${DOCKER_SOCKET} недоступен: проброс сокета в контейнер не настроен`);
+  updateRun = { status: "running", startedAt: new Date().toISOString(), finishedAt: "", message: "", log: [] };
+  updateLog(`Обновление ${APP_VERSION} -> ${updateCheck.version || "latest"}`);
+  // Отвечаем сразу: запрос не должен ждать перезапуска, который его же и оборвёт.
+  runDockerUpdate().then(() => {
+    updateRun = { ...updateRun, status: "done", finishedAt: new Date().toISOString(), message: "Обновление запущено" };
+  }).catch((error) => {
+    updateRun = { ...updateRun, status: "error", finishedAt: new Date().toISOString(), message: error.message };
+    updateLog(`Ошибка: ${error.message}`);
+  });
+  return updateStatus();
+}
+
 async function handleApi(req, res, url) {
   if (url.pathname === "/api/auth/status") {
     return sendJson(res, 200, { setupRequired: userCount() === 0, authenticated: isAuthed(req), meta: getPublicMeta() });
@@ -1376,6 +1577,19 @@ async function handleApi(req, res, url) {
   }
   if (req.method === "GET" && url.pathname === "/api/bot/revenue/monthly") {
     return sendJson(res, 200, { months: getBotRevenueMonthly(12) });
+  }
+  if (req.method === "GET" && url.pathname === "/api/update") {
+    return sendJson(res, 200, await checkForUpdate(url.searchParams.get("refresh") === "1"));
+  }
+  if (req.method === "POST" && url.pathname === "/api/update/check") {
+    const status = await checkForUpdate(true);
+    await logAction(req, "update.check", { version: status.version, latest: status.latest, error: status.error });
+    return sendJson(res, 200, status);
+  }
+  if (req.method === "POST" && url.pathname === "/api/update/apply") {
+    const status = startUpdate();
+    await logAction(req, "update.apply", { from: status.version, to: status.latest });
+    return sendJson(res, 202, status);
   }
   if (req.method === "GET" && url.pathname === "/api/logs") return sendJson(res, 200, { items: await readAccessLog() });
   if (req.method === "GET" && url.pathname === "/api/notifications") return sendJson(res, 200, { items: getDueItems() });
@@ -1495,6 +1709,8 @@ await initDb();
 setInterval(cleanupAuthState, 60 * 60_000).unref();
 refreshExchangeRates().catch((error) => console.warn(error.message));
 setInterval(() => refreshExchangeRates().catch((error) => console.warn(error.message)), EXCHANGE_RATE_INTERVAL_MS).unref();
+checkForUpdate(true).catch((error) => console.warn(error.message));
+setInterval(() => checkForUpdate(true).catch((error) => console.warn(error.message)), UPDATE_CHECK_INTERVAL_MS).unref();
 
 const server = createServer(async (req, res) => {
   try {
@@ -1507,7 +1723,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`${SITE_TITLE}: http://localhost:${PORT}`);
+  console.log(`${SITE_TITLE} v${APP_VERSION}: http://localhost:${PORT}`);
   console.log("Login/password authorization is enabled");
   if (telegramNotifyUrl()) console.log("Realtime Telegram notifications are configured");
   if (telegramNotifyUrl() && notifyOnStart()) {

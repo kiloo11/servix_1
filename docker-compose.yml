@@ -1,6 +1,10 @@
 services:
   servix:
-    build: .
+    # Обновление из панели пересоздаёт контейнер с новым образом из registry.
+    # Со сборкой из исходников (build: .) кнопка обновления работать не будет —
+    # тянуть образ будет неоткуда, останется git pull + docker compose up -d --build.
+    image: ghcr.io/kiloo11/servix_1:latest
+    # build: .
     container_name: servix
     ports:
       - "3000:3000"
@@ -12,6 +16,10 @@ services:
       # NOTIFY_ON_START: "true"
       # BEDOLAGA_API_URL: "https://vpnbot.postq.space"
       # BEDOLAGA_API_KEY: ""
+      # UPDATE_REPO: "kiloo11/servix_1"
     volumes:
       - ./data:/app/data
+      # Нужен кнопке «Обновить» в настройках: панель запускает через сокет одноразовый
+      # контейнер watchtower, который пересоздаёт её саму с новым образом.
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped

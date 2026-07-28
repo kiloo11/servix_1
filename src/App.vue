@@ -53,6 +53,12 @@
         <AppTooltip :label="sidebarCollapsed ? t('common.logout') : ''" side="right">
           <button class="secondary-button sidebar-logout" type="button" @click="logout"><LogOutIcon :size="18" /><span>{{ t("common.logout") }}</span></button>
         </AppTooltip>
+        <AppTooltip :label="update.updateAvailable ? t('update.availableToast', { version: update.latest }) : t('update.title')" side="right">
+          <button class="sidebar-version" type="button" @click="go('settings')">
+            v{{ update.version || meta.version || "—" }}
+            <span v-if="update.updateAvailable" class="sidebar-version-dot"></span>
+          </button>
+        </AppTooltip>
       </div>
     </aside>
 
@@ -448,6 +454,8 @@ export default {
       settings: { siteTitle: translate("ru", "app.defaultTitle"), notificationLeads: "5m,2h,1d,3d,5d", locale: "ru", timezone: "Europe/Moscow", telegramNotifyUrl: "", notifyOnStart: true, currency: "USDT" },
       passwordForm: { currentPassword: "", newPassword: "", passwordRepeat: "" },
       security: { login: "", totpEnabled: false, hasPendingTotp: false },
+      update: { version: "", latest: "", repo: "", updateAvailable: false, releaseUrl: "", notes: "", publishedAt: "", checkedAt: "", error: "", canApply: false, apply: { status: "idle", message: "", log: [] } },
+      updateBusy: false,
       twoFactor: { currentPassword: "", token: "", secret: "", otpauthUrl: "", qrCode: "" },
       providers: [],
       assets: [],
@@ -958,6 +966,7 @@ export default {
       if (!this.needsLogin) {
         await this.load();
         await this.loadSecurity();
+        this.loadUpdate();
         if (this.view === "logs") await this.loadLogs();
         if (this.view === "pnl") {
           await this.loadBotRevenue();
@@ -1094,6 +1103,7 @@ export default {
       const path = pathFromView(view);
       if (location.pathname !== path) history.pushState({}, "", path);
       if (view === "logs") this.loadLogs();
+      if (view === "settings") this.loadUpdate();
       if (view === "pnl") {
         this.loadBotRevenue();
         this.loadBotRevenueMonthly();
@@ -1140,17 +1150,31 @@ export default {
       this.toast(inactive ? this.t("assets.deactivated") : this.t("assets.activated"));
       await this.load();
     },
-    async quickRenew(asset) {
+    quickRenewBase(asset) {
       const current = parseAppDate(asset.expiresAt);
-      const date = Number.isNaN(current.getTime()) ? new Date() : current;
-      date.setDate(date.getDate() + 30);
+      return Number.isNaN(current.getTime()) ? new Date() : current;
+    },
+    // Продлеваем на длину того месяца, в котором заканчивается запись: 31 день в январе,
+    // 28 (или 29) в феврале, 30 в апреле. Нулевой день следующего месяца — последний день текущего.
+    quickRenewDays(asset) {
+      const date = this.quickRenewBase(asset);
+      return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    },
+    quickRenewLabel(asset) {
+      return this.t("assets.quickRenew", { days: this.tc("day", this.quickRenewDays(asset)) });
+    },
+    async quickRenew(asset) {
+      const date = this.quickRenewBase(asset);
+      const days = this.quickRenewDays(asset);
+      const daysLabel = this.tc("day", days);
+      date.setDate(date.getDate() + days);
       const updated = { ...asset, expiresAt: toLocalInput(date) };
       const price = Number(asset.price || 0);
       if (price > 0) {
-        updated.payments = [...(asset.payments || []), { amount: price, currency: asset.priceCurrency || "USDT", paidAt: toLocalInput(new Date()), note: this.t("assets.quickRenewNote") }];
+        updated.payments = [...(asset.payments || []), { amount: price, currency: asset.priceCurrency || "USDT", paidAt: toLocalInput(new Date()), note: this.t("assets.quickRenewNote", { days: daysLabel }) }];
       }
       await this.updateAsset(updated);
-      this.toast(this.t("assets.quickRenewed"));
+      this.toast(this.t("assets.quickRenewed", { days: daysLabel }));
       await this.load();
     },
     convertToEur(amount, currency) {
@@ -1175,6 +1199,70 @@ export default {
     async refreshRates() {
       this.meta = { ...this.meta, ...(await this.api("/api/rates/refresh", { method: "POST" })) };
       this.toast(this.t("settings.ratesRefreshed"));
+    },
+    async loadUpdate(refresh = false) {
+      try {
+        this.update = await this.api(`/api/update${refresh ? "?refresh=1" : ""}`);
+      } catch {
+        // Недоступная проверка обновлений не должна ломать экран настроек.
+      }
+    },
+    async checkUpdate() {
+      this.updateBusy = true;
+      try {
+        this.update = await this.api("/api/update/check", { method: "POST" });
+        if (this.update.error) this.toast(this.t("update.checkFailed", { error: this.update.error }));
+        else if (this.update.updateAvailable) this.toast(this.t("update.availableToast", { version: this.update.latest }));
+        else this.toast(this.t("update.upToDate"));
+      } catch (error) {
+        this.toast(this.t("update.checkFailed", { error: error.message }));
+      } finally {
+        this.updateBusy = false;
+      }
+    },
+    async applyUpdate() {
+      if (!(await this.confirmAction(this.t("update.confirm", { version: this.update.latest || this.update.version })))) return;
+      this.updateBusy = true;
+      try {
+        this.update = await this.api("/api/update/apply", { method: "POST" });
+        this.toast(this.t("update.started"));
+        this.waitForRestart();
+      } catch (error) {
+        this.toast(this.t("update.failed", { error: error.message }));
+      } finally {
+        this.updateBusy = false;
+      }
+    },
+    // Контейнер уходит в пересоздание и на несколько минут перестаёт отвечать: ждём, пока
+    // поднимется новая версия, и только тогда перезагружаем страницу. Опрашиваем
+    // /api/auth/status, а не /api/update: сессии живут в памяти процесса и перезапуск их теряет,
+    // так что после обновления авторизованные запросы вернут 401.
+    async waitForRestart(deadlineMs = 10 * 60_000) {
+      const previousVersion = this.update.version;
+      const until = Date.now() + deadlineMs;
+      while (Date.now() < until) {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        try {
+          const status = await this.api("/api/auth/status");
+          const version = status.meta?.version || "";
+          if (version && version !== previousVersion) {
+            this.toast(this.t("update.done", { version }));
+            setTimeout(() => location.reload(), 1500);
+            return;
+          }
+          // Пока панель ещё жива и сессия цела, забираем лог обновления — там видно ошибку.
+          if (status.authenticated) {
+            const state = await this.api("/api/update");
+            this.update = state;
+            if (state.apply?.status === "error") {
+              this.toast(this.t("update.failed", { error: state.apply.message }));
+              return;
+            }
+          }
+        } catch {
+          // Сервер перезапускается — недоступность здесь ожидаема.
+        }
+      }
     },
     async loadBotRevenue(refresh = false) {
       try {
