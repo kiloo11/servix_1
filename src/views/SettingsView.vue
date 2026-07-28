@@ -53,6 +53,38 @@
 
       <div class="settings-panel">
         <div class="settings-card-head">
+          <div class="settings-card-icon"><DownloadIcon :size="18" /></div>
+          <div>
+            <h2>{{ app.t("update.title") }}</h2>
+            <span>{{ app.t("update.text") }}</span>
+          </div>
+        </div>
+        <div class="rate-display-grid">
+          <div><span>{{ app.t("update.current") }}</span><strong>v{{ app.update.version || app.meta.version || "—" }}</strong></div>
+          <div><span>{{ app.t("update.latest") }}</span><strong>{{ app.update.latest ? `v${app.update.latest}` : "—" }}</strong></div>
+          <div><span>{{ app.t("update.checked") }}</span><strong>{{ app.update.checkedAt ? app.formatDateTime(app.update.checkedAt) : app.t("update.never") }}</strong></div>
+        </div>
+        <p v-if="app.update.error" class="hint">{{ app.t("update.checkFailed", { error: app.update.error }) }}</p>
+        <p v-else-if="app.update.updateAvailable" class="hint">
+          {{ app.t("update.availableToast", { version: app.update.latest }) }}
+          <a :href="app.update.releaseUrl" target="_blank" rel="noreferrer">{{ app.t("update.releaseLink") }}</a>
+        </p>
+        <p v-else class="hint">{{ app.t("update.upToDate") }}</p>
+        <p v-if="!app.update.canApply" class="hint">{{ app.t("update.dockerMissing") }}</p>
+        <ul v-if="app.update.apply && app.update.apply.log && app.update.apply.log.length" class="update-log">
+          <li v-for="entry in app.update.apply.log" :key="entry.at + entry.message">{{ app.formatDateTime(entry.at) }} — {{ entry.message }}</li>
+        </ul>
+        <div class="settings-inline-footer">
+          <span class="hint">{{ app.t("update.repo", { repo: app.update.repo || "—" }) }}</span>
+          <div class="export-actions">
+            <button class="secondary-button" type="button" :disabled="app.updateBusy" @click="app.checkUpdate"><RefreshCwIcon :size="16" />{{ app.t("update.check") }}</button>
+            <button class="primary-button" type="button" :disabled="app.updateBusy || !app.update.canApply || !app.update.updateAvailable || app.update.apply.status === 'running'" @click="app.applyUpdate"><DownloadIcon :size="18" />{{ app.t("update.apply") }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-panel">
+        <div class="settings-card-head">
           <div class="settings-card-icon"><CoinsIcon :size="18" /></div>
           <div>
             <h2>{{ app.t("settings.ratesTitle") }}</h2>
@@ -120,13 +152,13 @@
 </template>
 
 <script>
-import { Coins as CoinsIcon, KeyRound as KeyRoundIcon, QrCode as QrCodeIcon, RefreshCw as RefreshCwIcon, Save as SaveIcon, Send as SendIcon, Settings as SettingsIcon, ShieldCheck as ShieldCheckIcon } from "@lucide/vue";
+import { Coins as CoinsIcon, Download as DownloadIcon, KeyRound as KeyRoundIcon, QrCode as QrCodeIcon, RefreshCw as RefreshCwIcon, Save as SaveIcon, Send as SendIcon, Settings as SettingsIcon, ShieldCheck as ShieldCheckIcon } from "@lucide/vue";
 import AppSelect from "../components/AppSelect.vue";
 import AppSelectItem from "../components/AppSelectItem.vue";
 import AppTooltip from "../components/AppTooltip.vue";
 
 export default {
-  components: { AppSelect, AppSelectItem, AppTooltip, CoinsIcon, KeyRoundIcon, QrCodeIcon, RefreshCwIcon, SaveIcon, SendIcon, SettingsIcon, ShieldCheckIcon },
+  components: { AppSelect, AppSelectItem, AppTooltip, CoinsIcon, DownloadIcon, KeyRoundIcon, QrCodeIcon, RefreshCwIcon, SaveIcon, SendIcon, SettingsIcon, ShieldCheckIcon },
   props: {
     app: { type: Object, required: true }
   }

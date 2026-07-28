@@ -362,6 +362,32 @@ button, a {
   background: var(--danger-soft);
 }
 
+.sidebar-version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  opacity: 0.6;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sidebar-version:hover {
+  opacity: 1;
+}
+
+.sidebar-version-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--warn);
+}
+
 .sidebar-collapsed .sidebar {
   padding: 14px 12px;
 }
@@ -1627,6 +1653,20 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.update-log {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+  padding: 10px 12px;
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .settings-panel textarea[readonly],

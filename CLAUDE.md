@@ -63,6 +63,22 @@ UI primitives (`reka-ui`, a Radix-Vue-style headless library) are wrapped in `sr
 
 `locale/ru.json` and `locale/en.json` hold UI strings (`ru` is the primary/default locale). `App.vue` has its own `t(key, params)` / `tc(key, count, params)` helpers (`translate`/`translatePlural` module functions) that walk dot-path keys and do `{param}` interpolation; `tc` additionally handles Russian 3-form pluralization (`plural.<key>: [one, few, many]`) via `pluralIndex`. The backend (`server.js`) has its own separate, much smaller copy of the same `t`/`tc`/`loadLocales` pattern for building Telegram notification text — the two are not shared code, so a new user-facing string used in both places needs to be added twice.
 
+### Versioning and self-update
+
+The single source of truth for the version is `package.json` — `server.js` reads it at
+startup (`APP_VERSION`) and returns it in `meta.version`, and the release workflow refuses
+to publish a tag that disagrees with it. A release is a `vX.Y.Z` tag; `.github/workflows/release.yml`
+builds and pushes `ghcr.io/<repo>:latest` and `:vX.Y.Z`. Note the entries in `CHANGELOG.md`.
+
+`GET /api/update` reports current vs latest version (GitHub releases, falling back to tags),
+`POST /api/update/check` forces a re-check, `POST /api/update/apply` starts the update and
+returns 202. Two things there are deliberate: the container never recreates itself (the
+Docker daemon would kill the process mid-update, leaving the panel down), so a one-shot
+watchtower container launched through the docker socket does it; and the socket is spoken to
+directly over the Engine API with `node:http` `socketPath`, so the image needs no docker CLI.
+Without a mounted socket `canApply` is false and the UI only reports versions — that must
+stay a graceful downgrade, not an error.
+
 ### Money/currency
 
 Three currencies exist: `USDT`, `EUR`, `RUB`. `EUR` is the backend's internal pivot: `convertAmount`/`convertToEur` in `App.vue` always convert through EUR using `meta.rateRubPerEur` and `meta.rateUsdtPerEur` (fetched/cached server-side, refreshed periodically). A `price` on an asset is treated as a *monthly* recurring cost throughout P&L/stats — there's no separate billing-cycle-normalization for the headline numbers (`assetCycleDays` exists but is informational only, shown in the record's UI, not used to normalize `monthlyCost`).

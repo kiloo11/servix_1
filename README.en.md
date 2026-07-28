@@ -88,6 +88,11 @@ TELEGRAM_NOTIFY_URL: "tgram://TOKEN/CHAT_ID"
 | `TELEGRAM_NOTIFY_URL` | empty | Initial Telegram notification URL. It can be changed later in settings. |
 | `NOTIFY_ON_START` | `true` | Send relevant upcoming notifications after application startup. |
 | `COOKIE_SECURE` | empty | Set to `true` when the app is served behind an HTTPS reverse proxy. |
+| `UPDATE_REPO` | `kiloo11/servix_1` | GitHub repository whose releases are checked for updates. |
+| `GITHUB_TOKEN` | empty | GitHub API token — only needed for a private repository or when hitting the rate limit. |
+| `DOCKER_SOCKET` | `/var/run/docker.sock` | Path to the docker socket used to run the update. |
+| `UPDATE_CONTAINER` | hostname | Name or id of the panel container. Defaults to the hostname, which is the container id in Docker. |
+| `UPDATE_HELPER_IMAGE` | `containrrr/watchtower:latest` | Image that recreates the panel container during an update. |
 
 `SITE_TITLE`, `APP_TIMEZONE`, `TELEGRAM_NOTIFY_URL`, and `NOTIFY_ON_START` are stored in the database. After the first launch, it is usually easier to manage them from the settings page.
 
@@ -186,6 +191,35 @@ cp -r data data.backup
 On Windows, you can simply copy the `data` directory manually.
 
 ## Updating
+
+The panel version is shown in the sidebar and in Settings ("Panel update"). Every 6 hours,
+and whenever you press "Check for updates", the panel compares its own version with the
+latest release of the repository (`UPDATE_REPO`, `kiloo11/servix_1` by default). If there
+are no releases yet, the highest `vX.Y.Z` tag is used instead.
+
+The "Update" button is available when the panel runs in Docker from a registry image and
+the docker socket is mounted into it:
+
+```yaml
+services:
+  servix:
+    image: ghcr.io/kiloo11/servix_1:latest
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+The button makes the panel start a one-shot watchtower container through the socket; that
+container pulls the new image and recreates the panel container with the same settings. A
+container cannot recreate itself — the process would die halfway — so a separate container
+does the job. The panel is unavailable during the update and the page reloads itself once
+the new version is up.
+
+Access to the docker socket is equivalent to root on the host. If that is not acceptable,
+do not mount the socket: the panel will still report versions and new releases, and you can
+update manually.
+
+When building from source (`build: .`) there is no image to pull, so update manually:
 
 ```bash
 git pull
