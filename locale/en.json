@@ -11,11 +11,12 @@
     "subtitle": "CRM SYSTEM"
   },
   "nav": {
-    "assets": "Records",
+    "assets": "Resources",
     "providers": "Providers",
     "stats": "Statistics",
     "pnl": "P&L",
     "alerts": "Alerts",
+    "ads": "Ad Campaigns",
     "logs": "Logs",
     "guide": "Manual",
     "settings": "Settings",
@@ -83,6 +84,19 @@
     "test": "Test",
     "domain": "Domains"
   },
+  "categories": {
+    "manageTitle": "Categories",
+    "manageText": "Categories for grouping servers and other equipment.",
+    "add": "Add category",
+    "new": "New category",
+    "edit": "Edit category",
+    "name": "Category name",
+    "color": "Category color",
+    "saved": "Category saved",
+    "deleted": "Category deleted",
+    "deleteConfirm": "Delete category \"{name}\"?",
+    "empty": "No categories yet"
+  },
   "auth": {
     "title": "Auth",
     "totpTitle": "Two-factor code",
@@ -139,7 +153,6 @@
     "loginUrlEmpty": "Link is not set",
     "loginUrl": "Login URL",
     "faviconUrl": "Favicon URL",
-    "color": "Provider color",
     "note": "Note",
     "notePlaceholder": "Login, payment terms, or any useful note",
     "new": "New provider",
@@ -147,7 +160,8 @@
     "saved": "Provider saved",
     "deleted": "Provider deleted",
     "deleteConfirm": "Delete provider \"{name}\"?",
-    "recommendedPayment": "Recommended payment: {date}"
+    "recommendedPayment": "Recommended payment: {date}",
+    "noRecords": "No records"
   },
   "stats": {
     "currencyFilter": "Statistics currency",
@@ -237,6 +251,10 @@
     "testSkipped": "Telegram is not configured",
     "testMessage": "Test notification."
   },
+  "ads": {
+    "inDevelopmentTitle": "Coming soon",
+    "inDevelopmentText": "Ad campaign management will be available here in an upcoming update."
+  },
   "logs": {
     "refresh": "Refresh",
     "search": "Search logs",
@@ -253,6 +271,8 @@
     "subtitle": "Service behavior, notifications, and account security in one place.",
     "generalTitle": "General settings",
     "generalText": "Interface, timezone, and Telegram notification rules.",
+    "pagesTitle": "Logs & guide",
+    "pagesText": "Audit log and panel help.",
     "siteTitle": "Service title",
     "leads": "Telegram notification leads",
     "leadsHint": "Format: `m` minutes, `h` hours, `d` days. Example: `5m, 2h, 1d, 3d, 5d`.",
