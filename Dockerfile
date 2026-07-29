@@ -1,14 +1,15 @@
 FROM node:24-alpine AS build
 
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+COPY web/package*.json web/
+RUN npm --prefix web install
 
-COPY index.html vite.config.js ./
-COPY src ./src
+# locale/ sits next to web/ (not inside it) — lib/i18n.js imports
+# ../../locale/*.json, and next.config.js's turbopack.root points one level
+# up from web/ for the same reason.
+COPY web ./web
 COPY locale ./locale
-COPY public ./public
-RUN npm run build
+RUN npm --prefix web run build
 
 FROM node:24-alpine
 
@@ -18,7 +19,7 @@ RUN npm install --omit=dev
 
 COPY server.js ./
 COPY locale ./locale
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/web/dist ./dist
 
 ENV NODE_ENV=production
 ENV PORT=3000

@@ -6,24 +6,12 @@
   "type": "module",
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web install && npm --prefix web run build",
     "server": "node --env-file-if-exists=.env server.js"
   },
   "engines": {
     "node": ">=24"
   },
-  "license": "MIT",
-  "dependencies": {
-    "@lucide/vue": "^1.17.0",
-    "chart.js": "^4.5.1",
-    "jspdf": "^4.2.1",
-    "qrcode": "^1.5.4",
-    "reka-ui": "^2.10.1",
-    "vue": "^3.5.24"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.7",
-    "vite": "^8.0.16"
-  }
+  "license": "MIT"
 }

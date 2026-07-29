@@ -30,7 +30,6 @@ const AUTH_RATE_WINDOW_MS = 15 * 60_000;
 const AUTH_RATE_MAX_ATTEMPTS = 8;
 const TOTP_RATE_MAX_ATTEMPTS = 6;
 const CURRENCIES = ["USDT", "EUR", "RUB"];
-const CATEGORIES = ["infra", "node", "test"];
 const ASSET_TYPES = ["vps", "domain", "certificate"];
 const FETCH_TIMEOUT_MS = 10_000;
 // Версия панели — из package.json: он копируется в финальный образ, отдельного файла с версией не нужно.
@@ -63,7 +62,12 @@ const mimeTypes = {
   ".webmanifest": "application/manifest+json; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
-  ".ico": "image/x-icon"
+  ".ico": "image/x-icon",
+  // Next.js static export adds self-hosted fonts and RSC prefetch payloads
+  // (.txt) that Vite's output never produced.
+  ".woff2": "font/woff2",
+  ".woff": "font/woff",
+  ".txt": "text/plain; charset=utf-8"
 };
 
 function readPackageVersion() {
@@ -141,6 +145,14 @@ async function initDb() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS assets (
       id TEXT PRIMARY KEY,
       type TEXT NOT NULL,
@@ -207,7 +219,7 @@ async function initDb() {
   ensureMeta("rateUpdatedAt", "");
   process.env.TZ = getMeta().timezone;
   if (!existed) await migrateLegacyJson();
-  ensureProviderColors();
+  ensureCategorySeed();
 }
 
 function ensureMeta(key, value) {
@@ -219,12 +231,20 @@ function ensureColumn(table, column, definition) {
   if (!columns.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
-function ensureProviderColors() {
-  const rows = db.prepare("SELECT id, name, color FROM providers").all();
-  const stmt = db.prepare("UPDATE providers SET color = ?, updated_at = ? WHERE id = ?");
-  for (const row of rows) {
-    if (!normalizeColor(row.color)) stmt.run(randomProviderColor(row.id || row.name), new Date().toISOString(), row.id);
-  }
+// Seeds the three categories that used to be a fixed CATEGORIES const with a
+// matching id, so existing assets.category values ("infra"/"node"/"test")
+// stay valid references with zero data migration on the assets table.
+function ensureCategorySeed() {
+  const count = db.prepare("SELECT COUNT(*) AS count FROM categories").get().count;
+  if (count > 0) return;
+  const now = new Date().toISOString();
+  const defaults = [
+    { id: "infra", name: "Инфраструктура", color: "#cf00a3" },
+    { id: "node", name: "Ноды", color: "#22c55e" },
+    { id: "test", name: "Тестовые", color: "#f59e0b" }
+  ];
+  const stmt = db.prepare("INSERT INTO categories (id, name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)");
+  defaults.forEach((category, index) => stmt.run(category.id, category.name, category.color, index, now, now));
 }
 
 async function migrateLegacyJson() {
@@ -445,7 +465,9 @@ function normalizeCurrency(value) {
 
 function normalizeCategory(value) {
   const category = String(value || "").trim();
-  return CATEGORIES.includes(category) ? category : "";
+  if (!category) return "";
+  const exists = db.prepare("SELECT 1 FROM categories WHERE id = ?").get(category);
+  return exists ? category : "";
 }
 
 function normalizeRate(value, fallback) {
@@ -475,6 +497,10 @@ function getData() {
     SELECT id, name, login_url AS loginUrl, favicon_url AS faviconUrl, color, note, created_at AS createdAt, updated_at AS updatedAt
     FROM providers ORDER BY created_at DESC
   `).all();
+  const categories = db.prepare(`
+    SELECT id, name, color, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt
+    FROM categories ORDER BY sort_order ASC, created_at ASC
+  `).all();
   const assets = db.prepare(`
     SELECT id, type, name, provider_id AS providerId, expires_at AS expiresAt, ip, domain, country_code AS countryCode, sort_order AS sortOrder, inactive, category, price, price_currency AS priceCurrency, created_at AS createdAt, updated_at AS updatedAt
     FROM assets ORDER BY type ASC, sort_order ASC, created_at DESC
@@ -487,7 +513,7 @@ function getData() {
     asset.inactive = Boolean(asset.inactive);
     asset.payments = payments.filter((payment) => payment.assetId === asset.id).map(({ assetId, ...payment }) => payment);
   }
-  return { meta: getMeta(), providers, assets };
+  return { meta: getMeta(), providers, categories, assets };
 }
 
 function securityHeaders(extra = {}) {
@@ -495,7 +521,11 @@ function securityHeaders(extra = {}) {
     "x-content-type-options": "nosniff",
     "referrer-policy": "same-origin",
     "x-frame-options": "DENY",
-    "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    // script-src needs 'unsafe-inline' since the Next.js App Router frontend
+    // (static export) bootstraps hydration via inline <script>self.__next_f.push(...)</script>
+    // tags — unavoidable for RSC-based hydration without a per-request server
+    // to mint nonces, which static export doesn't have.
+    "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
     ...extra
   };
 }
@@ -613,6 +643,21 @@ function normalizeDateTime(value, { dateOnlyOk = false } = {}) {
   return raw;
 }
 
+function normalizeCategoryEntity(input, previous = {}) {
+  const now = new Date().toISOString();
+  const name = String(input.name || "").trim();
+  if (!name) throw new Error("Название категории обязательно");
+  const id = previous.id || input.id || crypto.randomUUID();
+  return {
+    id,
+    name,
+    color: normalizeColor(input.color) || normalizeColor(previous.color) || randomProviderColor(id),
+    sortOrder: Number(input.sortOrder ?? previous.sortOrder ?? Date.now()),
+    createdAt: previous.createdAt || now,
+    updatedAt: now
+  };
+}
+
 function normalizeProvider(input, previous = {}) {
   const now = new Date().toISOString();
   const name = String(input.name || "").trim();
@@ -624,7 +669,7 @@ function normalizeProvider(input, previous = {}) {
     name,
     loginUrl,
     faviconUrl: normalizeFaviconUrl(input.faviconUrl, loginUrl),
-    color: normalizeColor(input.color) || normalizeColor(previous.color) || randomProviderColor(id),
+    color: normalizeColor(input.color) || normalizeColor(previous.color) || "",
     note: String(input.note ?? previous.note ?? "").trim(),
     createdAt: previous.createdAt || now,
     updatedAt: now
@@ -742,6 +787,19 @@ function upsertProvider(provider) {
   return provider;
 }
 
+function upsertCategory(category) {
+  db.prepare(`
+    INSERT INTO categories (id, name, color, sort_order, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      color = excluded.color,
+      sort_order = excluded.sort_order,
+      updated_at = excluded.updated_at
+  `).run(category.id, category.name, category.color, category.sortOrder, category.createdAt, category.updatedAt);
+  return category;
+}
+
 function deleteAsset(id) {
   const asset = getData().assets.find((item) => item.id === id);
   if (!asset) return null;
@@ -756,6 +814,14 @@ function deleteProvider(id) {
   db.prepare("DELETE FROM providers WHERE id = ?").run(id);
   db.prepare("UPDATE assets SET provider_id = '' WHERE provider_id = ?").run(id);
   return provider;
+}
+
+function deleteCategory(id) {
+  const category = getData().categories.find((item) => item.id === id);
+  if (!category) return null;
+  db.prepare("DELETE FROM categories WHERE id = ?").run(id);
+  db.prepare("UPDATE assets SET category = '' WHERE category = ?").run(id);
+  return category;
 }
 
 function getDueItems(data = getData()) {
@@ -1668,7 +1734,36 @@ async function handleApi(req, res, url) {
       return sendJson(res, 200, provider);
     }
   }
+  if (req.method === "POST" && url.pathname === "/api/categories") {
+    const category = upsertCategory(normalizeCategoryEntity(await readBody(req)));
+    await logAction(req, "category.create", { id: category.id, name: category.name });
+    return sendJson(res, 201, category);
+  }
+  const categoryMatch = url.pathname.match(/^\/api\/categories\/([^/]+)$/);
+  if (categoryMatch) {
+    const existing = getData().categories.find((category) => category.id === categoryMatch[1]);
+    if (!existing) return sendJson(res, 404, { error: "Категория не найдена" });
+    if (req.method === "PUT") {
+      const category = upsertCategory(normalizeCategoryEntity(await readBody(req), existing));
+      await logAction(req, "category.update", { id: category.id, name: category.name });
+      return sendJson(res, 200, category);
+    }
+    if (req.method === "DELETE") {
+      const category = deleteCategory(existing.id);
+      await logAction(req, "category.delete", { id: existing.id, name: existing.name });
+      return sendJson(res, 200, category);
+    }
+  }
   return sendJson(res, 404, { error: "API endpoint не найден" });
+}
+
+function streamFile(res, filePath, contentType) {
+  res.writeHead(200, securityHeaders({ "content-type": contentType }));
+  const stream = createReadStream(filePath);
+  stream.on("error", () => {
+    if (!res.destroyed) res.destroy();
+  });
+  stream.pipe(res);
 }
 
 async function serveStatic(req, res, url) {
@@ -1682,26 +1777,30 @@ async function serveStatic(req, res, url) {
   try {
     const info = await stat(filePath);
     if (!info.isFile()) throw new Error("Not found");
-    res.writeHead(200, securityHeaders({ "content-type": mimeTypes[path.extname(filePath)] || "application/octet-stream" }));
-    const stream = createReadStream(filePath);
-    stream.on("error", () => {
-      if (!res.destroyed) res.destroy();
-    });
-    stream.pipe(res);
+    streamFile(res, filePath, mimeTypes[path.extname(filePath)] || "application/octet-stream");
+    return;
   } catch {
+    // Falls through below — the requested path isn't a literal file.
+  }
+  // Next.js static export (trailingSlash: true) lays out each route as
+  // <route>/index.html, e.g. requesting "/alerts" or "/alerts/" resolves to
+  // a directory, not a file — try that route's own index.html before giving
+  // up and falling back to the root SPA shell.
+  try {
+    const routeIndexPath = path.join(filePath, "index.html");
+    await stat(routeIndexPath);
+    streamFile(res, routeIndexPath, "text/html; charset=utf-8");
+    return;
+  } catch {
+    // Falls through to the root index.html fallback below.
+  }
+  try {
     const indexPath = path.join(PUBLIC_DIR, "index.html");
-    try {
-      await stat(indexPath);
-      res.writeHead(200, securityHeaders({ "content-type": "text/html; charset=utf-8" }));
-      const stream = createReadStream(indexPath);
-      stream.on("error", () => {
-        if (!res.destroyed) res.destroy();
-      });
-      stream.pipe(res);
-    } catch {
-      res.writeHead(404, securityHeaders({ "content-type": "text/plain; charset=utf-8" }));
-      res.end("Не найдено. Выполните npm run build.");
-    }
+    await stat(indexPath);
+    streamFile(res, indexPath, "text/html; charset=utf-8");
+  } catch {
+    res.writeHead(404, securityHeaders({ "content-type": "text/plain; charset=utf-8" }));
+    res.end("Не найдено. Выполните npm run build.");
   }
 }
 
