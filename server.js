@@ -1757,8 +1757,20 @@ async function handleApi(req, res, url) {
   return sendJson(res, 404, { error: "API endpoint не найден" });
 }
 
-function streamFile(res, filePath, contentType) {
-  res.writeHead(200, securityHeaders({ "content-type": contentType }));
+// Next's static export content-hashes every file under _next/static/ (the
+// filename itself changes when the content does), so those are safe to cache
+// forever. Everything else — index.html and the per-route index.html shells
+// above all — is an entry point that *names* those hashed files; caching it
+// means a browser can keep serving a pre-update HTML/RSC payload that points
+// at chunk filenames the new image no longer ships (404s mid-page, a half-
+// updated UI) after a self-update swaps the container. So those always
+// revalidate instead.
+function cacheControlFor(requestPath) {
+  return requestPath.startsWith("/_next/static/") ? "public, max-age=31536000, immutable" : "no-cache";
+}
+
+function streamFile(res, filePath, contentType, cacheControl) {
+  res.writeHead(200, securityHeaders({ "content-type": contentType, "cache-control": cacheControl }));
   const stream = createReadStream(filePath);
   stream.on("error", () => {
     if (!res.destroyed) res.destroy();
@@ -1774,10 +1786,11 @@ async function serveStatic(req, res, url) {
     res.writeHead(403, securityHeaders({ "content-type": "text/plain; charset=utf-8" }));
     return res.end("Forbidden");
   }
+  const cacheControl = cacheControlFor(requested);
   try {
     const info = await stat(filePath);
     if (!info.isFile()) throw new Error("Not found");
-    streamFile(res, filePath, mimeTypes[path.extname(filePath)] || "application/octet-stream");
+    streamFile(res, filePath, mimeTypes[path.extname(filePath)] || "application/octet-stream", cacheControl);
     return;
   } catch {
     // Falls through below — the requested path isn't a literal file.
@@ -1789,7 +1802,7 @@ async function serveStatic(req, res, url) {
   try {
     const routeIndexPath = path.join(filePath, "index.html");
     await stat(routeIndexPath);
-    streamFile(res, routeIndexPath, "text/html; charset=utf-8");
+    streamFile(res, routeIndexPath, "text/html; charset=utf-8", "no-cache");
     return;
   } catch {
     // Falls through to the root index.html fallback below.
@@ -1797,7 +1810,7 @@ async function serveStatic(req, res, url) {
   try {
     const indexPath = path.join(PUBLIC_DIR, "index.html");
     await stat(indexPath);
-    streamFile(res, indexPath, "text/html; charset=utf-8");
+    streamFile(res, indexPath, "text/html; charset=utf-8", "no-cache");
   } catch {
     res.writeHead(404, securityHeaders({ "content-type": "text/plain; charset=utf-8" }));
     res.end("Не найдено. Выполните npm run build.");
