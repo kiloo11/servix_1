@@ -145,3 +145,10 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python (api/)
+api/.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
