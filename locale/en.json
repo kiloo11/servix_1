@@ -11,6 +11,7 @@
     "subtitle": "CRM SYSTEM"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "assets": "Resources",
     "providers": "Providers",
     "stats": "Statistics",
@@ -166,6 +167,32 @@
     "deleteConfirm": "Delete provider \"{name}\"?",
     "recommendedPayment": "Recommended payment: {date}",
     "noRecords": "No records"
+  },
+  "dashboard": {
+    "subtitle": "Key business metrics: revenue, MRR, subscriber movement and forecast.",
+    "month": "Month",
+    "cardCashRevenue": "Cash revenue",
+    "cardBookingsMrr": "MRR (bookings)",
+    "cardRecognizedMrr": "MRR (recognized)",
+    "cardArpu": "ARPU",
+    "cardGrossMargin": "Gross margin",
+    "cardChurnRate": "Churn rate",
+    "cardInfraCostPerSubscriber": "Infra / subscriber",
+    "movementTitle": "Monthly MRR movement",
+    "movementNew": "New",
+    "movementExpansion": "Expansion",
+    "movementContraction": "Contraction",
+    "movementChurned": "Churned",
+    "movementReactivated": "Reactivated",
+    "movementRetained": "Retained",
+    "movementEmpty": "Not enough data for this month",
+    "trendTitle": "MRR trend & forecast",
+    "trendEmpty": "No chart data yet",
+    "forecastLabel": "Forecast",
+    "confidenceLow": "low confidence",
+    "confidenceMedium": "medium confidence",
+    "confidenceHigh": "high confidence",
+    "confidenceInsufficient": "insufficient data"
   },
   "stats": {
     "currencyFilter": "Statistics currency",

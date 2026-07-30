@@ -19,7 +19,12 @@ const nextConfig = {
     ? {}
     : {
         async rewrites() {
-          return [{ source: "/api/:path*", destination: "http://localhost:3000/api/:path*" }];
+          // BACKEND_PORT lets local dev point at either backend while both
+          // coexist during the Node→Python migration (e.g. BACKEND_PORT=8000
+          // npm run dev to test against the Python API) — defaults to the
+          // Node backend's port, unchanged from before.
+          const backendPort = process.env.BACKEND_PORT || 3000;
+          return [{ source: "/api/:path*", destination: `http://localhost:${backendPort}/api/:path*` }];
         },
       }),
 };

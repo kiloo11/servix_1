@@ -11,6 +11,7 @@
     "subtitle": "SYSTEM"
   },
   "nav": {
+    "dashboard": "Дашборд",
     "assets": "Ресурсы",
     "providers": "Провайдеры",
     "stats": "Статистика",
@@ -166,6 +167,32 @@
     "deleteConfirm": "Удалить провайдера \"{name}\"?",
     "recommendedPayment": "Рекомендуемый платёж: {date}",
     "noRecords": "Без записей"
+  },
+  "dashboard": {
+    "subtitle": "Ключевые показатели бизнеса: доход, MRR, движение подписчиков и прогноз.",
+    "month": "Месяц",
+    "cardCashRevenue": "Денежный доход",
+    "cardBookingsMrr": "MRR (по оплате)",
+    "cardRecognizedMrr": "MRR (признанный)",
+    "cardArpu": "ARPU",
+    "cardGrossMargin": "Валовая маржа",
+    "cardChurnRate": "Отток",
+    "cardInfraCostPerSubscriber": "Инфра / подписчик",
+    "movementTitle": "Движение MRR за месяц",
+    "movementNew": "Новые",
+    "movementExpansion": "Расширение",
+    "movementContraction": "Сокращение",
+    "movementChurned": "Отток",
+    "movementReactivated": "Реактивация",
+    "movementRetained": "Удержано",
+    "movementEmpty": "Недостаточно данных за месяц",
+    "trendTitle": "Динамика MRR и прогноз",
+    "trendEmpty": "Пока нет данных для графика",
+    "forecastLabel": "Прогноз",
+    "confidenceLow": "низкая точность",
+    "confidenceMedium": "средняя точность",
+    "confidenceHigh": "высокая точность",
+    "confidenceInsufficient": "недостаточно данных"
   },
   "stats": {
     "currencyFilter": "Валюта статистики",

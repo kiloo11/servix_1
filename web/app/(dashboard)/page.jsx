@@ -1,204 +1,219 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
-import { AccordionRoot, AccordionItem, AccordionTrigger, AccordionContent } from "../../components/ui/Accordion";
+import { useEffect, useMemo, useState } from "react";
 import AppSelect from "../../components/ui/AppSelect";
 import AppSelectItem from "../../components/ui/AppSelectItem";
-import AssetCard from "../../components/assets/AssetCard";
-import AssetFormModal from "../../components/assets/AssetFormModal";
-import PaymentsModal from "../../components/assets/PaymentsModal";
-import ExpireModal from "../../components/assets/ExpireModal";
+import RevenueTrendChart from "../../components/dashboard/RevenueTrendChart";
 import { useLocale } from "../../context/LocaleContext";
 import { useAuth } from "../../context/AuthContext";
-import { useData } from "../../context/DataContext";
-import { useAssetActions } from "../../lib/assetActions";
-import { useGrouping } from "../../lib/grouping";
-import { ASSET_TYPES, emptyAsset } from "../../lib/assets";
-import { clone, compareAssetsOrder, parseAppDate } from "../../lib/dates";
+import { useFormat } from "../../lib/format";
+import { formatMoney as formatMoneyRaw } from "../../lib/money";
 
-// Ported from src/views/AssetsView.vue + the asset-related slices of
-// App.vue's data/computed/methods (search/typeFilter, filteredAssets,
-// assetGroups, defaultAssetAccordionValue, drag-reorder, modal open/close).
-export default function AssetsPage() {
-  const { t, tc, locale } = useLocale();
-  const { meta } = useAuth();
-  const { assets } = useData();
-  const { assetGroupBuckets, providerOf, countryDisplayName } = useGrouping();
-  const { dropAsset } = useAssetActions();
+const DEFAULT_SUMMARY = { cashRevenue: 0, bookingsMrr: 0, recognizedMrr: 0, arpu: 0, grossMargin: 0, infraCostPerSubscriber: 0, churnRate: 0 };
+const DEFAULT_FORECAST = { dataPointsUsed: 0, confidence: "insufficient", history: [], forecast: [] };
 
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [sort, setSort] = useState("manual");
-  const [draggedId, setDraggedId] = useState("");
+const MOVEMENT_ORDER = ["new", "expansion", "reactivated", "retained", "contraction", "churned"];
+const POSITIVE_BUCKETS = new Set(["new", "expansion", "reactivated"]);
+const NEGATIVE_BUCKETS = new Set(["contraction", "churned"]);
+const MOVEMENT_LABEL_KEYS = {
+  new: "dashboard.movementNew",
+  expansion: "dashboard.movementExpansion",
+  reactivated: "dashboard.movementReactivated",
+  retained: "dashboard.movementRetained",
+  contraction: "dashboard.movementContraction",
+  churned: "dashboard.movementChurned",
+};
+const CONFIDENCE_LABEL_KEYS = {
+  low: "dashboard.confidenceLow",
+  medium: "dashboard.confidenceMedium",
+  high: "dashboard.confidenceHigh",
+  insufficient: "dashboard.confidenceInsufficient",
+};
 
-  const [assetModalOpen, setAssetModalOpen] = useState(false);
-  const [editingAsset, setEditingAsset] = useState(null);
-  const [paymentsModalOpen, setPaymentsModalOpen] = useState(false);
-  const [paymentsAssetId, setPaymentsAssetId] = useState("");
-  const [expireModalOpen, setExpireModalOpen] = useState(false);
-  const [expireAssetId, setExpireAssetId] = useState("");
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
 
-  // Derived live from `assets` (not a snapshot) so the modal reflects fresh
-  // data after a mutation reloads — matches App.vue's paymentsAsset/expireAsset
-  // computeds, which re-resolve via assetById() on every assets change.
-  const paymentsAsset = assets.find((asset) => asset.id === paymentsAssetId) || null;
-  const expireAsset = assets.find((asset) => asset.id === expireAssetId) || null;
+// Bedolaga's numbers are RUB-native (unlike the rest of the app, which is
+// currency-agnostic over user-entered asset prices) — no currency picker
+// here, always render in RUB.
+function formatRub(value, locale) {
+  return formatMoneyRaw(value || 0, "RUB", locale);
+}
 
-  const filteredAssets = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return assets.filter((asset) => {
-      const provider = providerOf(asset);
-      const isInactive = Boolean(asset.inactive);
-      const matchesType = typeFilter === "inactive" ? isInactive : !isInactive && (typeFilter === "all" || asset.type === typeFilter);
-      const haystack = [asset.name, asset.ip, asset.domain, provider?.name].join(" ").toLowerCase();
-      return matchesType && haystack.includes(query);
-    });
-  }, [assets, search, typeFilter, providerOf]);
+function monthLabelOf(monthKey, intlLocale) {
+  return new Intl.DateTimeFormat(intlLocale, { month: "short", year: "2-digit" }).format(new Date(`${monthKey}-01T00:00:00`));
+}
 
-  // "manual" is the drag-reordered sortOrder — the other three are purely
-  // client-side display order and never touch sortOrder, so switching back
-  // to "manual" always lands exactly where drag-and-drop left it.
-  const sorters = useMemo(
-    () => ({
-      manual: compareAssetsOrder,
-      payment: (a, b) => parseAppDate(a.expiresAt) - parseAppDate(b.expiresAt),
-      provider: (a, b) => (providerOf(a)?.name || "").localeCompare(providerOf(b)?.name || "", locale),
-      country: (a, b) => countryDisplayName(a.countryCode).localeCompare(countryDisplayName(b.countryCode), locale),
-    }),
-    [providerOf, countryDisplayName, locale]
-  );
+// New primary landing page (Дашборд) — Phase 5 of the Node→Python migration
+// plan. Data comes from the Python backend's /api/dashboard/* endpoints
+// (Phases 2-4), fetched directly here the same way pnl/page.jsx fetches
+// /api/bot/revenue — this isn't core CRUD data, so it doesn't belong in
+// DataContext.
+export default function DashboardPage() {
+  const { t, locale } = useLocale();
+  const { call } = useAuth();
+  const { formatShort } = useFormat();
+  const intlLocale = locale === "en" ? "en-US" : "ru-RU";
 
-  const assetGroups = useMemo(
-    () =>
-      ASSET_TYPES.map((type) => ({
-        type,
-        label: t(`type.${type}`) || t("type.record"),
-        items: filteredAssets.filter((asset) => asset.type === type).sort(sorters[sort] || compareAssetsOrder),
-      })).filter((group) => group.items.length),
-    [filteredAssets, t, sort, sorters]
-  );
+  const [month, setMonth] = useState(currentMonthKey);
+  const [summary, setSummary] = useState(DEFAULT_SUMMARY);
+  const [movement, setMovement] = useState({});
+  const [trend, setTrend] = useState([]);
+  const [forecast, setForecast] = useState(DEFAULT_FORECAST);
 
-  const defaultAccordionValue = useMemo(() => {
-    for (const group of assetGroups) {
-      if (group.type !== "vps" && group.type !== "domain") continue;
-      const bucket = assetGroupBuckets(group)[0];
-      if (bucket) return [`${group.type}:${bucket.category || "none"}`];
+  const monthOptions = useMemo(() => {
+    const now = new Date();
+    const options = [];
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      options.push({ value, label: new Intl.DateTimeFormat(intlLocale, { month: "long", year: "numeric" }).format(date) });
     }
-    return [];
-  }, [assetGroups, assetGroupBuckets]);
+    return options;
+  }, [intlLocale]);
 
-  function openAsset(asset = null) {
-    setEditingAsset(asset ? clone(asset) : { ...emptyAsset(), priceCurrency: meta.currency || "USDT" });
-    setAssetModalOpen(true);
-  }
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await call(`/api/dashboard/summary?month=${month}`);
+        if (!cancelled) setSummary(data);
+      } catch {
+        if (!cancelled) setSummary(DEFAULT_SUMMARY);
+      }
+      try {
+        const data = await call(`/api/dashboard/mrr-movement?month=${month}`);
+        if (!cancelled) setMovement(data.buckets || {});
+      } catch {
+        if (!cancelled) setMovement({});
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [call, month]);
 
-  function openPayments(asset) {
-    setPaymentsAssetId(asset.id);
-    setPaymentsModalOpen(true);
-  }
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await call("/api/dashboard/trend?months=12");
+        if (!cancelled) setTrend((data.months || []).map((row) => ({ ...row, monthLabel: monthLabelOf(row.month, intlLocale) })));
+      } catch {
+        if (!cancelled) setTrend([]);
+      }
+      try {
+        const data = await call("/api/dashboard/forecast?metric=bookingsMrr&months=3");
+        if (!cancelled) {
+          setForecast({ ...data, forecast: (data.forecast || []).map((row) => ({ ...row, monthLabel: monthLabelOf(row.month, intlLocale) })) });
+        }
+      } catch {
+        if (!cancelled) setForecast(DEFAULT_FORECAST);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [call, intlLocale]);
 
-  function openExpire(asset) {
-    setExpireAssetId(asset.id);
-    setExpireModalOpen(true);
-  }
+  const movementRows = useMemo(() => {
+    const rows = MOVEMENT_ORDER.map((key) => ({ key, ...(movement[key] || { count: 0, revenue: 0 }) }));
+    const maxRevenue = Math.max(1, ...rows.map((row) => Math.abs(row.revenue || 0)));
+    return rows.map((row) => ({ ...row, width: (Math.abs(row.revenue || 0) / maxRevenue) * 100 }));
+  }, [movement]);
 
-  function renderCard(asset) {
-    return (
-      <AssetCard
-        key={asset.id}
-        asset={asset}
-        dragging={draggedId === asset.id}
-        dragDisabled={sort !== "manual"}
-        onDragStart={(a, e) => {
-          setDraggedId(a.id);
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", a.id);
-        }}
-        onDragEnd={() => setDraggedId("")}
-        onDropOn={(target) => {
-          dropAsset(draggedId, target);
-          setDraggedId("");
-        }}
-        onEdit={openAsset}
-        onOpenPayments={openPayments}
-        onOpenExpire={openExpire}
-      />
-    );
-  }
+  const hasMovementData = movementRows.some((row) => row.count > 0);
+  const formatMoney = (value) => formatRub(value, locale);
 
   return (
-    <section>
-      <section className="toolbar">
-        <div className="search-row">
-          <input type="search" placeholder={t("assets.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
-          <AppSelect value={typeFilter} onChange={setTypeFilter} aria-label={t("common.type")}>
-            <AppSelectItem value="all">{t("assets.allTypes")}</AppSelectItem>
-            <AppSelectItem value="inactive">{t("assets.inactive")}</AppSelectItem>
-            <AppSelectItem value="vps">{t("typePlural.vps")}</AppSelectItem>
-            <AppSelectItem value="domain">{t("typePlural.domain")}</AppSelectItem>
-            <AppSelectItem value="certificate">{t("typePlural.certificate")}</AppSelectItem>
-          </AppSelect>
-          <AppSelect value={sort} onChange={setSort} aria-label={t("assets.sort")}>
-            <AppSelectItem value="manual">{t("assets.sortManual")}</AppSelectItem>
-            <AppSelectItem value="payment">{t("assets.sortPayment")}</AppSelectItem>
-            <AppSelectItem value="provider">{t("assets.sortProvider")}</AppSelectItem>
-            <AppSelectItem value="country">{t("assets.sortCountry")}</AppSelectItem>
-          </AppSelect>
+    <section className="view active">
+      <div className="section-head">
+        <div className="heading-stack">
+          <h1>{t("nav.dashboard")}</h1>
+          <span>{t("dashboard.subtitle")}</span>
         </div>
-        <button className="primary-button" type="button" onClick={() => openAsset()}>
-          <Plus size={18} />
-          {t("assets.add")}
-        </button>
-      </section>
+        <AppSelect value={month} onChange={setMonth} className="period-select" aria-label={t("dashboard.month")}>
+          {monthOptions.map((option) => (
+            <AppSelectItem key={option.value} value={option.value}>
+              {option.label}
+            </AppSelectItem>
+          ))}
+        </AppSelect>
+      </div>
 
-      <section className="view active">
-        {filteredAssets.length ? (
-          <AccordionRoot type="multiple" defaultValue={defaultAccordionValue} className="asset-sections">
-            {assetGroups.map((group) => (
-              <section key={group.type} className="asset-type-section">
-                {typeFilter === "all" ? (
-                  <div className="asset-type-head">
-                    <h2>{group.label}</h2>
-                    <span>{tc("piece", group.items.length)}</span>
+      <div className="stats-grid">
+        <article className="stat-card">
+          <span>{t("dashboard.cardCashRevenue")}</span>
+          <strong>{formatMoney(summary.cashRevenue)}</strong>
+        </article>
+        <article className="stat-card">
+          <span>{t("dashboard.cardBookingsMrr")}</span>
+          <strong>{formatMoney(summary.bookingsMrr)}</strong>
+        </article>
+        <article className="stat-card">
+          <span>{t("dashboard.cardRecognizedMrr")}</span>
+          <strong>{formatMoney(summary.recognizedMrr)}</strong>
+        </article>
+        <article className="stat-card">
+          <span>{t("dashboard.cardArpu")}</span>
+          <strong>{formatMoney(summary.arpu)}</strong>
+        </article>
+        <article className="stat-card">
+          <span>{t("dashboard.cardGrossMargin")}</span>
+          <strong>{(summary.grossMargin * 100).toFixed(1)}%</strong>
+        </article>
+        <article className="stat-card">
+          <span>{t("dashboard.cardChurnRate")}</span>
+          <strong>{(summary.churnRate * 100).toFixed(1)}%</strong>
+        </article>
+        <article className="stat-card">
+          <span>{t("dashboard.cardInfraCostPerSubscriber")}</span>
+          <strong>{formatMoney(summary.infraCostPerSubscriber)}</strong>
+        </article>
+      </div>
+
+      <div className="charts-grid">
+        <article className="chart-panel">
+          <h2>{t("dashboard.movementTitle")}</h2>
+          {hasMovementData ? (
+            <div className="bar-list">
+              {movementRows.map((row) => {
+                const color = POSITIVE_BUCKETS.has(row.key) ? "var(--success)" : NEGATIVE_BUCKETS.has(row.key) ? "var(--danger)" : "var(--muted)";
+                return (
+                  <div key={row.key} className="bar-row">
+                    <span>
+                      <i style={{ background: color }} />
+                      {t(MOVEMENT_LABEL_KEYS[row.key])} ({row.count})
+                    </span>
+                    <div>
+                      <i style={{ width: `${row.width}%`, background: color }} />
+                    </div>
+                    <strong style={{ color }}>{formatMoney(row.revenue)}</strong>
                   </div>
-                ) : null}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="inline-empty">{t("dashboard.movementEmpty")}</div>
+          )}
+        </article>
 
-                {group.type === "vps" || group.type === "domain" ? (
-                  assetGroupBuckets(group).map((bucket) => (
-                    <AccordionItem key={bucket.category || "none"} value={`${group.type}:${bucket.category || "none"}`} className="category-group">
-                      <AccordionTrigger className="category-group-summary">
-                        <span className="category-badge" style={bucket.color ? { "--category-color": bucket.color } : undefined}>
-                          {bucket.label}
-                        </span>
-                        <span className="category-group-count">{tc("piece", bucket.items.length)}</span>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="asset-grid">{bucket.items.map(renderCard)}</div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))
-                ) : (
-                  <div className="asset-grid">{group.items.map(renderCard)}</div>
-                )}
-              </section>
-            ))}
-          </AccordionRoot>
-        ) : (
-          <div className="empty-state visible">
-            <h1>{t("assets.emptyTitle")}</h1>
-            <p>{t("assets.emptyText")}</p>
-            <button className="primary-button" type="button" onClick={() => openAsset()}>
-              <Plus size={18} />
-              {t("assets.add")}
-            </button>
+        <article className="chart-panel wide-chart">
+          <div className="chart-title-row">
+            <h2>{t("dashboard.trendTitle")}</h2>
+            <span>{t(CONFIDENCE_LABEL_KEYS[forecast.confidence] || CONFIDENCE_LABEL_KEYS.insufficient)}</span>
           </div>
-        )}
-      </section>
-
-      <AssetFormModal open={assetModalOpen} onOpenChange={setAssetModalOpen} asset={editingAsset} />
-      <PaymentsModal open={paymentsModalOpen} onOpenChange={setPaymentsModalOpen} asset={paymentsAsset} />
-      <ExpireModal open={expireModalOpen} onOpenChange={setExpireModalOpen} asset={expireAsset} />
+          {trend.some((row) => row.bookingsMrr) ? (
+            <div className="month-profit-chart-wrap">
+              <RevenueTrendChart trendMonths={trend} forecastRows={forecast.forecast} currency="RUB" t={t} formatMoney={formatMoney} formatShort={formatShort} />
+            </div>
+          ) : (
+            <div className="inline-empty">{t("dashboard.trendEmpty")}</div>
+          )}
+        </article>
+      </div>
     </section>
   );
 }

@@ -13,6 +13,7 @@ import {
   ChevronsUpDown,
   Coins,
   Globe,
+  LayoutDashboard,
   LogOut,
   Megaphone,
   PanelLeftClose,
@@ -40,7 +41,8 @@ import { useMediaQuery } from "../../lib/useMediaQuery";
 // Logs and Guide moved out of primary nav into a panel on the Settings page
 // — they're administrative/reference pages, not everyday navigation.
 const NAV_ITEMS = [
-  { path: "/", labelKey: "nav.assets", icon: Server },
+  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/assets", labelKey: "nav.assets", icon: Server },
   { path: "/providers", labelKey: "nav.providers", icon: Building2 },
   { path: "/stats", labelKey: "nav.stats", icon: BarChart3 },
   { path: "/pnl", labelKey: "nav.pnl", icon: Wallet },
