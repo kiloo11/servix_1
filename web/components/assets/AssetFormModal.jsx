@@ -11,7 +11,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { useData } from "../../context/DataContext";
 import { useAssetActions } from "../../lib/assetActions";
 import { useGrouping } from "../../lib/grouping";
-import { useMoney } from "../../lib/money";
+import { currencySymbol, useMoney } from "../../lib/money";
 import { ASSET_TYPES, CURRENCIES } from "../../lib/assets";
 import { countries, countryFlagUrl } from "../../lib/countries";
 
@@ -163,7 +163,7 @@ export default function AssetFormModal({ open, onOpenChange, asset }) {
             <AppSelect value={draft.priceCurrency} onChange={(v) => set("priceCurrency", v)} aria-label={t("common.currency")}>
               {CURRENCIES.map((currency) => (
                 <AppSelectItem key={currency} value={currency}>
-                  {currency === "USDT" ? "₮" : t(`currency.${currency}`)}
+                  {currencySymbol(currency)}
                 </AppSelectItem>
               ))}
             </AppSelect>

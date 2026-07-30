@@ -9,7 +9,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { useAuth } from "../../context/AuthContext";
 import { useAssetActions } from "../../lib/assetActions";
 import { useFormat } from "../../lib/format";
-import { useMoney } from "../../lib/money";
+import { currencySymbol, useMoney } from "../../lib/money";
 import { CURRENCIES } from "../../lib/assets";
 import { toLocalInput } from "../../lib/dates";
 
@@ -69,7 +69,7 @@ export default function PaymentsModal({ open, onOpenChange, asset }) {
             <AppSelect value={quickPayment.currency} onChange={(v) => setQuickPayment((c) => ({ ...c, currency: v }))} aria-label={t("common.currency")}>
               {CURRENCIES.map((currency) => (
                 <AppSelectItem key={currency} value={currency}>
-                  {currency === "USDT" ? "₮" : t(`currency.${currency}`)}
+                  {currencySymbol(currency)}
                 </AppSelectItem>
               ))}
             </AppSelect>

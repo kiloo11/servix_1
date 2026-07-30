@@ -17,7 +17,7 @@ export default function AppSelect({ value, onChange, placeholder = "", number = 
   return (
     <Select.Root value={stringValue} onValueChange={handleChange}>
       <Select.Trigger className={`app-select-trigger${className ? ` ${className}` : ""}`} {...triggerProps}>
-        <Select.Value placeholder={placeholder} />
+        <Select.Value className="app-select-value" placeholder={placeholder} />
         <Select.Icon className="app-select-icon">
           <ChevronDown size={16} />
         </Select.Icon>

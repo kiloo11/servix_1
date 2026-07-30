@@ -13,7 +13,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useData } from "../../../context/DataContext";
 import { useToast } from "../../../context/ToastContext";
 import { useFormat } from "../../../lib/format";
-import { useMoney } from "../../../lib/money";
+import { currencySymbol, useMoney } from "../../../lib/money";
 import { useUpdateActions } from "../../../lib/updateActions";
 import { CURRENCIES, emptyCategory } from "../../../lib/assets";
 import { clone } from "../../../lib/dates";
@@ -173,7 +173,7 @@ export default function SettingsPage() {
               <AppSelect value={settings.currency} onChange={(v) => setField("currency", v)} aria-label={t("settings.currency")}>
                 {CURRENCIES.map((currency) => (
                   <AppSelectItem key={currency} value={currency}>
-                    {currency === "USDT" ? "₮" : t(`currency.${currency}`)}
+                    {currencySymbol(currency)}
                   </AppSelectItem>
                 ))}
               </AppSelect>

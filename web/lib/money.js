@@ -31,6 +31,15 @@ export function usdRubRate(meta) {
   return Number(meta.rateRubPerEur || 0) / (Number(meta.rateUsdtPerEur) || 1);
 }
 
+// For currency *pickers* (option labels), not amounts — formatMoney already
+// renders EUR/RUB amounts with their Intl-native €/₽ symbols; this is what
+// those selects need to show the same symbols instead of full names like
+// "Российский рубль", which wrapped to 2 lines and forced the select (and
+// any grid/flex track sizing it) wider than intended.
+export function currencySymbol(currency) {
+  return { USDT: "₮", EUR: "€", RUB: "₽" }[currency] || currency;
+}
+
 export function formatMoney(value, currency = "USDT", locale = "ru") {
   const intlLocale = locale === "en" ? "en-US" : "ru-RU";
   const num = Number(value || 0);

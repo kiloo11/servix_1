@@ -23,10 +23,6 @@
     "collapseMenu": "Collapse menu",
     "expandMenu": "Expand menu"
   },
-  "currency": {
-    "EUR": "Euro",
-    "RUB": "Russian ruble"
-  },
   "type": {
     "vps": "Server",
     "domain": "Domain",

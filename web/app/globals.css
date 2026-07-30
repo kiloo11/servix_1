@@ -1088,6 +1088,15 @@ table.data-table {
 .app-select-trigger:hover {
   border-color: rgba(255, 255, 255, 0.16);
 }
+/* Long option text (e.g. "Российский рубль") wrapped to 2 lines and forced
+   the trigger — and any grid/flex track sizing it, like .quick-payment —
+   wider than intended instead of just truncating in place. */
+.app-select-value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 .app-select-icon {
   color: var(--muted);
   flex-shrink: 0;
@@ -1993,7 +2002,12 @@ table.data-table {
 /* ─── Payments modal ──────────────────────────────────────────────────────────── */
 .quick-payment {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  /* Bare 1fr doesn't shrink below its content's intrinsic width — a long
+     currency name (e.g. "Российский рубль") in the select forced this
+     track wider than its fair share, pushing the auto (add-button) column
+     out past the modal's edge. minmax(0, 1fr) actually lets it shrink; the
+     select's own text truncates instead (see .app-select-value). */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 10px;
   align-items: end;
   margin-bottom: 16px;
@@ -2995,7 +3009,7 @@ table.data-table {
      button spans full width instead of staying a small square dropped onto
      its own row (a plain 1-column collapse would do that). */
   .quick-payment {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .quick-payment label:nth-child(3) {
     grid-column: 1 / -1;

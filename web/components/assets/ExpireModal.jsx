@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useAssetActions } from "../../lib/assetActions";
 import { useFormat } from "../../lib/format";
 import { CURRENCIES } from "../../lib/assets";
+import { currencySymbol } from "../../lib/money";
 
 const PRESET_DAYS = [1, 3, 5, 10, 20, 30, 60, 90];
 
@@ -58,7 +59,7 @@ export default function ExpireModal({ open, onOpenChange, asset }) {
             <AppSelect value={renewalPayment.currency} onChange={(v) => setRenewalPayment((c) => ({ ...c, currency: v }))} aria-label={t("common.currency")}>
               {CURRENCIES.map((currency) => (
                 <AppSelectItem key={currency} value={currency}>
-                  {currency === "USDT" ? "₮" : t(`currency.${currency}`)}
+                  {currencySymbol(currency)}
                 </AppSelectItem>
               ))}
             </AppSelect>
