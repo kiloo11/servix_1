@@ -55,14 +55,44 @@
   --accent: var(--color-accent);
   --accent2: var(--color-accent2);
 
-  --border: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.14);
   --text: #f4f4f5;
-  --text2: rgba(215, 194, 240, 0.8);
-  --muted: rgba(215, 194, 240, 0.55);
+  --text2: rgba(215, 194, 240, 0.9);
+  /* Was 0.55 — against the near-black --color-bg (#04000f), that landed
+     around 3:1 contrast, borderline/failing WCAG AA for the small text
+     (card labels, hints, subtitles) this is used for everywhere. */
+  --muted: rgba(215, 194, 240, 0.75);
 
-  --glass-border: rgba(207, 0, 163, 0.08);
+  --glass-border: rgba(207, 0, 163, 0.14);
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-bg-nested: rgba(255, 255, 255, 0.03);
+
+  /* ─── Typography scale ───────────────────────────────────────────────────────
+     Grew organically to 16 near-duplicate font-sizes (12px/12.5px/13px/13.5px
+     etc., often on visually equivalent roles) with no defined steps. Collapsed
+     to these 10 — every rule in this file now references one of them, so a
+     size change here is a size change everywhere that role appears.
+     Weights are deliberately left as plain numbers at each call site instead
+     of tokenized the same way: CSS custom properties aren't reliably resolved
+     inside @font-face descriptors (where 400/500/700 already appear, matching
+     actual font files), and unlike sizes, weight usage was already a clean,
+     small 400/500/600/700 set — these four names are here as the reference
+     for which number means what, not a replacement to wire up everywhere. */
+  --text-2xs: 10px; /* rarest — pagination hints, tiny captions */
+  --text-xs: 11px; /* uppercase micro-labels, secondary meta */
+  --text-sm: 12px; /* default secondary/meta text — hints, sub-values, table cells */
+  --text-base: 13px; /* default body text, inputs, list rows */
+  --text-md: 14px; /* emphasized body, primary buttons, nav labels */
+  --text-lg: 15px; /* small display-font emphasis: brand text, amounts, counters */
+  --text-xl: 16px; /* subheadings */
+  --text-2xl: 18px; /* modal/dialog headings */
+  --text-3xl: 20px; /* page h1, prominent numbers */
+  --text-4xl: 26px; /* hero stat-card value */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
 
   --danger: #ef4444;
   --success: #22c55e;
@@ -128,7 +158,7 @@
   justify-content: center;
   gap: 8px;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   letter-spacing: 0.02em;
   padding: 10px 20px;
@@ -152,7 +182,7 @@
   justify-content: center;
   gap: 8px;
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   padding: 10px 18px;
   border-radius: 12px;
@@ -194,7 +224,7 @@
   justify-content: center;
   gap: 8px;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   padding: 12px 20px;
   border-radius: 12px;
@@ -213,7 +243,7 @@
   justify-content: center;
   gap: 8px;
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   padding: 11px 18px;
   border-radius: 12px;
@@ -232,7 +262,7 @@
   justify-content: center;
   gap: 8px;
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   padding: 11px 18px;
   border-radius: 12px;
@@ -282,7 +312,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
 }
@@ -293,7 +323,7 @@
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
 }
 .login-card input:focus {
   outline: none;
@@ -307,15 +337,15 @@
 .brand.compact strong {
   display: block;
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--text-xl);
   color: var(--text);
 }
 .brand.compact span {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .form-error {
-  font-size: 13px;
+  font-size: var(--text-base);
   color: rgba(239, 68, 68, 0.9);
   margin: 0;
 }
@@ -329,7 +359,7 @@
   height: 52px;
   text-align: center;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: var(--text-3xl);
   font-weight: 700;
 }
 /* 6 boxes at 44px + 8px gaps (304px) overflow the login card's content width
@@ -345,7 +375,7 @@
   .otp-inputs input {
     width: 38px;
     height: 46px;
-    font-size: 17px;
+    font-size: var(--text-2xl);
   }
 }
 
@@ -461,14 +491,14 @@
 }
 .brand-text strong {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: var(--text-lg);
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .brand-text span {
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   color: var(--muted);
   white-space: nowrap;
 }
@@ -498,7 +528,7 @@
   background: transparent;
   color: var(--muted);
   font-family: var(--font-text);
-  font-size: 13.5px;
+  font-size: var(--text-base);
   cursor: pointer;
   position: relative;
   width: 100%;
@@ -530,41 +560,179 @@
   border-radius: 9px;
   background: var(--accent);
   color: #fff;
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+/* Two separate cards (resources vs finances) rather than one long list —
+   a divider line within a single card reads as "still one thing", two
+   bordered boxes read as genuinely separate groups. */
+.summary-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .summary-card {
   border-radius: 12px;
-  padding: 10px 12px 12px;
+  padding: 12px 14px;
   background: var(--glass-bg-nested);
   border: 1px solid var(--glass-border);
 }
-.summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 10px;
+.summary-heading {
+  display: block;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
 }
-.summary > div {
+/* Only the rates card needs a corner action. align-items: center here
+   centers by each child's margin box, not its glyph box — .summary-heading's
+   own margin-bottom (needed when it's used standalone in the other two
+   cards) made its box taller below than the button's, so centering put the
+   text visibly higher than the icon. Zero that margin here and move the
+   same spacing to the row itself instead. */
+.summary-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.summary-heading-row .summary-heading {
+  margin-bottom: 0;
+}
+.summary-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.summary-refresh-button:hover:not(:disabled) {
+  opacity: 1;
+}
+.summary-refresh-button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.summary-refresh-button:disabled svg {
+  animation: summary-refresh-spin 0.7s linear infinite;
+}
+@keyframes summary-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Was a 2-column grid — 5 metrics in 2 columns always leaves one alone in
+   its row with an empty cell beside it (Провайдеры), and the sidebar is too
+   narrow for 2 columns to give "Уплачено"'s amount real room anyway (that's
+   why it needed a .summary-wide escape hatch). A single-column list with an
+   icon per row reads cleaner at this width and has no leftover empty cells. */
+.summary {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 9px;
 }
-.summary span {
-  font-size: 10px;
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Was flex-wrap: wrap, which pushed the label onto its own line once the
+     row ran out of room (e.g. once a trend tag showed up) — instead the
+     label text itself (not the icon) is what should give up the space,
+     down to nothing, so the value/trend always stay on one line. */
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.summary-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-2xs);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  min-width: 0;
+  flex-shrink: 1;
 }
-.summary strong {
+.summary-label svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.summary-label-text {
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.summary-row strong {
   font-family: var(--font-display);
-  font-size: 13.5px;
+  font-size: var(--text-base);
+  color: var(--text);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+/* Resources card: icon + count only, no label text, all 3 sharing one row
+   instead of stacked — the label is still available as a native title
+   tooltip on hover/focus. Equal-width grid cells with symmetric padding
+   keep each icon+number centered exactly on its side of the divider line
+   (asymmetric padding here would put the divider and the visual center of
+   each half at different points, like it did on .asset-figures earlier). */
+.summary-inline {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.summary-inline-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+.summary-inline-item:not(:first-child) {
+  border-left: 1px solid var(--border);
+}
+.summary-inline-item svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.summary-inline-item strong {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
   color: var(--text);
 }
-.summary-wide {
-  grid-column: 1 / -1;
+.summary-value {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.trend-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+.trend-tag.trend-good {
+  color: var(--success);
+}
+.trend-tag.trend-bad {
+  color: var(--danger);
+}
+.trend-tag.trend-flat {
+  color: var(--muted);
 }
 .sidebar-spacer {
   flex: 1;
@@ -603,7 +771,7 @@
   color: var(--accent);
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 .sidebar-account-text {
   display: flex;
@@ -613,7 +781,7 @@
   flex: 1;
 }
 .sidebar-account-text strong {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -623,7 +791,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 .sidebar-account-chevron {
@@ -653,7 +821,7 @@
   gap: 10px;
   padding: 9px 10px;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--text2);
   cursor: pointer;
   outline: none;
@@ -698,7 +866,7 @@
     background: var(--color-bg2);
     color: var(--text);
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: var(--text-lg);
     cursor: pointer;
   }
   .sidebar-collapse {
@@ -754,22 +922,25 @@
   border: 1px solid var(--glass-border);
 }
 .stat-card-label {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 .stat-card-value {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: var(--text-4xl);
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
 }
 .stat-card-sub {
-  opacity: 0.5;
+  /* Was 0.5, stacked on top of --muted's own alpha — compounded to ~0.4
+     effective opacity against the near-black background, too faint for
+     text used this widely (RUB-equivalents, hints, payment counts). */
+  opacity: 0.72;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
@@ -780,7 +951,7 @@
   gap: 5px;
   padding: 3px 10px;
   border-radius: 8px;
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   border: 1px solid transparent;
@@ -814,7 +985,7 @@
 /* ─── Form inputs ─────────────────────────────────────────────────────────────── */
 .field-label {
   display: block;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
   margin-bottom: 6px;
@@ -828,7 +999,7 @@
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
   transition: border-color 0.15s, background 0.15s;
 }
 .input:focus,
@@ -854,12 +1025,12 @@
 table.data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: var(--text-base);
 }
 .data-table th {
   text-align: left;
   padding: 10px 14px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
@@ -893,7 +1064,7 @@ table.data-table {
 .toast {
   border-radius: 12px;
   padding: 12px 16px;
-  font-size: 13.5px;
+  font-size: var(--text-base);
   color: var(--text);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
@@ -911,7 +1082,7 @@ table.data-table {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font-family: var(--font-text);
-  font-size: 13.5px;
+  font-size: var(--text-base);
   cursor: pointer;
 }
 .app-select-trigger:hover {
@@ -954,7 +1125,7 @@ table.data-table {
   gap: 8px;
   padding: 8px 10px;
   border-radius: 8px;
-  font-size: 13.5px;
+  font-size: var(--text-base);
   color: var(--text2);
   cursor: pointer;
   outline: none;
@@ -975,7 +1146,7 @@ table.data-table {
   z-index: 145;
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text);
   max-width: 240px;
   background: rgba(10, 4, 24, 0.92);
@@ -1024,7 +1195,7 @@ table.data-table {
 }
 .dialog-head h2 {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--text);
   margin: 0;
@@ -1054,7 +1225,7 @@ table.data-table {
 }
 .confirm-message {
   color: var(--text2);
-  font-size: 14px;
+  font-size: var(--text-md);
   line-height: 1.6;
   margin: 0;
 }
@@ -1071,7 +1242,7 @@ table.data-table {
   background: transparent;
   color: var(--text);
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   cursor: pointer;
 }
@@ -1094,6 +1265,13 @@ table.data-table {
 }
 .accordion-content-inner {
   padding: 0 16px 16px;
+  /* Its children (.table-toolbar, .payments-table, .table-footer) had no
+     margin of their own, so with no gap here they stacked flush against
+     each other — no vertical breathing room between the filter row, the
+     table, and the pagination footer. */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 @keyframes accordion-down {
   from {
@@ -1130,7 +1308,7 @@ table.data-table {
 }
 .section-head h1 {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: var(--text-3xl);
   color: var(--text);
   margin: 0;
 }
@@ -1150,7 +1328,7 @@ table.data-table {
   margin: 0;
 }
 .heading-stack > span {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .search-row {
@@ -1170,7 +1348,7 @@ table.data-table {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font-family: var(--font-text);
-  font-size: 13.5px;
+  font-size: var(--text-base);
 }
 .search-row input[type="search"]:focus {
   outline: none;
@@ -1183,13 +1361,13 @@ table.data-table {
 }
 .empty-state h1 {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: var(--text-2xl);
   color: var(--text);
   margin: 0 0 8px;
 }
 .empty-state p {
   margin: 0 0 20px;
-  font-size: 13.5px;
+  font-size: var(--text-base);
 }
 .empty-state .primary-button {
   margin: 0 auto;
@@ -1213,12 +1391,12 @@ table.data-table {
 }
 .asset-type-head h2 {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--text-xl);
   color: var(--text);
   margin: 0;
 }
 .asset-type-head span:not(.provider-type-head-right) {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .provider-type-head {
@@ -1230,7 +1408,7 @@ table.data-table {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--muted);
   margin-left: auto;
 }
@@ -1247,7 +1425,7 @@ table.data-table {
   gap: 10px;
 }
 .category-group-count {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
   margin-left: auto;
 }
@@ -1257,10 +1435,12 @@ table.data-table {
 .category-badge {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   padding: 3px 10px;
   border-radius: 8px;
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   font-weight: 600;
+  white-space: nowrap;
   /* Categories are a user-managed entity now (own color per row), not a
      fixed 3-name enum — driven by the --category-color custom property set
      inline per badge. */
@@ -1283,7 +1463,7 @@ table.data-table {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 .category-manage-chip:hover {
@@ -1311,10 +1491,10 @@ table.data-table {
 /* ─── Asset card ──────────────────────────────────────────────────────────────── */
 .asset-card {
   border-radius: 16px;
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   transition: border-color 0.2s, box-shadow 0.2s, opacity 0.15s;
@@ -1340,9 +1520,17 @@ table.data-table {
   gap: 10px;
   min-width: 0;
 }
+/* The name/subtitle wrapper is a flex item with no size of its own — without
+   min-width: 0 here, flexbox falls back to its content's min-content width,
+   which for the nowrap <h2> inside is its FULL unwrapped text length, so a
+   long name claims that much space regardless of the h2's own max-width +
+   ellipsis, overlapping the category badge instead of yielding to it. */
+.card-title-row > div {
+  min-width: 0;
+}
 .card-title-row h2 {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 600;
   color: var(--text);
   margin: 0;
@@ -1350,6 +1538,12 @@ table.data-table {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 180px;
+}
+.asset-card .card-title-row h2 {
+  font-size: var(--text-xl);
+  /* No header badge competing for space anymore (category is already shown
+     once, on the accordion group above) — the title can use the room. */
+  max-width: 240px;
 }
 .favicon {
   width: 32px;
@@ -1371,13 +1565,13 @@ table.data-table {
   color: var(--accent);
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 .country-option {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .flag-icon {
@@ -1388,47 +1582,81 @@ table.data-table {
   flex-shrink: 0;
 }
 .card-subtitle-link {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
   text-decoration: none;
 }
 .card-subtitle-link:hover {
   color: var(--accent);
 }
-.header-badges {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
-}
 .pill {
   display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 3px 9px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
   white-space: nowrap;
 }
 .meta-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--text2);
 }
-.ip-meta {
+/* The relative status line ("Просрочено на…"/"Истекает через…") plus the
+   next-payment date are the single most actionable fact on the card —
+   pulled out of the plain meta-list into their own bordered block instead
+   of reading as just another gray line next to "Провайдер: …". */
+.expiry-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+.expiry-block-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text2);
+}
+.expiry-block.is-soon {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+.expiry-block.is-soon .expiry-block-main {
+  color: var(--warning);
+}
+.expiry-block.is-overdue {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.32);
+}
+.expiry-block.is-overdue .expiry-block-main {
+  color: var(--danger);
+}
+.meta-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+.meta-row svg {
+  flex-shrink: 0;
+  color: var(--muted);
 }
 .meta-copy-button {
   border: none;
   background: transparent;
   color: var(--text2);
   font-family: ui-monospace, monospace;
-  font-size: 12px;
+  font-size: var(--text-sm);
   cursor: pointer;
   padding: 0;
   text-decoration: underline dotted;
@@ -1436,18 +1664,46 @@ table.data-table {
 .meta-copy-button:hover {
   color: var(--accent);
 }
-.price-strip,
-.payment-strip {
+/* Monthly cost and total-paid used to be two unlabeled rows of identical
+   bold text stacked directly on each other — nothing distinguished which
+   number meant what. Side-by-side columns with their own label fix that. */
+.asset-figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  position: relative;
+}
+/* A border on the second column (plus matching padding) would sit off from
+   the card's true midpoint once the text inside is centered — this divider
+   is positioned independently of the columns/padding, always exactly at
+   the halfway point. */
+.asset-figures::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--border);
+}
+.asset-figure {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 12.5px;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 8px;
+}
+.asset-figure-label {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--muted);
 }
-.price-strip strong,
-.payment-strip strong {
+.asset-figure strong {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: var(--text-lg);
   color: var(--text);
 }
 .asset-card footer {
@@ -1509,7 +1765,7 @@ table.data-table {
   margin-top: 4px;
 }
 .provider-note {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--text2);
   margin: 0;
   line-height: 1.5;
@@ -1521,7 +1777,7 @@ table.data-table {
 }
 .provider-total strong {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--text-xl);
   color: var(--text);
 }
 .provider-asset-list {
@@ -1557,7 +1813,7 @@ table.data-table {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
 }
@@ -1571,7 +1827,7 @@ table.data-table {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
 }
 .form-grid input:focus,
 .form-grid textarea:focus,
@@ -1590,7 +1846,7 @@ table.data-table {
   gap: 6px;
 }
 .form-grid legend {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
   padding: 0;
@@ -1608,7 +1864,7 @@ table.data-table {
   padding: 9px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--muted);
   cursor: pointer;
   font-weight: normal !important;
@@ -1622,7 +1878,7 @@ table.data-table {
   color: var(--text);
 }
 .hint {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
   margin: -6px 0 14px;
 }
@@ -1702,7 +1958,7 @@ table.data-table {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 .search-select-options {
   max-height: 260px;
@@ -1718,7 +1974,7 @@ table.data-table {
   border: none;
   background: transparent;
   color: var(--text2);
-  font-size: 13px;
+  font-size: var(--text-base);
   cursor: pointer;
   justify-content: flex-start;
 }
@@ -1730,7 +1986,7 @@ table.data-table {
 .inline-empty {
   padding: 12px;
   text-align: center;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 
@@ -1769,11 +2025,11 @@ table.data-table {
 }
 .payment-item strong {
   font-family: var(--font-display);
-  font-size: 13.5px;
+  font-size: var(--text-base);
   color: var(--text);
 }
 .payment-item span {
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 .table-footer {
@@ -1782,7 +2038,7 @@ table.data-table {
   justify-content: space-between;
   gap: 12px;
   margin-top: 14px;
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .pagination {
@@ -1792,7 +2048,7 @@ table.data-table {
 }
 .pagination strong {
   font-family: var(--font-display);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--text);
 }
 
@@ -1805,7 +2061,7 @@ table.data-table {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
   margin-bottom: 16px;
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--muted);
 }
 .expire-current strong {
@@ -1831,11 +2087,11 @@ table.data-table {
   margin-bottom: 8px;
 }
 .date-adjust-title strong {
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--text);
 }
 .date-adjust-title span {
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 .date-adjust-row {
@@ -1848,7 +2104,7 @@ table.data-table {
   align-items: center;
   gap: 3px;
   padding: 7px 12px;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
 }
 .is-plus .preset-button:hover {
   border-color: rgba(34, 197, 94, 0.3);
@@ -1870,7 +2126,11 @@ table.data-table {
 }
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  /* Fixed 4 columns rather than auto-fit/minmax — with 8 cards (PnL with bot
+     revenue enabled) auto-fit let every card squeeze onto one cramped line on
+     wide screens instead of wrapping into a predictable 2x4 layout. Narrower
+     viewports drop to 2 then 1 column below. */
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -1878,14 +2138,23 @@ table.data-table {
   gap: 4px;
 }
 .stats-grid .stat-card span {
-  font-size: 11px;
+  font-size: var(--text-xs);
+  line-height: 1.4;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  /* Labels vary in length (some wrap to 2 lines, e.g. "ЧИСТАЯ ПРИБЫЛЬ ЗА
+     МЕСЯЦ", others fit on 1), which pushed each card's number to a
+     different vertical position depending on how many lines its own label
+     happened to wrap to. Reserving 2 lines' worth of height up front keeps
+     every card's number aligned regardless of label length. */
+  min-height: 2.8em;
+  display: flex;
+  align-items: flex-start;
 }
 .stats-grid .stat-card strong {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: var(--text-3xl);
   color: var(--text);
 }
 .charts-grid {
@@ -1909,7 +2178,7 @@ table.data-table {
 }
 .chart-panel h2 {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   color: var(--text);
   margin: 0;
 }
@@ -1921,17 +2190,25 @@ table.data-table {
 }
 .chart-title-row span {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--accent);
 }
 
 /* Hand-rolled SVG line chart */
 .line-chart {
   position: relative;
-  height: 180px;
+  /* A fixed height meant the chart never grew past 180px even when its
+     parent .chart-panel (flex column) got stretched taller than its own
+     content — e.g. .wide-chart spans 2 rows in .charts-grid and matches
+     whatever height its sibling column's two stacked cards add up to. flex:1
+     lets it actually fill that extra space instead of leaving dead space
+     below the axis labels; min-height keeps it from collapsing when there's
+     no extra room to give. */
+  flex: 1;
+  min-height: 180px;
 }
 .compact-line {
-  height: 120px;
+  min-height: 120px;
 }
 .line-chart svg {
   width: 100%;
@@ -1953,6 +2230,18 @@ table.data-table {
 .line-main.count-line {
   stroke: #38bdf8;
 }
+/* Projected/future segment — dashed continuation of .line-main, sharing its
+   y-scale (see computePoints() in lib/statsTimeline.js) so the two meet
+   without a kink at the boundary point. No fill under it — only actual
+   historical spend gets the shaded area. */
+.line-forecast {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 2.5;
+  opacity: 0.65;
+  vector-effect: non-scaling-stroke;
+}
 .line-hit {
   fill: transparent;
   cursor: crosshair;
@@ -1961,7 +2250,7 @@ table.data-table {
   display: flex;
   justify-content: space-between;
   padding-top: 6px;
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   color: var(--muted);
 }
 .chart-tooltip {
@@ -1979,16 +2268,16 @@ table.data-table {
   min-width: 130px;
 }
 .chart-tooltip strong {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 .chart-tooltip span {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--text);
 }
 .chart-tooltip small {
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   color: var(--muted);
 }
 
@@ -2010,7 +2299,7 @@ table.data-table {
   grid-template-columns: 100px 1fr auto;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 .bar-row > span {
   display: flex;
@@ -2040,7 +2329,7 @@ table.data-table {
 }
 .bar-row strong {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text);
   white-space: nowrap;
 }
@@ -2057,7 +2346,7 @@ table.data-table {
 }
 .table-title-row span {
   display: block;
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
   margin-top: 2px;
 }
@@ -2068,7 +2357,7 @@ table.data-table {
 .table-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 16px;
 }
 .table-toolbar input[type="search"] {
   flex: 1;
@@ -2078,12 +2367,18 @@ table.data-table {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--text-base);
+}
+.table-toolbar input[type="search"]:focus {
+  outline: none;
+  border-color: rgba(207, 0, 163, 0.4);
 }
 .payments-table {
   display: flex;
   flex-direction: column;
   border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
   /* Scrolls horizontally on narrow screens instead of squeezing 4+ columns
      into an unreadable 2-column grid — same pattern as .logs-table. */
   overflow-x: auto;
@@ -2092,22 +2387,36 @@ table.data-table {
 .payments-table-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 10px;
-  padding: 10px 14px;
+  /* Right-aligned numeric columns (.cell-num, strong) sit at their column's
+     right edge, right next to the next (left-aligned) column's left edge —
+     10px read as the two touching. */
+  gap: 24px;
+  padding: 16px 14px;
   align-items: center;
-  min-width: 480px;
+  min-width: 540px;
 }
 .payments-table-head {
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid var(--border);
 }
 .payments-table-row {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--text2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+/* Zebra striping + hover — a flat 6-column row is hard to track by eye
+   across a wide table without some banding to anchor on. */
+.payments-table-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.payments-table-row:hover {
+  background: rgba(207, 0, 163, 0.06);
 }
 .payments-table-row:last-child {
   border-bottom: none;
@@ -2115,16 +2424,39 @@ table.data-table {
 .payments-table-row strong {
   color: var(--text);
   font-family: var(--font-display);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
+  text-align: right;
+}
+/* Monetary column that isn't emphasized enough to be a <strong> cell, but
+   still needs to align with the ones that are — see .pnl-table-row's
+   "Стоимость/мес" column. */
+.cell-num {
+  text-align: right;
 }
 .pnl-table-row {
   grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr 1fr;
-  min-width: 720px;
+  min-width: 800px;
+}
+/* Bot-payments table only has 3 cells per row (date/method/sum), but without
+   this it fell back to the shared 4-column template built for the Stats
+   page's payments table — the 3rd cell landed in column 3 of 4, leaving a
+   whole unused column of empty space where "Сумма" should be flush right. */
+.bot-table-row {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 /* PnL monthly chart + collapsible tables */
 .month-profit-panel {
   margin-bottom: 14px;
+}
+/* Both bot-payments and expenses AccordionItems below are separate
+   .chart-panel cards, but nothing spaced them apart from each other — with
+   no gap of its own, the accordion root just stacked them flush, borders
+   touching. */
+.pnl-tables-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .month-profit-chart-wrap {
   height: 240px;
@@ -2155,7 +2487,7 @@ table.data-table {
 }
 .alerts-counter strong {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: var(--text-lg);
 }
 .alerts-status-panel {
   display: flex;
@@ -2166,7 +2498,7 @@ table.data-table {
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.2);
   color: rgba(239, 68, 68, 0.9);
-  font-size: 13px;
+  font-size: var(--text-base);
   margin-bottom: 20px;
 }
 .alerts-status-panel.configured {
@@ -2215,13 +2547,13 @@ table.data-table {
 }
 .alert-main strong {
   font-family: var(--font-display);
-  font-size: 13.5px;
+  font-size: var(--text-base);
   color: var(--text);
 }
 .alert-meta {
   display: flex;
   gap: 12px;
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .alert-empty svg {
@@ -2246,14 +2578,14 @@ table.data-table {
   min-width: 640px;
 }
 .logs-table-head {
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
 }
 .logs-table-row {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -2262,11 +2594,11 @@ table.data-table {
 }
 .logs-table-row strong {
   color: var(--text);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 .logs-table-row code {
   font-family: ui-monospace, monospace;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2288,10 +2620,10 @@ table.data-table {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
-  font-size: 13.5px;
+  font-size: var(--text-base);
 }
 .guide-search-panel span {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .guide-manual {
@@ -2326,12 +2658,12 @@ table.data-table {
 }
 .guide-manual-head h2 {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: var(--text-lg);
   color: var(--text);
   margin: 0 0 4px;
 }
 .guide-manual-head p {
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--text2);
   margin: 0;
   line-height: 1.6;
@@ -2342,7 +2674,7 @@ table.data-table {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--text2);
 }
 .guide-advice-grid {
@@ -2366,13 +2698,13 @@ table.data-table {
   border: 1px solid rgba(239, 68, 68, 0.18);
 }
 .guide-advice strong {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text);
 }
 .guide-advice ul {
   margin: 0;
   padding-left: 18px;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   color: var(--text2);
   display: flex;
   flex-direction: column;
@@ -2430,7 +2762,7 @@ table.data-table {
   border-radius: 10px;
   color: var(--text2);
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: var(--text-base);
   transition: background 0.15s, color 0.15s;
 }
 .settings-link-row svg {
@@ -2446,7 +2778,7 @@ table.data-table {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
 }
@@ -2460,7 +2792,7 @@ table.data-table {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font-family: var(--font-text);
-  font-size: 14px;
+  font-size: var(--text-md);
 }
 .settings-panel input:focus,
 .settings-panel textarea:focus {
@@ -2485,12 +2817,12 @@ table.data-table {
 }
 .settings-card-head h2 {
   font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: var(--text-md);
   color: var(--text);
   margin: 0;
 }
 .settings-card-head span {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .settings-form-grid {
@@ -2550,14 +2882,14 @@ table.data-table {
   background: rgba(255, 255, 255, 0.03);
 }
 .rate-display-grid span {
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 .rate-display-grid strong {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   color: var(--text);
 }
 .update-log {
@@ -2565,7 +2897,7 @@ table.data-table {
   padding-left: 18px;
   max-height: 140px;
   overflow-y: auto;
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   color: var(--muted);
   display: flex;
   flex-direction: column;
@@ -2594,7 +2926,7 @@ table.data-table {
   background: #fff;
 }
 .totp-qr-card span {
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 .totp-secret-fields {
   display: flex;
@@ -2604,7 +2936,7 @@ table.data-table {
 .totp-secret-fields textarea {
   resize: none;
   font-family: ui-monospace, monospace;
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 @media (max-width: 900px) {
@@ -2627,8 +2959,14 @@ table.data-table {
     grid-column: 1;
     grid-row: auto;
   }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 @media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
   /* .search-row's own min-width: 200px stops the flex-wrap math from ever
      moving the "Добавить запись" button to its own line — the two end up
      sharing one row and visually overlapping instead. Stack the toolbar

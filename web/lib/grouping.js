@@ -9,7 +9,7 @@ import { assetCycleDays, compareAssetsOrder, DAY_MS, parseAppDate } from "./date
 import { countryNameForLocale } from "./i18n";
 
 // Ported from App.vue's providerOf/providerAssets/providerCategoriesFor/
-// providerTypeCost/providerRecommendedDateFor/providerInitial/
+// providerTypeCost/providerRecommendedDateFor/
 // assetSubtitle/categorySubgroups/domainBucket/assetGroupBuckets/
 // providerTypeGroups/countryDisplayName — the grouping/lookup helpers shared
 // by AssetsView, ProvidersView and AssetCard.
@@ -47,9 +47,6 @@ export function useGrouping() {
     const nearest = parseAppDate(dates.sort((a, b) => parseAppDate(a) - parseAppDate(b))[0]);
     if (Number.isNaN(nearest.getTime())) return "";
     return formatDate(new Date(nearest.getTime() - DAY_MS));
-  }
-  function providerInitial(asset) {
-    return (providerOf(asset)?.name || "?").slice(0, 1).toUpperCase();
   }
   function countryDisplayName(code) {
     return code ? countryNameForLocale(code, locale) : t("common.countryEmpty");
@@ -106,7 +103,6 @@ export function useGrouping() {
     providerCategoriesFor,
     providerTypeCost,
     providerRecommendedDateFor,
-    providerInitial,
     countryDisplayName,
     assetSubtitle,
     categorySubgroups,

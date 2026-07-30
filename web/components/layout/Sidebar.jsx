@@ -1,24 +1,33 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { DropdownMenu, Separator } from "radix-ui";
 import {
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowUp,
   BarChart3,
   Bell,
   Building2,
   ChevronsUpDown,
+  Coins,
+  Globe,
   LogOut,
   Megaphone,
   PanelLeftClose,
   PanelLeftOpen,
+  RefreshCw,
   Server,
   Settings,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 import AppTooltip from "../ui/AppTooltip";
 import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
 import { useLocale } from "../../context/LocaleContext";
+import { useFormat } from "../../lib/format";
 import { useMoney } from "../../lib/money";
 import { useMediaQuery } from "../../lib/useMediaQuery";
 
@@ -35,15 +44,16 @@ const NAV_ITEMS = [
   { path: "/providers", labelKey: "nav.providers", icon: Building2 },
   { path: "/stats", labelKey: "nav.stats", icon: BarChart3 },
   { path: "/pnl", labelKey: "nav.pnl", icon: Wallet },
-  { path: "/alerts", labelKey: "nav.alerts", icon: Bell },
   { path: "/ads", labelKey: "nav.ads", icon: Megaphone },
 ];
 
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }) {
   const { t } = useLocale();
-  const { meta, logout } = useAuth();
-  const { providers, assets, alerts, update, security } = useData();
-  const { formatPaymentTotal } = useMoney();
+  const { meta, setMeta, logout, call } = useAuth();
+  const [ratesRefreshing, setRatesRefreshing] = useState(false);
+  const { providers, assets, alerts, update, security, botRevenue, botRevenueMonthly } = useData();
+  const { formatMoney, convertAmount, paymentsTotalIn, usdRubRate } = useMoney();
+  const { formatShort } = useFormat();
   const router = useRouter();
   const pathname = usePathname();
   // The icon-only collapsed sidebar (and its tooltips) is a desktop-only
@@ -57,13 +67,75 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
     return assets.filter((asset) => asset.type === type).length;
   }
 
+  const currency = meta.currency || "USDT";
   const allPayments = assets.flatMap((asset) => asset.payments || []);
+
+  // Calendar-month buckets (not a rolling 30-day window) — matches how
+  // bot_revenue_monthly is already keyed server-side, so "this month" for
+  // paid and for revenue line up on the same boundary.
+  function monthKeyOf(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const now = new Date();
+  const currentMonthKey = monthKeyOf(now);
+  const previousMonthKey = monthKeyOf(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+
+  function paidInMonth(monthKey) {
+    return paymentsTotalIn(
+      allPayments.filter((payment) => String(payment.paidAt || "").slice(0, 7) === monthKey),
+      currency
+    );
+  }
+  function revenueInMonth(monthKey) {
+    const row = botRevenueMonthly.find((item) => item.month === monthKey);
+    return convertAmount(row?.totalRub || 0, "RUB", currency);
+  }
+
+  const monthPaid = paidInMonth(currentMonthKey);
+  const previousMonthPaid = paidInMonth(previousMonthKey);
+  const monthRevenue = revenueInMonth(currentMonthKey);
+  const previousMonthRevenue = revenueInMonth(previousMonthKey);
+  const monthProfit = monthRevenue - monthPaid;
+  const previousMonthProfit = previousMonthRevenue - previousMonthPaid;
+
+  // Colored by direction alone (up green, down red) — not by whether that
+  // direction is actually "good" for the metric (e.g. rising spend), since
+  // an up arrow rendered in red read as contradictory/broken at a glance.
+  function TrendTag({ current, previous }) {
+    // A zero previous-month base makes "% change" undefined (division by
+    // zero) rather than just a big number — skip the tag entirely instead
+    // of showing a misleading e.g. "+100%".
+    if (!previous) return null;
+    const delta = current - previous;
+    if (Math.abs(delta) < 0.005) return <span className="trend-tag trend-flat">{t("summary.trendFlat")}</span>;
+    const percent = (delta / Math.abs(previous)) * 100;
+    const up = delta > 0;
+    const Icon = up ? ArrowUp : ArrowDown;
+    return (
+      <span className={`trend-tag ${up ? "trend-good" : "trend-bad"}`}>
+        <Icon size={11} />
+        {Math.abs(percent).toFixed(1)}%
+      </span>
+    );
+  }
+
   const accountInitial = (security.login || "?").slice(0, 1).toUpperCase();
   const versionLabel = `v${update.version || meta.version || "—"}`;
 
   function go(path) {
     router.push(path);
     onCloseMobile();
+  }
+
+  // Same request Settings' own "Обновить курсы" button makes — a compact
+  // duplicate here since re-checking rates is exactly what this card is for.
+  async function refreshRates() {
+    setRatesRefreshing(true);
+    try {
+      setMeta({ ...meta, ...(await call("/api/rates/refresh", { method: "POST" })) });
+    } finally {
+      setRatesRefreshing(false);
+    }
   }
 
   return (
@@ -94,6 +166,25 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
 
         <Separator.Root className="sidebar-separator" decorative />
 
+        <nav className="nav-tabs alerts-section" aria-label={t("nav.alerts")}>
+          <AppTooltip label={showCollapsedUi ? t("nav.alerts") : ""} side="right">
+            <button
+              className={`nav-button${pathname === "/alerts" ? " active" : ""}`}
+              type="button"
+              aria-current={pathname === "/alerts" ? "page" : undefined}
+              onClick={() => go("/alerts")}
+            >
+              <span className="nav-icon">
+                <Bell size={18} />
+              </span>
+              <span className="nav-label">{t("nav.alerts")}</span>
+              {alerts.length ? <span className="nav-badge">{alerts.length}</span> : null}
+            </button>
+          </AppTooltip>
+        </nav>
+
+        <Separator.Root className="sidebar-separator" decorative />
+
         <nav className="nav-tabs" aria-label={t("nav.assets")}>
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.path;
@@ -110,7 +201,6 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
                     <Icon size={18} />
                   </span>
                   <span className="nav-label">{t(item.labelKey)}</span>
-                  {item.path === "/alerts" && alerts.length ? <span className="nav-badge">{alerts.length}</span> : null}
                 </button>
               </AppTooltip>
             );
@@ -119,27 +209,95 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
 
         <Separator.Root className="sidebar-separator" decorative />
 
-        <div className="summary-card">
-          <div className="summary">
-            <div>
-              <span>{t("summary.servers")}</span>
-              <strong>{countByType("vps")}</strong>
+        <div className="summary-stack">
+          <div className="summary-card">
+            <span className="summary-heading">{t("summary.resourcesHeading")}</span>
+            <div className="summary-inline">
+              <span className="summary-inline-item" title={t("summary.servers")}>
+                <Server size={14} />
+                <strong>{countByType("vps")}</strong>
+              </span>
+              <span className="summary-inline-item" title={t("summary.domains")}>
+                <Globe size={14} />
+                <strong>{countByType("domain")}</strong>
+              </span>
+              <span className="summary-inline-item" title={t("summary.providers")}>
+                <Building2 size={14} />
+                <strong>{providers.length}</strong>
+              </span>
             </div>
-            <div>
-              <span>{t("summary.domains")}</span>
-              <strong>{countByType("domain")}</strong>
+          </div>
+
+          <div className="summary-card">
+            <span className="summary-heading">{t("summary.financeHeading")}</span>
+            <div className="summary">
+              <div className="summary-row">
+                <span className="summary-label">
+                  <Wallet size={13} />
+                  <span className="summary-label-text">{t("summary.paid")}</span>
+                </span>
+                <span className="summary-value">
+                  <strong>{formatMoney(monthPaid, currency)}</strong>
+                  <TrendTag current={monthPaid} previous={previousMonthPaid} />
+                </span>
+              </div>
+              {botRevenue.configured ? (
+                <>
+                  <div className="summary-row">
+                    <span className="summary-label">
+                      <TrendingUp size={13} />
+                      <span className="summary-label-text">{t("summary.revenue")}</span>
+                    </span>
+                    <span className="summary-value">
+                      <strong>{formatMoney(monthRevenue, currency)}</strong>
+                      <TrendTag current={monthRevenue} previous={previousMonthRevenue} />
+                    </span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="summary-label">
+                      <Coins size={13} />
+                      <span className="summary-label-text">{t("summary.profit")}</span>
+                    </span>
+                    <span className="summary-value">
+                      <strong>{formatMoney(monthProfit, currency)}</strong>
+                      <TrendTag current={monthProfit} previous={previousMonthProfit} />
+                    </span>
+                  </div>
+                </>
+              ) : null}
             </div>
-            <div>
-              <span>{t("summary.providers")}</span>
-              <strong>{providers.length}</strong>
+          </div>
+
+          <div className="summary-card">
+            <div className="summary-heading-row">
+              <span className="summary-heading">{t("summary.ratesHeading")}</span>
+              <AppTooltip label={t("settings.refreshRates")}>
+                <button
+                  className="summary-refresh-button"
+                  type="button"
+                  onClick={refreshRates}
+                  disabled={ratesRefreshing}
+                  aria-label={t("settings.refreshRates")}
+                >
+                  <RefreshCw size={13} />
+                </button>
+              </AppTooltip>
             </div>
-            <div className="summary-wide">
-              <span>{t("summary.paid")}</span>
-              <strong>{formatPaymentTotal(allPayments)}</strong>
-            </div>
-            <div className="summary-wide">
-              <span>{t("summary.terms")}</span>
-              <strong>{alerts.length}</strong>
+            <div className="summary">
+              <div className="summary-row">
+                <span className="summary-label">
+                  <ArrowLeftRight size={13} />
+                  <span className="summary-label-text">{t("settings.rateRubPerEur")}</span>
+                </span>
+                <strong>{formatShort(meta.rateRubPerEur)} ₽</strong>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">
+                  <ArrowLeftRight size={13} />
+                  <span className="summary-label-text">{t("settings.rateUsdRub")}</span>
+                </span>
+                <strong>{formatShort(usdRubRate())} ₽</strong>
+              </div>
             </div>
           </div>
         </div>

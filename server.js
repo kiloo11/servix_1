@@ -220,6 +220,7 @@ async function initDb() {
   process.env.TZ = getMeta().timezone;
   if (!existed) await migrateLegacyJson();
   ensureCategorySeed();
+  seedDemoData();
 }
 
 function ensureMeta(key, value) {
@@ -245,6 +246,68 @@ function ensureCategorySeed() {
   ];
   const stmt = db.prepare("INSERT INTO categories (id, name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)");
   defaults.forEach((category, index) => stmt.run(category.id, category.name, category.color, index, now, now));
+}
+
+// Populates a handful of realistic providers/assets/payments so a fresh dev
+// DATA_DIR isn't an empty shell — opt-in only (SEED_DEMO_DATA=true, see
+// `npm run dev:server`) and only when the DB is genuinely empty, so it can
+// never touch a real deployment and won't re-seed/duplicate on every dev
+// restart against the same scratch DATA_DIR.
+function seedDemoData() {
+  if (process.env.SEED_DEMO_DATA !== "true") return;
+  seedDemoAssets();
+  seedDemoBotRevenueMonthly();
+}
+
+function seedDemoAssets() {
+  const providerCount = db.prepare("SELECT COUNT(*) AS count FROM providers").get().count;
+  const assetCount = db.prepare("SELECT COUNT(*) AS count FROM assets").get().count;
+  if (providerCount > 0 || assetCount > 0) return;
+
+  const inDays = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 16);
+  const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+  const monthsAgo = (n) => daysAgo(n * 30);
+  const payments = (entries) => entries.map(([amount, currency, monthsBack]) => ({ amount, currency, paidAt: monthsAgo(monthsBack) }));
+  // The Stats page only counts vps-type payments and defaults to a 30-day
+  // window — a handful of monthly-cadence payments (as `payments()` above
+  // gives) mostly falls just outside every short window, leaving Stats
+  // looking empty. This spread guarantees points inside every period filter
+  // (7d/30d/90d/180d/1y/all) with several within the last month for an
+  // actual line, not a single dot.
+  const recurringOffsets = [2, 9, 16, 23, 40, 70, 100, 160, 250, 350];
+  const recurring = (amount, currency) => recurringOffsets.map((d) => ({ amount, currency, paidAt: daysAgo(d) }));
+
+  const hostup = upsertProvider(normalizeProvider({ name: "HostUp", loginUrl: "https://hostup.example/login", note: "Ноды и тестовые сервера" }));
+  const cloudbase = upsertProvider(normalizeProvider({ name: "CloudBase", loginUrl: "https://cloudbase.example/login", note: "Базы данных и кэш" }));
+  const regdomains = upsertProvider(normalizeProvider({ name: "RegDomains", loginUrl: "https://regdomains.example/login", note: "Регистратор доменов" }));
+  const ssltrust = upsertProvider(normalizeProvider({ name: "SSL Trust", loginUrl: "https://ssltrust.example/login", note: "Сертификаты" }));
+
+  const assets = [
+    { type: "vps", name: "node-fra-01", providerId: hostup.id, category: "node", countryCode: "DE", ip: "45.12.34.10", price: 12, priceCurrency: "USDT", expiresAt: inDays(3), payments: recurring(12, "USDT") },
+    { type: "vps", name: "node-ams-02", providerId: hostup.id, category: "node", countryCode: "NL", ip: "45.12.34.20", price: 15, priceCurrency: "USDT", expiresAt: inDays(20), payments: recurring(15, "USDT") },
+    { type: "vps", name: "infra-db-01", providerId: cloudbase.id, category: "infra", countryCode: "US", ip: "185.22.1.5", price: 40, priceCurrency: "EUR", expiresAt: inDays(45), payments: recurring(40, "EUR") },
+    { type: "vps", name: "infra-cache-01", providerId: cloudbase.id, category: "infra", countryCode: "US", ip: "185.22.1.9", price: 8, priceCurrency: "USDT", expiresAt: inDays(-2), payments: recurring(8, "USDT") },
+    { type: "vps", name: "test-sandbox", providerId: hostup.id, category: "test", countryCode: "RU", ip: "10.0.0.5", price: 5, priceCurrency: "USDT", expiresAt: inDays(10), inactive: true, payments: [] },
+    { type: "domain", name: "example-project.com", providerId: regdomains.id, price: 12, priceCurrency: "USDT", expiresAt: inDays(60), payments: payments([[12, "USDT", 11]]) },
+    { type: "domain", name: "vpn-service.io", providerId: regdomains.id, price: 10, priceCurrency: "EUR", expiresAt: inDays(5), payments: payments([[10, "EUR", 11]]) },
+    { type: "certificate", name: "wildcard.example.com", providerId: ssltrust.id, price: 3, priceCurrency: "USDT", expiresAt: inDays(25), payments: payments([[3, "USDT", 11]]) },
+    { type: "certificate", name: "api.example.com", providerId: ssltrust.id, price: 3, priceCurrency: "USDT", expiresAt: inDays(-1), payments: payments([[3, "USDT", 11]]) }
+  ];
+  assets.forEach((input, index) => upsertAsset(normalizeAsset({ ...input, sortOrder: index })));
+}
+
+// Independent of seedDemoAssets() (own idempotency check against its own
+// table) so it backfills even into a .devdata DB that was already seeded
+// before this existed. Pre-populates bot_revenue_monthly so the PnL monthly
+// chart has data from the very first page load — fetchBotRevenue()'s own
+// demo branch upserts the same table as a side effect too, but only after
+// /api/bot/revenue has been called at least once, and the frontend fetches
+// /monthly right after it in the same effect, not before.
+function seedDemoBotRevenueMonthly() {
+  const rowCount = db.prepare("SELECT COUNT(*) AS count FROM bot_revenue_monthly").get().count;
+  if (rowCount > 0) return;
+  const monthAgo = Date.now() - BOT_REVENUE_MONTH_MS;
+  upsertBotRevenueMonthly(aggregateBotTransactions(buildDemoBotTransactions(), monthAgo).monthTotals);
 }
 
 async function migrateLegacyJson() {
@@ -416,9 +479,48 @@ function aggregateBotTransactions(rawItems, monthAgo) {
   return { totalKopeks, monthKopeks, count, monthCount, items, monthTotals };
 }
 
+// Fake raw transactions in the same shape fetchBedolagaTransactionPages()
+// would return, so they can go through the exact same aggregateBotTransactions()
+// path real API data does — spread over ~6 months so both the "Все пополнения
+// от бота" list and the monthly profit chart have something to show.
+function buildDemoBotTransactions() {
+  const now = Date.now();
+  const methods = ["yookassa", "cryptobot", "stars", "sbp"];
+  const items = [];
+  for (let i = 0; i < 42; i++) {
+    const daysBack = Math.round((i / 42) * 175);
+    const amountRub = 150 + ((i * 137) % 2350);
+    items.push({
+      id: `demo-${i}`,
+      user_id: 100000 + i,
+      amount_kopeks: Math.round(amountRub * 100),
+      amount_rubles: amountRub,
+      payment_method: methods[i % methods.length],
+      description: "",
+      completed_at: new Date(now - daysBack * 86_400_000).toISOString()
+    });
+  }
+  return items;
+}
+
 async function fetchBotRevenue(force = false) {
   if (!BEDOLAGA_API_URL || !BEDOLAGA_API_KEY) {
-    return { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
+    if (process.env.SEED_DEMO_DATA !== "true") {
+      return { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
+    }
+    const monthAgo = Date.now() - BOT_REVENUE_MONTH_MS;
+    const { totalKopeks, monthKopeks, count, monthCount, items, monthTotals } = aggregateBotTransactions(buildDemoBotTransactions(), monthAgo);
+    items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    upsertBotRevenueMonthly(monthTotals);
+    return {
+      configured: true,
+      totalRub: totalKopeks / 100,
+      monthRub: monthKopeks / 100,
+      count,
+      monthCount,
+      items: items.slice(0, BOT_REVENUE_MAX_ITEMS),
+      updatedAt: new Date().toISOString()
+    };
   }
   if (!force && botRevenueCache && Date.now() - botRevenueCache.fetchedAt < BOT_REVENUE_CACHE_MS) {
     return botRevenueCache.data;
@@ -668,7 +770,7 @@ function normalizeProvider(input, previous = {}) {
     id,
     name,
     loginUrl,
-    faviconUrl: normalizeFaviconUrl(input.faviconUrl, loginUrl),
+    faviconUrl: normalizeFaviconUrl(input.faviconUrl),
     color: normalizeColor(input.color) || normalizeColor(previous.color) || "",
     note: String(input.note ?? previous.note ?? "").trim(),
     createdAt: previous.createdAt || now,
@@ -715,8 +817,8 @@ function hslToHex(hue, saturation, lightness) {
   return `#${[r, g, b].map((value) => Math.round((value + m) * 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
-function normalizeFaviconUrl(raw, loginUrl = "") {
-  const value = normalizeExternalUrl(raw) || normalizeExternalUrl(loginUrl);
+function normalizeFaviconUrl(raw) {
+  const value = normalizeExternalUrl(raw);
   if (!value) return "";
   try {
     const url = new URL(value);

@@ -23,13 +23,13 @@ Production runs `npm run build` then `node server.js`, which serves the built SP
 
 ### Local demo/verification instance
 
-Never point a dev server at the real `./data` directory when just testing a UI change. Start the backend with an isolated `DATA_DIR` pointing at a scratch folder, e.g.:
+Never point a dev server at the real `./data` directory when just testing a UI change. `npm run dev:server` runs the backend against an isolated, gitignored `./.devdata` `DATA_DIR` and sets `SEED_DEMO_DATA=true`, which seeds a handful of realistic providers/assets/payments (mixed types, categories, currencies, expiry states — overdue/due-soon/future, one inactive) the first time that DB is created; it's a no-op once the DB already has any providers/assets, so it's safe to leave set across restarts. You still need to create a demo user once via `POST /api/auth/setup` (`{"login":"demo","password":"...","passwordRepeat":"..."}`) — seeding covers business data, not auth.
+
+For a one-off scratch instance instead (e.g. testing against an empty panel), point `DATA_DIR` at any other folder without `SEED_DEMO_DATA`:
 
 ```bash
 DATA_DIR=/path/to/scratch/data node --env-file-if-exists=.env server.js
 ```
-
-Then create a demo user via `POST /api/auth/setup` (`{"login":"demo","password":"...","passwordRepeat":"..."}`) and seed a couple of providers/assets via `POST /api/providers` and `POST /api/assets`.
 
 ### Configuration
 
@@ -86,6 +86,6 @@ Three currencies exist: `USDT`, `EUR`, `RUB`. `EUR` is the backend's internal pi
 ## Style conventions seen in this codebase
 
 - Records/assets are called "записи" (records) in Russian UI copy, not "servers", except where specifically talking about `type: vps` items.
-- Faded/secondary numeric values (e.g. a RUB-equivalent shown next to a USDT amount) use `<small className="stat-card-sub">` — `opacity: 0.5; color: var(--muted); font-size: 12px; font-weight: 700`.
+- Faded/secondary numeric values (e.g. a RUB-equivalent shown next to a USDT amount) use `<small className="stat-card-sub">` — `opacity: 0.72; color: var(--muted); font-size: 12px; font-weight: 700` (bumped from 0.5/0.55 for readability — see the comments on `--muted` and `.stat-card-sub` in `globals.css`).
 - Collapsible groups of cards use `web/components/ui/Accordion.jsx`'s `AccordionRoot`/`AccordionItem` (`type="single" collapsible` for true accordion behavior — only one section open at a time) with `AccordionTrigger` styled as `.category-group-summary` or `.asset-type-head`, not raw Radix `Accordion.*` (the wrapper's the one with the height-animation CSS wired up).
 - Assets are never hard-deleted from the UI's normal flow — they carry an `inactive` boolean column (`server.js`) and get soft-deactivated instead, preserving payment history.

@@ -39,6 +39,7 @@ build/Release
 
 # Local runtime data (SQLite DB, access log)
 /data/
+/.devdata/
 
 # Dependency directories
 node_modules/

@@ -279,7 +279,7 @@ export default function PnLPage() {
         </article>
       ) : null}
 
-      <AccordionRoot type="single" collapsible defaultValue="expenses">
+      <AccordionRoot type="single" collapsible defaultValue="expenses" className="pnl-tables-stack">
         {botRevenue.configured ? (
           <AccordionItem value="bot-payments" className="chart-panel table-panel">
             <AccordionTrigger className="table-collapsible-trigger">
@@ -291,13 +291,13 @@ export default function PnLPage() {
             <AccordionContent>
               {pnlBotPaginatedItems.length ? (
                 <div className="payments-table">
-                  <div className="payments-table-head">
+                  <div className="payments-table-head bot-table-row">
                     <span>{t("common.date")}</span>
                     <span>{t("pnl.botPaymentMethod")}</span>
-                    <span>{t("common.sum")}</span>
+                    <span className="cell-num">{t("common.sum")}</span>
                   </div>
                   {pnlBotPaginatedItems.map((item) => (
-                    <div key={item.id} className="payments-table-row">
+                    <div key={item.id} className="payments-table-row bot-table-row">
                       <span>{formatDateTime(item.createdAt)}</span>
                       <span>{item.paymentMethod || t("common.providerEmpty")}</span>
                       <strong>{formatMoney(item.amountRub, "RUB")}</strong>
@@ -365,17 +365,17 @@ export default function PnLPage() {
                 <div className="payments-table-head pnl-table-row">
                   <span>{t("common.name")}</span>
                   <span>{t("common.provider")}</span>
-                  <span>{t("pnl.colTotal")}</span>
-                  <span>{t("pnl.colMonthly")}</span>
+                  <span className="cell-num">{t("pnl.colTotal")}</span>
+                  <span className="cell-num">{t("pnl.colMonthly")}</span>
                   <span>{t("pnl.colRenewal")}</span>
-                  <span>{t("pnl.colForecast")}</span>
+                  <span className="cell-num">{t("pnl.colForecast")}</span>
                 </div>
                 {pnlPaginatedRows.map((row) => (
                   <div key={row.id} className="payments-table-row pnl-table-row">
                     <span>{row.name}</span>
                     <span>{row.provider}</span>
                     <strong>{row.totalDisplay}</strong>
-                    <span>{row.monthlyCost ? row.monthlyCostDisplay : t("pnl.noForecast")}</span>
+                    <span className="cell-num">{row.monthlyCost ? row.monthlyCostDisplay : t("pnl.noForecast")}</span>
                     <span>{formatDateTime(row.expiresAt)}</span>
                     <strong>{row.forecastAmount ? formatMoney(row.forecastAmount, row.forecastCurrency) : t("pnl.noForecast")}</strong>
                   </div>

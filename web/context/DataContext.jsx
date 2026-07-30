@@ -7,6 +7,7 @@ import { useLocale } from "./LocaleContext";
 const DataContext = createContext(null);
 
 const DEFAULT_SECURITY = { login: "", totpEnabled: false, hasPendingTotp: false };
+const DEFAULT_BOT_REVENUE = { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
 const DEFAULT_UPDATE = {
   version: "",
   latest: "",
@@ -30,6 +31,8 @@ export function DataProvider({ children }) {
   const [assets, setAssets] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [security, setSecurity] = useState(DEFAULT_SECURITY);
+  const [botRevenue, setBotRevenue] = useState(DEFAULT_BOT_REVENUE);
+  const [botRevenueMonthly, setBotRevenueMonthly] = useState([]);
   const [update, setUpdate] = useState(DEFAULT_UPDATE);
   const [loaded, setLoaded] = useState(false);
 
@@ -50,6 +53,22 @@ export function DataProvider({ children }) {
     setSecurity(await call("/api/auth/security"));
   }, [call]);
 
+  // Sidebar's summary card needs a total-revenue figure alongside "Уплачено"
+  // to show income/profit — best-effort like loadUpdate: an unconfigured or
+  // unreachable Bedolaga API must not break the rest of the app's data load.
+  const loadBotRevenue = useCallback(async () => {
+    try {
+      setBotRevenue(await call("/api/bot/revenue"));
+    } catch {
+      // Keep whatever was last successfully loaded (or the all-zero default).
+    }
+    try {
+      setBotRevenueMonthly((await call("/api/bot/revenue/monthly")).months || []);
+    } catch {
+      // Same — a stale/empty monthly breakdown just means no trend shows.
+    }
+  }, [call]);
+
   // Ported from App.vue's `loadUpdate(refresh)`.
   const loadUpdate = useCallback(
     async (refresh = false) => {
@@ -68,7 +87,8 @@ export function DataProvider({ children }) {
     load();
     loadSecurity();
     loadUpdate();
-  }, [authed, loaded, load, loadSecurity, loadUpdate]);
+    loadBotRevenue();
+  }, [authed, loaded, load, loadSecurity, loadUpdate, loadBotRevenue]);
 
   // Raw CRUD primitives — every mutation in the old App.vue ends with
   // `await this.load()`, so that invariant lives here once rather than
@@ -171,12 +191,15 @@ export function DataProvider({ children }) {
       alerts,
       setAlerts,
       security,
+      botRevenue,
+      botRevenueMonthly,
       update,
       setUpdate,
       dataLoaded: loaded,
       load,
       loadSecurity,
       loadUpdate,
+      loadBotRevenue,
       createAsset,
       putAsset,
       removeAsset,
@@ -194,11 +217,14 @@ export function DataProvider({ children }) {
       assets,
       alerts,
       security,
+      botRevenue,
+      botRevenueMonthly,
       update,
       loaded,
       load,
       loadSecurity,
       loadUpdate,
+      loadBotRevenue,
       createAsset,
       putAsset,
       removeAsset,

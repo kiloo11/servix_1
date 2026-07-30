@@ -69,7 +69,7 @@ export default function PaymentsModal({ open, onOpenChange, asset }) {
             <AppSelect value={quickPayment.currency} onChange={(v) => setQuickPayment((c) => ({ ...c, currency: v }))} aria-label={t("common.currency")}>
               {CURRENCIES.map((currency) => (
                 <AppSelectItem key={currency} value={currency}>
-                  {currency === "USDT" ? "USDT" : t(`currency.${currency}`)}
+                  {currency === "USDT" ? "₮" : t(`currency.${currency}`)}
                 </AppSelectItem>
               ))}
             </AppSelect>

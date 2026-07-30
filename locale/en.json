@@ -110,16 +110,26 @@
     "createUser": "Create user"
   },
   "summary": {
+    "resourcesHeading": "Resources",
+    "financeHeading": "Finance",
+    "ratesHeading": "Exchange rates",
     "servers": "Servers",
     "domains": "Domains",
     "providers": "Providers",
     "paid": "Paid",
-    "terms": "Terms"
+    "revenue": "Revenue",
+    "profit": "Profit",
+    "trendFlat": "no change"
   },
   "assets": {
     "search": "Search: name, IP, domain, provider",
     "allTypes": "All types",
     "inactive": "Inactive",
+    "sort": "Sort",
+    "sortManual": "Manual",
+    "sortPayment": "By nearest payment",
+    "sortProvider": "By provider",
+    "sortCountry": "By country",
     "activate": "Activate",
     "deactivate": "Deactivate",
     "copyIp": "Copy IP",
@@ -132,7 +142,6 @@
     "add": "Add record",
     "emptyTitle": "Add your first record",
     "emptyText": "The expiration time can be set down to hours and minutes.",
-    "metaProvider": "Provider: {value}",
     "metaCountry": "Country: {value}",
     "metaDomain": "Domain: {value}",
     "new": "New record",
@@ -143,8 +152,7 @@
     "activated": "Record activated",
     "ipCopied": "IP copied",
     "copyFailed": "Could not copy",
-    "deleteConfirm": "Delete \"{name}\"?",
-    "nextPayment": "Payment: {date}"
+    "deleteConfirm": "Delete \"{name}\"?"
   },
   "providers": {
     "add": "Add provider",

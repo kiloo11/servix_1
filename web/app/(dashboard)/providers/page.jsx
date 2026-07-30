@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ExternalLink, Pencil, Plus } from "lucide-react";
 import { AccordionRoot, AccordionItem, AccordionTrigger, AccordionContent } from "../../../components/ui/Accordion";
 import AppTooltip from "../../../components/ui/AppTooltip";
+import FaviconImage from "../../../components/ui/FaviconImage";
 import ProviderFormModal from "../../../components/providers/ProviderFormModal";
 import { useLocale } from "../../../context/LocaleContext";
 import { useAuth } from "../../../context/AuthContext";
@@ -43,11 +44,7 @@ export default function ProvidersPage() {
       <article key={provider.id} className="provider-card">
         <header>
           <div className="card-title-row">
-            {provider.faviconUrl ? (
-              <img className="favicon" src={provider.faviconUrl} alt="" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="favicon-placeholder">{provider.name.slice(0, 1).toUpperCase()}</span>
-            )}
+            <FaviconImage key={provider.faviconUrl || "none"} src={provider.faviconUrl} letter={provider.name.slice(0, 1).toUpperCase()} />
             <div>
               <h2>{provider.name}</h2>
               {categories.length ? (

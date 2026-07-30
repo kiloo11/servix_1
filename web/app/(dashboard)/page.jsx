@@ -15,20 +15,21 @@ import { useData } from "../../context/DataContext";
 import { useAssetActions } from "../../lib/assetActions";
 import { useGrouping } from "../../lib/grouping";
 import { ASSET_TYPES, emptyAsset } from "../../lib/assets";
-import { clone, compareAssetsOrder } from "../../lib/dates";
+import { clone, compareAssetsOrder, parseAppDate } from "../../lib/dates";
 
 // Ported from src/views/AssetsView.vue + the asset-related slices of
 // App.vue's data/computed/methods (search/typeFilter, filteredAssets,
 // assetGroups, defaultAssetAccordionValue, drag-reorder, modal open/close).
 export default function AssetsPage() {
-  const { t, tc } = useLocale();
+  const { t, tc, locale } = useLocale();
   const { meta } = useAuth();
   const { assets } = useData();
-  const { assetGroupBuckets, providerOf } = useGrouping();
+  const { assetGroupBuckets, providerOf, countryDisplayName } = useGrouping();
   const { dropAsset } = useAssetActions();
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [sort, setSort] = useState("manual");
   const [draggedId, setDraggedId] = useState("");
 
   const [assetModalOpen, setAssetModalOpen] = useState(false);
@@ -55,23 +56,36 @@ export default function AssetsPage() {
     });
   }, [assets, search, typeFilter, providerOf]);
 
+  // "manual" is the drag-reordered sortOrder — the other three are purely
+  // client-side display order and never touch sortOrder, so switching back
+  // to "manual" always lands exactly where drag-and-drop left it.
+  const sorters = useMemo(
+    () => ({
+      manual: compareAssetsOrder,
+      payment: (a, b) => parseAppDate(a.expiresAt) - parseAppDate(b.expiresAt),
+      provider: (a, b) => (providerOf(a)?.name || "").localeCompare(providerOf(b)?.name || "", locale),
+      country: (a, b) => countryDisplayName(a.countryCode).localeCompare(countryDisplayName(b.countryCode), locale),
+    }),
+    [providerOf, countryDisplayName, locale]
+  );
+
   const assetGroups = useMemo(
     () =>
       ASSET_TYPES.map((type) => ({
         type,
         label: t(`type.${type}`) || t("type.record"),
-        items: filteredAssets.filter((asset) => asset.type === type).sort(compareAssetsOrder),
+        items: filteredAssets.filter((asset) => asset.type === type).sort(sorters[sort] || compareAssetsOrder),
       })).filter((group) => group.items.length),
-    [filteredAssets, t]
+    [filteredAssets, t, sort, sorters]
   );
 
   const defaultAccordionValue = useMemo(() => {
     for (const group of assetGroups) {
       if (group.type !== "vps" && group.type !== "domain") continue;
       const bucket = assetGroupBuckets(group)[0];
-      if (bucket) return `${group.type}:${bucket.category || "none"}`;
+      if (bucket) return [`${group.type}:${bucket.category || "none"}`];
     }
-    return "";
+    return [];
   }, [assetGroups, assetGroupBuckets]);
 
   function openAsset(asset = null) {
@@ -95,6 +109,7 @@ export default function AssetsPage() {
         key={asset.id}
         asset={asset}
         dragging={draggedId === asset.id}
+        dragDisabled={sort !== "manual"}
         onDragStart={(a, e) => {
           setDraggedId(a.id);
           e.dataTransfer.effectAllowed = "move";
@@ -124,6 +139,12 @@ export default function AssetsPage() {
             <AppSelectItem value="domain">{t("typePlural.domain")}</AppSelectItem>
             <AppSelectItem value="certificate">{t("typePlural.certificate")}</AppSelectItem>
           </AppSelect>
+          <AppSelect value={sort} onChange={setSort} aria-label={t("assets.sort")}>
+            <AppSelectItem value="manual">{t("assets.sortManual")}</AppSelectItem>
+            <AppSelectItem value="payment">{t("assets.sortPayment")}</AppSelectItem>
+            <AppSelectItem value="provider">{t("assets.sortProvider")}</AppSelectItem>
+            <AppSelectItem value="country">{t("assets.sortCountry")}</AppSelectItem>
+          </AppSelect>
         </div>
         <button className="primary-button" type="button" onClick={() => openAsset()}>
           <Plus size={18} />
@@ -133,7 +154,7 @@ export default function AssetsPage() {
 
       <section className="view active">
         {filteredAssets.length ? (
-          <AccordionRoot type="single" collapsible defaultValue={defaultAccordionValue} className="asset-sections">
+          <AccordionRoot type="multiple" defaultValue={defaultAccordionValue} className="asset-sections">
             {assetGroups.map((group) => (
               <section key={group.type} className="asset-type-section">
                 {typeFilter === "all" ? (

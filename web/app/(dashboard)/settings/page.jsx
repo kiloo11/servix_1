@@ -173,7 +173,7 @@ export default function SettingsPage() {
               <AppSelect value={settings.currency} onChange={(v) => setField("currency", v)} aria-label={t("settings.currency")}>
                 {CURRENCIES.map((currency) => (
                   <AppSelectItem key={currency} value={currency}>
-                    {currency === "USDT" ? "USDT" : t(`currency.${currency}`)}
+                    {currency === "USDT" ? "₮" : t(`currency.${currency}`)}
                   </AppSelectItem>
                 ))}
               </AppSelect>
@@ -292,7 +292,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <span>{t("settings.rateUsdtPerEur")}</span>
-              <strong>{formatShort(meta.rateUsdtPerEur)} USDT</strong>
+              <strong>{formatShort(meta.rateUsdtPerEur)} ₮</strong>
             </div>
             <div>
               <span>{t("settings.rateUsdRub")}</span>

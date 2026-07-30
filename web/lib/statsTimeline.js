@@ -71,38 +71,44 @@ export function roundPoint(value) {
   return Math.round(value * 100) / 100;
 }
 
-export function linePoints(rows, key) {
-  if (!rows.length) return "";
-  const max = Math.max(1, ...rows.map((row) => Number(row[key] || 0)));
-  const last = Math.max(1, rows.length - 1);
-  return rows
-    .map((row, index) => {
-      const x = rows.length === 1 ? 50 : (index / last) * 100;
-      const y = 38 - (Number(row[key] || 0) / max) * 32;
-      return `${roundPoint(x)},${roundPoint(y)}`;
-    })
-    .join(" ");
-}
-
-export function areaPoints(rows, key) {
-  const points = linePoints(rows, key);
-  if (!points) return "";
-  return `0,40 ${points} 100,40`;
-}
-
-export function chartHits(rows, key) {
+// Single source of truth for the hand-rolled chart's x/y math, shared by
+// LineChart.jsx for both the historical (solid) and forecast (dashed)
+// segments — both need points computed from ONE combined max, otherwise the
+// two segments would use different y-scales and visibly kink where they
+// join at the shared boundary point.
+export function computePoints(rows, key) {
   if (!rows.length) return [];
   const max = Math.max(1, ...rows.map((row) => Number(row[key] || 0)));
   const last = Math.max(1, rows.length - 1);
-  const hitWidth = rows.length === 1 ? 100 : 100 / rows.length;
   return rows.map((row, index) => {
     const x = rows.length === 1 ? 50 : (index / last) * 100;
     const y = 38 - (Number(row[key] || 0) / max) * 32;
-    return {
-      key: `${key}-${row.time}`,
-      x: roundPoint(Math.max(0, x - hitWidth / 2)),
-      width: roundPoint(index === rows.length - 1 ? 100 - Math.max(0, x - hitWidth / 2) : hitWidth),
-      point: { x: roundPoint(x), y: roundPoint(y), row },
-    };
+    return { x: roundPoint(x), y: roundPoint(y), row };
   });
+}
+
+// Projects the next `days` days of vps renewals (own price, on their own
+// expiresAt day) as timeline rows shaped like buildPaymentTimeline()'s, so
+// LineChart can render them as a continuation of the same series.
+export function buildForecastDaily(vpsAssets, currency, convertAmount, days = 7, locale = "ru", timezone = "Europe/Moscow") {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const rows = [];
+  for (let i = 1; i <= days; i++) {
+    const date = new Date(startOfToday.getTime() + i * 86_400_000);
+    rows.push({ time: date.getTime(), label: formatTimelineLabel(date, 24, locale, timezone), amount: 0, count: 0 });
+  }
+  for (const asset of vpsAssets) {
+    if (asset.inactive) continue;
+    const expires = parseAppDate(asset.expiresAt);
+    if (Number.isNaN(expires.getTime())) continue;
+    const expiresDay = new Date(expires);
+    expiresDay.setHours(0, 0, 0, 0);
+    const row = rows.find((r) => r.time === expiresDay.getTime());
+    if (row) {
+      row.amount += convertAmount(Number(asset.price || 0), asset.priceCurrency || "USDT", currency);
+      row.count += 1;
+    }
+  }
+  return rows;
 }

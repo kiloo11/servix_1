@@ -1,7 +1,8 @@
 "use client";
 
-import { ArchiveX, CalendarClock, CreditCard, ExternalLink, Pencil, RotateCcw, Zap } from "lucide-react";
+import { ArchiveX, Building2, CalendarClock, CreditCard, ExternalLink, Pencil, RotateCcw, Terminal, TriangleAlert, Zap } from "lucide-react";
 import AppTooltip from "../ui/AppTooltip";
+import FaviconImage from "../ui/FaviconImage";
 import { useLocale } from "../../context/LocaleContext";
 import { useAssetActions } from "../../lib/assetActions";
 import { useFormat } from "../../lib/format";
@@ -11,31 +12,32 @@ import { domainHref } from "../../lib/assets";
 import { countryFlagUrl } from "../../lib/countries";
 
 // Ported from src/views/AssetCard.vue.
-export default function AssetCard({ asset, dragging, onDragStart, onDragEnd, onDropOn, onEdit, onOpenPayments, onOpenExpire }) {
+export default function AssetCard({ asset, dragging, dragDisabled, onDragStart, onDragEnd, onDropOn, onEdit, onOpenPayments, onOpenExpire }) {
   const { t, tc } = useLocale();
-  const { providerOf, providerInitial, assetSubtitle, categoryById } = useGrouping();
-  const { formatDateTime, daysText, dueStateClass, assetNextPaymentDate, quickRenewLabel } = useFormat();
+  const { providerOf, assetSubtitle } = useGrouping();
+  const { formatDate, daysText, dueStateClass, quickRenewLabel } = useFormat();
   const { formatMoney, convertToEur, formatPaymentTotal } = useMoney();
   const { copyIp, quickRenew, toggleAssetInactive } = useAssetActions();
 
   const provider = providerOf(asset);
+  // Computed once and reused for the card border, the expiry pill, and the
+  // relative status line below — the single fact a user scans a whole list
+  // of cards for is "is anything overdue or due soon", so all three should
+  // agree on the same color instead of only the border carrying it.
+  const due = dueStateClass(asset.expiresAt);
 
   return (
     <article
-      className={`asset-card${dueStateClass(asset.expiresAt) ? ` ${dueStateClass(asset.expiresAt)}` : ""}${dragging ? " dragging" : ""}`}
-      draggable
-      onDragStart={(e) => onDragStart(asset, e)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={() => onDropOn(asset)}
-      onDragEnd={onDragEnd}
+      className={`asset-card${due ? ` ${due}` : ""}${dragging ? " dragging" : ""}`}
+      draggable={!dragDisabled}
+      onDragStart={dragDisabled ? undefined : (e) => onDragStart(asset, e)}
+      onDragOver={dragDisabled ? undefined : (e) => e.preventDefault()}
+      onDrop={dragDisabled ? undefined : () => onDropOn(asset)}
+      onDragEnd={dragDisabled ? undefined : onDragEnd}
     >
       <header>
         <div className="card-title-row">
-          {provider?.faviconUrl ? (
-            <img className="favicon" src={provider.faviconUrl} alt="" referrerPolicy="no-referrer" />
-          ) : (
-            <span className="favicon-placeholder">{providerInitial(asset)}</span>
-          )}
+          <FaviconImage key={provider?.faviconUrl || "none"} src={provider?.faviconUrl} letter={asset.name.slice(0, 1).toUpperCase()} />
           <div>
             <h2>{asset.name}</h2>
             {asset.type === "vps" ? (
@@ -52,37 +54,40 @@ export default function AssetCard({ asset, dragging, onDragStart, onDragEnd, onD
             )}
           </div>
         </div>
-        <div className="header-badges">
-          {asset.category && categoryById(asset.category) ? (
-            <span className="category-badge" style={{ "--category-color": categoryById(asset.category).color }}>
-              {categoryById(asset.category).name}
-            </span>
-          ) : null}
-          <span className="pill">{formatDateTime(asset.expiresAt)}</span>
-        </div>
       </header>
       <div className="meta-list">
-        <span>{t("assets.metaProvider", { value: provider?.name || t("common.providerEmpty") })}</span>
+        <span className="meta-row">
+          <Building2 size={14} title={t("common.provider")} />
+          {provider?.name || t("common.providerEmpty")}
+        </span>
         {asset.type === "vps" && asset.ip ? (
-          <span className="ip-meta">
-            <span>IP:</span>
+          <span className="meta-row">
+            <Terminal size={14} title="IP" />
             <button className="meta-copy-button" type="button" title={t("assets.copyIp")} onClick={() => copyIp(asset.ip)}>
               {asset.ip}
             </button>
           </span>
         ) : null}
-        <span>{daysText(asset.expiresAt)}</span>
-        {assetNextPaymentDate(asset) ? <span className="stat-card-sub">{t("assets.nextPayment", { date: assetNextPaymentDate(asset) })}</span> : null}
       </div>
-      {asset.price ? (
-        <div className="price-strip">
-          <strong>{formatMoney(asset.price, asset.priceCurrency)}</strong>
-          {asset.priceCurrency !== "EUR" ? <span>≈ {formatMoney(convertToEur(asset.price, asset.priceCurrency), "EUR")}</span> : null}
+      <div className={`expiry-block${due ? ` ${due}` : ""}`}>
+        <span className="expiry-block-main">
+          {due === "is-overdue" ? <TriangleAlert size={12} /> : null}
+          {daysText(asset.expiresAt)} ({formatDate(asset.expiresAt)})
+        </span>
+      </div>
+      <div className="asset-figures">
+        {asset.price ? (
+          <div className="asset-figure">
+            <span className="asset-figure-label">{t("pnl.colMonthly")}</span>
+            <strong>{formatMoney(asset.price, asset.priceCurrency)}</strong>
+            {asset.priceCurrency !== "EUR" ? <small className="stat-card-sub">≈ {formatMoney(convertToEur(asset.price, asset.priceCurrency), "EUR")}</small> : null}
+          </div>
+        ) : null}
+        <div className="asset-figure">
+          <span className="asset-figure-label">{t("pnl.colTotal")}</span>
+          <strong>{formatPaymentTotal(asset.payments)}</strong>
+          <small className="stat-card-sub">{tc("payment", asset.payments?.length || 0)}</small>
         </div>
-      ) : null}
-      <div className="payment-strip">
-        <strong>{formatPaymentTotal(asset.payments)}</strong>
-        <span>{tc("payment", asset.payments?.length || 0)}</span>
       </div>
       <footer>
         {provider?.loginUrl ? (

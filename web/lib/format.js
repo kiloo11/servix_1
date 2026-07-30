@@ -2,12 +2,12 @@
 
 import { useAuth } from "../context/AuthContext";
 import { useLocale } from "../context/LocaleContext";
-import { DAY_MS, WEEK_MINUTES, minutesUntil, dueStateClass, formatDate, formatDateTime, formatDuration, parseAppDate, quickRenewDays } from "./dates";
+import { DAY_MS, WEEK_MINUTES, minutesUntil, dueStateClass, formatDate, formatDateTime, formatDuration, quickRenewDays } from "./dates";
 
 // See lib/dates.js for the pure date math this binds to meta.timezone/locale —
 // mirrors App.vue's formatDateTime/formatDate/daysText/dueStateClass/
-// assetNextPaymentDate/quickRenewLabel, which all read `this.currentLocale`/
-// `this.meta.timezone` implicitly.
+// quickRenewLabel, which all read `this.currentLocale`/`this.meta.timezone`
+// implicitly.
 export function useFormat() {
   const { meta } = useAuth();
   const { locale, t, tc } = useLocale();
@@ -30,11 +30,6 @@ export function useFormat() {
     if (item.minutesLeft === 0) return t("common.now");
     return t("duration.in", { duration: formatDuration(item.minutesLeft, locale) });
   }
-  function assetNextPaymentDate(asset) {
-    const expires = parseAppDate(asset.expiresAt);
-    if (!expires || Number.isNaN(expires.getTime())) return "";
-    return fDate(new Date(expires.getTime() - DAY_MS));
-  }
   function quickRenewLabel(asset) {
     return t("assets.quickRenew", { days: tc("day", quickRenewDays(asset)) });
   }
@@ -51,7 +46,6 @@ export function useFormat() {
     alertWhen,
     dueStateClass,
     minutesUntil,
-    assetNextPaymentDate,
     quickRenewLabel,
   };
 }

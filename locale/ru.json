@@ -110,20 +110,29 @@
     "createUser": "Создать пользователя"
   },
   "summary": {
+    "resourcesHeading": "Ресурсы",
+    "financeHeading": "Финансы",
+    "ratesHeading": "Курсы валют",
     "servers": "Серверы",
     "domains": "Домены",
     "providers": "Провайдеры",
     "paid": "Уплачено",
-    "terms": "Сроки"
+    "revenue": "Доход",
+    "profit": "Прибыль",
+    "trendFlat": "без изменений"
   },
   "assets": {
     "search": "Поиск: название, IP, домен, провайдер",
     "allTypes": "Все типы",
     "inactive": "Неактивные",
+    "sort": "Сортировка",
+    "sortManual": "Вручную",
+    "sortPayment": "По ближайшему платежу",
+    "sortProvider": "По провайдеру",
+    "sortCountry": "По стране",
     "add": "Добавить запись",
     "emptyTitle": "Добавьте первую запись",
     "emptyText": "Срок можно указать вплоть до часа и минуты.",
-    "metaProvider": "Провайдер: {value}",
     "metaCountry": "Страна: {value}",
     "metaDomain": "Домен: {value}",
     "new": "Новая запись",
@@ -143,8 +152,7 @@
     "deactivateConfirm": "Деактивировать \"{name}\"?",
     "quickRenew": "Быстро +{days}",
     "quickRenewed": "Продлено на {days}",
-    "quickRenewNote": "Быстрое продление +{days}",
-    "nextPayment": "Платёж: {date}"
+    "quickRenewNote": "Быстрое продление +{days}"
   },
   "providers": {
     "add": "Добавить провайдера",

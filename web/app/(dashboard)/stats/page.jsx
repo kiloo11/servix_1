@@ -12,7 +12,7 @@ import { useGrouping } from "../../../lib/grouping";
 import { useMoney } from "../../../lib/money";
 import { useFormat } from "../../../lib/format";
 import { minutesUntil, parseAppDate } from "../../../lib/dates";
-import { buildPaymentTimeline, maxNotificationLeadMinutes, periodStart } from "../../../lib/statsTimeline";
+import { buildForecastDaily, buildPaymentTimeline, maxNotificationLeadMinutes, periodStart } from "../../../lib/statsTimeline";
 import { exportPaymentsCsv, exportPaymentsPdf } from "../../../lib/pdfExport";
 import { providerFallbackColor } from "../../../lib/assets";
 
@@ -75,11 +75,27 @@ export default function StatsPage() {
 
   const paymentTimeline = useMemo(() => buildPaymentTimeline(periodPayments, statsPeriod, locale, meta.timezone), [periodPayments, statsPeriod, locale, meta.timezone]);
 
+  // A two-week-ahead projection of upcoming vps renewals, rendered as a
+  // dashed continuation of the same line on the spend-by-day chart only.
+  const forecastDaily = useMemo(() => buildForecastDaily(vpsAssets, currency, convertAmount, 14, locale, meta.timezone), [vpsAssets, currency, convertAmount, locale, meta.timezone]);
+
   const timelineAxisLabels = useMemo(() => {
     if (!paymentTimeline.length) return [];
     const indexes = [0, Math.floor((paymentTimeline.length - 1) / 2), paymentTimeline.length - 1];
     return [...new Set(indexes)].map((index) => paymentTimeline[index]?.label).filter(Boolean);
   }, [paymentTimeline]);
+
+  // Marks chart start, the historical/forecast boundary ("today"), and the
+  // end of the forecast week instead of [start, mid, end] of history alone
+  // — the mid-history label stopped being the visual midpoint once the
+  // forecast segment extended the line past it.
+  const spendAxisLabels = useMemo(() => {
+    if (!paymentTimeline.length) return [];
+    const first = paymentTimeline[0]?.label;
+    const boundary = paymentTimeline[paymentTimeline.length - 1]?.label;
+    const last = forecastDaily[forecastDaily.length - 1]?.label;
+    return [...new Set([first, boundary, last])].filter(Boolean);
+  }, [paymentTimeline, forecastDaily]);
 
   const timelineUnitLabel = statsPeriod === "7d" ? t("stats.unitHours") : t("stats.unitDays");
   const timelineTotal = useMemo(() => paymentTimeline.reduce((sum, row) => sum + row.amount, 0), [paymentTimeline]);
@@ -218,8 +234,9 @@ export default function StatsPage() {
           </div>
           <LineChart
             rows={paymentTimeline}
+            forecastRows={forecastDaily}
             valueKey="amount"
-            axisLabels={timelineAxisLabels}
+            axisLabels={spendAxisLabels}
             emptyText={t("stats.paymentsNone")}
             formatValue={(row) => formatMoney(row.amount, currency)}
             formatCount={(row) => tc("payment", row.count)}
@@ -315,7 +332,7 @@ export default function StatsPage() {
               <span>{t("common.date")}</span>
               <span>{t("type.vps")}</span>
               <span>{t("common.provider")}</span>
-              <span>{t("common.sum")}</span>
+              <span className="cell-num">{t("common.sum")}</span>
             </div>
             {paginatedPeriodPayments.map((payment) => (
               <div key={payment.id} className="payments-table-row">
