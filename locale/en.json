@@ -171,6 +171,8 @@
   },
   "dashboard": {
     "subtitle": "Key business metrics: revenue, MRR, subscriber movement and forecast.",
+    "notConfigured": "Bedolaga integration isn't configured — set BEDOLAGA_API_URL and BEDOLAGA_API_KEY to see data here.",
+    "loadError": "Failed to load dashboard metrics",
     "month": "Month",
     "cardCashRevenue": "Cash revenue",
     "cardBookingsMrr": "MRR (bookings)",

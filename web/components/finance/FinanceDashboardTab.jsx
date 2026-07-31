@@ -6,6 +6,7 @@ import AppSelectItem from "../ui/AppSelectItem";
 import RevenueTrendChart from "../dashboard/RevenueTrendChart";
 import { useLocale } from "../../context/LocaleContext";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { useFormat } from "../../lib/format";
 import { formatMoney as formatMoneyRaw } from "../../lib/money";
 
@@ -54,10 +55,14 @@ function monthLabelOf(monthKey, intlLocale) {
 export default function FinanceDashboardTab() {
   const { t, locale } = useLocale();
   const { call } = useAuth();
+  const toast = useToast();
   const { formatShort } = useFormat();
   const intlLocale = locale === "en" ? "en-US" : "ru-RU";
 
   const [month, setMonth] = useState(currentMonthKey);
+  // Assumed true until the first response lands, so the "not configured"
+  // empty state doesn't flash before we actually know either way.
+  const [configured, setConfigured] = useState(true);
   const [summary, setSummary] = useState(DEFAULT_SUMMARY);
   const [movement, setMovement] = useState({});
   const [trend, setTrend] = useState([]);
@@ -79,9 +84,15 @@ export default function FinanceDashboardTab() {
     (async () => {
       try {
         const data = await call(`/api/dashboard/summary?month=${month}`);
-        if (!cancelled) setSummary(data);
+        if (!cancelled) {
+          setSummary(data);
+          setConfigured(Boolean(data.configured));
+        }
       } catch {
-        if (!cancelled) setSummary(DEFAULT_SUMMARY);
+        if (!cancelled) {
+          setSummary(DEFAULT_SUMMARY);
+          toast(t("dashboard.loadError"));
+        }
       }
       try {
         const data = await call(`/api/dashboard/mrr-movement?month=${month}`);
@@ -93,7 +104,7 @@ export default function FinanceDashboardTab() {
     return () => {
       cancelled = true;
     };
-  }, [call, month]);
+  }, [call, month, t, toast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,77 +151,83 @@ export default function FinanceDashboardTab() {
         </AppSelect>
       </div>
 
-      <div className="stats-grid">
-        <article className="stat-card">
-          <span>{t("dashboard.cardCashRevenue")}</span>
-          <strong>{formatMoney(summary.cashRevenue)}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t("dashboard.cardBookingsMrr")}</span>
-          <strong>{formatMoney(summary.bookingsMrr)}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t("dashboard.cardRecognizedMrr")}</span>
-          <strong>{formatMoney(summary.recognizedMrr)}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t("dashboard.cardArpu")}</span>
-          <strong>{formatMoney(summary.arpu)}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t("dashboard.cardGrossMargin")}</span>
-          <strong>{(summary.grossMargin * 100).toFixed(1)}%</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t("dashboard.cardChurnRate")}</span>
-          <strong>{(summary.churnRate * 100).toFixed(1)}%</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t("dashboard.cardInfraCostPerSubscriber")}</span>
-          <strong>{formatMoney(summary.infraCostPerSubscriber)}</strong>
-        </article>
-      </div>
-
-      <div className="charts-grid">
-        <article className="chart-panel">
-          <h2>{t("dashboard.movementTitle")}</h2>
-          {hasMovementData ? (
-            <div className="bar-list">
-              {movementRows.map((row) => {
-                const color = POSITIVE_BUCKETS.has(row.key) ? "var(--success)" : NEGATIVE_BUCKETS.has(row.key) ? "var(--danger)" : "var(--muted)";
-                return (
-                  <div key={row.key} className="bar-row">
-                    <span>
-                      <i style={{ background: color }} />
-                      {t(MOVEMENT_LABEL_KEYS[row.key])} ({row.count})
-                    </span>
-                    <div>
-                      <i style={{ width: `${row.width}%`, background: color }} />
-                    </div>
-                    <strong style={{ color }}>{formatMoney(row.revenue)}</strong>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="inline-empty">{t("dashboard.movementEmpty")}</div>
-          )}
-        </article>
-
-        <article className="chart-panel wide-chart">
-          <div className="chart-title-row">
-            <h2>{t("dashboard.trendTitle")}</h2>
-            <span>{t(CONFIDENCE_LABEL_KEYS[forecast.confidence] || CONFIDENCE_LABEL_KEYS.insufficient)}</span>
+      {!configured ? (
+        <div className="inline-empty">{t("dashboard.notConfigured")}</div>
+      ) : (
+        <>
+          <div className="stats-grid">
+            <article className="stat-card">
+              <span>{t("dashboard.cardCashRevenue")}</span>
+              <strong>{formatMoney(summary.cashRevenue)}</strong>
+            </article>
+            <article className="stat-card">
+              <span>{t("dashboard.cardBookingsMrr")}</span>
+              <strong>{formatMoney(summary.bookingsMrr)}</strong>
+            </article>
+            <article className="stat-card">
+              <span>{t("dashboard.cardRecognizedMrr")}</span>
+              <strong>{formatMoney(summary.recognizedMrr)}</strong>
+            </article>
+            <article className="stat-card">
+              <span>{t("dashboard.cardArpu")}</span>
+              <strong>{formatMoney(summary.arpu)}</strong>
+            </article>
+            <article className="stat-card">
+              <span>{t("dashboard.cardGrossMargin")}</span>
+              <strong>{(summary.grossMargin * 100).toFixed(1)}%</strong>
+            </article>
+            <article className="stat-card">
+              <span>{t("dashboard.cardChurnRate")}</span>
+              <strong>{(summary.churnRate * 100).toFixed(1)}%</strong>
+            </article>
+            <article className="stat-card">
+              <span>{t("dashboard.cardInfraCostPerSubscriber")}</span>
+              <strong>{formatMoney(summary.infraCostPerSubscriber)}</strong>
+            </article>
           </div>
-          {trend.some((row) => row.bookingsMrr) ? (
-            <div className="month-profit-chart-wrap">
-              <RevenueTrendChart trendMonths={trend} forecastRows={forecast.forecast} currency="RUB" t={t} formatMoney={formatMoney} formatShort={formatShort} />
-            </div>
-          ) : (
-            <div className="inline-empty">{t("dashboard.trendEmpty")}</div>
-          )}
-        </article>
-      </div>
+
+          <div className="charts-grid">
+            <article className="chart-panel">
+              <h2>{t("dashboard.movementTitle")}</h2>
+              {hasMovementData ? (
+                <div className="bar-list">
+                  {movementRows.map((row) => {
+                    const color = POSITIVE_BUCKETS.has(row.key) ? "var(--success)" : NEGATIVE_BUCKETS.has(row.key) ? "var(--danger)" : "var(--muted)";
+                    return (
+                      <div key={row.key} className="bar-row">
+                        <span>
+                          <i style={{ background: color }} />
+                          {t(MOVEMENT_LABEL_KEYS[row.key])} ({row.count})
+                        </span>
+                        <div>
+                          <i style={{ width: `${row.width}%`, background: color }} />
+                        </div>
+                        <strong style={{ color }}>{formatMoney(row.revenue)}</strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="inline-empty">{t("dashboard.movementEmpty")}</div>
+              )}
+            </article>
+
+            <article className="chart-panel wide-chart">
+              <div className="chart-title-row">
+                <h2>{t("dashboard.trendTitle")}</h2>
+                <span>{t(CONFIDENCE_LABEL_KEYS[forecast.confidence] || CONFIDENCE_LABEL_KEYS.insufficient)}</span>
+              </div>
+              {trend.some((row) => row.bookingsMrr) ? (
+                <div className="month-profit-chart-wrap">
+                  <RevenueTrendChart trendMonths={trend} forecastRows={forecast.forecast} currency="RUB" t={t} formatMoney={formatMoney} formatShort={formatShort} />
+                </div>
+              ) : (
+                <div className="inline-empty">{t("dashboard.trendEmpty")}</div>
+              )}
+            </article>
+          </div>
+        </>
+      )}
     </>
   );
 }

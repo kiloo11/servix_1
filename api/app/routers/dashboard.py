@@ -23,6 +23,7 @@ from app.core.dashboard_metrics import (
     prev_month,
     recognized_mrr_by_month,
 )
+from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import require_user
 from app.core.forecasting import forecast_metric
@@ -37,8 +38,14 @@ def _current_month() -> str:
 @router.get("/summary")
 def summary(month: str | None = None, db: Session = Depends(get_db)):
     target_month = month or _current_month()
+    settings = get_settings()
     return {
         "month": target_month,
+        # Every metric below is a pure aggregation over the bedolaga_* tables,
+        # which stay empty until BEDOLAGA_API_URL/BEDOLAGA_API_KEY are set and
+        # a sync has actually run — without this flag the frontend can't tell
+        # "genuinely zero" apart from "integration not configured yet".
+        "configured": bool(settings.bedolaga_api_url_clean and settings.bedolaga_api_key),
         "cashRevenue": cash_revenue_by_month(db, target_month),
         "bookingsMrr": bookings_mrr_by_month(db, target_month),
         "recognizedMrr": recognized_mrr_by_month(db, target_month),

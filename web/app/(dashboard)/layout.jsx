@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 import Sidebar from "../../components/layout/Sidebar";
 import { useAuth } from "../../context/AuthContext";
 import { useLocale } from "../../context/LocaleContext";
+import { withTrailingSlash } from "../../lib/navigate";
 
 export default function DashboardLayout({ children }) {
   const { bootstrapped, authed, meta } = useAuth();
@@ -33,7 +34,7 @@ export default function DashboardLayout({ children }) {
   }
 
   useEffect(() => {
-    if (bootstrapped && !authed) router.replace("/login");
+    if (bootstrapped && !authed) router.replace(withTrailingSlash("/login"));
   }, [bootstrapped, authed, router]);
 
   if (!bootstrapped) return <div className="boot-screen" />;

@@ -29,6 +29,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { useFormat } from "../../lib/format";
 import { useMoney } from "../../lib/money";
 import { useMediaQuery } from "../../lib/useMediaQuery";
+import { withTrailingSlash } from "../../lib/navigate";
 
 // Redesigned: nav no longer force-stretches to fill the viewport (the old
 // layout used flex:1 to pin the summary/logout footer to the bottom, which
@@ -52,7 +53,12 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const { formatMoney, convertAmount, paymentsTotalIn, usdRubRate } = useMoney();
   const { formatShort } = useFormat();
   const router = useRouter();
-  const pathname = usePathname();
+  // Production is a static export with trailingSlash:true, so the real
+  // pathname there is e.g. "/assets/" — only "/" happens to match either
+  // way, which is why plain `pathname === item.path` only ever highlighted
+  // Финансы. Strip any trailing slash before comparing against NAV_ITEMS'
+  // slash-less paths.
+  const pathname = usePathname().replace(/\/$/, "") || "/";
   // The icon-only collapsed sidebar (and its tooltips) is a desktop-only
   // concept — `collapsed` itself is a persisted preference that outlives
   // whatever viewport it was set on, so it can't be used alone to decide
@@ -122,7 +128,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const versionLabel = `v${meta.version || "—"}`;
 
   function go(path) {
-    router.push(path);
+    router.push(withTrailingSlash(path));
     onCloseMobile();
   }
 

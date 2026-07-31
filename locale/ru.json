@@ -171,6 +171,8 @@
   },
   "dashboard": {
     "subtitle": "Ключевые показатели бизнеса: доход, MRR, движение подписчиков и прогноз.",
+    "notConfigured": "Интеграция с Bedolaga не настроена — задайте BEDOLAGA_API_URL и BEDOLAGA_API_KEY, чтобы здесь появились данные.",
+    "loadError": "Не удалось загрузить показатели дашборда",
     "month": "Месяц",
     "cardCashRevenue": "Денежный доход",
     "cardBookingsMrr": "MRR (по оплате)",
