@@ -8,19 +8,6 @@ const DataContext = createContext(null);
 
 const DEFAULT_SECURITY = { login: "", totpEnabled: false, hasPendingTotp: false };
 const DEFAULT_BOT_REVENUE = { configured: false, totalRub: 0, monthRub: 0, count: 0, monthCount: 0, items: [], updatedAt: "" };
-const DEFAULT_UPDATE = {
-  version: "",
-  latest: "",
-  repo: "",
-  updateAvailable: false,
-  releaseUrl: "",
-  notes: "",
-  publishedAt: "",
-  checkedAt: "",
-  error: "",
-  canApply: false,
-  apply: { status: "idle", message: "", log: [] },
-};
 
 export function DataProvider({ children }) {
   const { authed, call, setMeta } = useAuth();
@@ -33,10 +20,8 @@ export function DataProvider({ children }) {
   const [security, setSecurity] = useState(DEFAULT_SECURITY);
   const [botRevenue, setBotRevenue] = useState(DEFAULT_BOT_REVENUE);
   const [botRevenueMonthly, setBotRevenueMonthly] = useState([]);
-  const [update, setUpdate] = useState(DEFAULT_UPDATE);
   const [loaded, setLoaded] = useState(false);
 
-  // Ported from App.vue's `load()` method.
   const load = useCallback(async () => {
     const data = await call("/api/assets");
     setMeta(data.meta);
@@ -48,14 +33,13 @@ export function DataProvider({ children }) {
     document.title = data.meta.siteTitle;
   }, [call, setMeta, setLocale]);
 
-  // Ported from App.vue's `loadSecurity()`.
   const loadSecurity = useCallback(async () => {
     setSecurity(await call("/api/auth/security"));
   }, [call]);
 
   // Sidebar's summary card needs a total-revenue figure alongside "Уплачено"
-  // to show income/profit — best-effort like loadUpdate: an unconfigured or
-  // unreachable Bedolaga API must not break the rest of the app's data load.
+  // to show income/profit — best-effort: an unconfigured or unreachable
+  // Bedolaga API must not break the rest of the app's data load.
   const loadBotRevenue = useCallback(async () => {
     try {
       setBotRevenue(await call("/api/bot/revenue"));
@@ -69,31 +53,18 @@ export function DataProvider({ children }) {
     }
   }, [call]);
 
-  // Ported from App.vue's `loadUpdate(refresh)`.
-  const loadUpdate = useCallback(
-    async (refresh = false) => {
-      try {
-        setUpdate(await call(`/api/update${refresh ? "?refresh=1" : ""}`));
-      } catch {
-        // An unreachable update check must not break the settings screen.
-      }
-    },
-    [call]
-  );
-
   useEffect(() => {
     if (!authed || loaded) return;
     setLoaded(true);
     load();
     loadSecurity();
-    loadUpdate();
     loadBotRevenue();
-  }, [authed, loaded, load, loadSecurity, loadUpdate, loadBotRevenue]);
+  }, [authed, loaded, load, loadSecurity, loadBotRevenue]);
 
-  // Raw CRUD primitives — every mutation in the old App.vue ends with
-  // `await this.load()`, so that invariant lives here once rather than
-  // repeated at every call site (see lib/assetActions.js for the
-  // confirm/toast-wrapped composed actions built on top of these).
+  // Raw CRUD primitives — every mutation here reloads afterward, so that
+  // invariant lives here once rather than repeated at every call site (see
+  // lib/assetActions.js for the confirm/toast-wrapped composed actions built
+  // on top of these).
   const createAsset = useCallback(
     async (asset) => {
       await call("/api/assets", { method: "POST", body: JSON.stringify(asset) });
@@ -116,9 +87,9 @@ export function DataProvider({ children }) {
     },
     [call, load]
   );
-  // Optimistically reorders `assets` locally before the API confirms (matches
-  // App.vue's dropAsset), then reloads on both success and failure — on
-  // failure this pulls the server's real order back in as a revert.
+  // Optimistically reorders `assets` locally before the API confirms, then
+  // reloads on both success and failure — on failure this pulls the server's
+  // real order back in as a revert.
   const reorderAssets = useCallback(
     async (type, inactive, orderedIds) => {
       setAssets((current) =>
@@ -193,12 +164,9 @@ export function DataProvider({ children }) {
       security,
       botRevenue,
       botRevenueMonthly,
-      update,
-      setUpdate,
       dataLoaded: loaded,
       load,
       loadSecurity,
-      loadUpdate,
       loadBotRevenue,
       createAsset,
       putAsset,
@@ -219,11 +187,9 @@ export function DataProvider({ children }) {
       security,
       botRevenue,
       botRevenueMonthly,
-      update,
       loaded,
       load,
       loadSecurity,
-      loadUpdate,
       loadBotRevenue,
       createAsset,
       putAsset,

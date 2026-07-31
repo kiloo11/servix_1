@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { BookOpen, Coins, Download, KeyRound, Plus, QrCode, RefreshCw, Save, ScrollText, Send, Settings as SettingsIcon, ShieldCheck, Tag } from "lucide-react";
+import { BookOpen, Coins, KeyRound, Plus, QrCode, Save, ScrollText, Send, Settings as SettingsIcon, ShieldCheck, Tag } from "lucide-react";
 import AppSelect from "../../../components/ui/AppSelect";
 import AppSelectItem from "../../../components/ui/AppSelectItem";
 import AppTooltip from "../../../components/ui/AppTooltip";
@@ -13,8 +13,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useData } from "../../../context/DataContext";
 import { useToast } from "../../../context/ToastContext";
 import { useFormat } from "../../../lib/format";
-import { currencySymbol, useMoney } from "../../../lib/money";
-import { useUpdateActions } from "../../../lib/updateActions";
+import { currencySymbol } from "../../../lib/money";
 import { CURRENCIES, emptyCategory } from "../../../lib/assets";
 import { clone } from "../../../lib/dates";
 
@@ -35,16 +34,14 @@ function buildSettingsDraft(meta) {
 const EMPTY_TWO_FACTOR = { currentPassword: "", token: "", secret: "", otpauthUrl: "", qrCode: "" };
 const EMPTY_PASSWORD_FORM = { currentPassword: "", newPassword: "", passwordRepeat: "" };
 
-// Ported from src/views/SettingsView.vue + App.vue's saveSettings/
-// changePassword/startTotpSetup/submitTotp/enableTotp/disableTotp/
-// testTelegram/testMonthlyReport/refreshRates.
+// Rate refresh moved to the Finance section's Rates tab
+// (web/components/finance/FinanceRatesTab.jsx) — this page just links there
+// now instead of duplicating the refresh call and figures.
 export default function SettingsPage() {
   const { t, tc } = useLocale();
   const { meta, setMeta, call } = useAuth();
-  const { security, update, categories, dataLoaded, loadSecurity } = useData();
-  const { formatDateTime, formatShort } = useFormat();
-  const { usdRubRate } = useMoney();
-  const { updateBusy, checkUpdate, applyUpdate } = useUpdateActions();
+  const { security, categories, dataLoaded, loadSecurity } = useData();
+  const { formatDateTime } = useFormat();
   const toast = useToast();
 
   const [settings, setSettings] = useState(() => buildSettingsDraft(meta));
@@ -58,11 +55,11 @@ export default function SettingsPage() {
     setCategoryModalOpen(true);
   }
 
-  // Ported from App.vue's `load()`, which rebuilds `settings` from `meta`
-  // every time — but here that would clobber in-progress edits if it reran
-  // on every meta change (e.g. refreshRates() only touching the rate
-  // fields), so this initializes the draft exactly once, when DataContext's
-  // first load() actually completes.
+  // Rebuilding `settings` from `meta` on every change would clobber
+  // in-progress edits (e.g. the Finance section's rates refresh only
+  // touching the rate fields on this same shared `meta`), so this
+  // initializes the draft exactly once, when DataContext's first load()
+  // actually completes.
   useEffect(() => {
     if (dataLoaded) setSettings(buildSettingsDraft(meta));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,11 +91,6 @@ export default function SettingsPage() {
   async function testMonthlyReport() {
     const result = await call("/api/telegram/monthly-report/test", { method: "POST" });
     toast(result.skipped ? t("alerts.testSkipped") : t("alerts.testSent"));
-  }
-
-  async function refreshRates() {
-    setMeta({ ...meta, ...(await call("/api/rates/refresh", { method: "POST" })) });
-    toast(t("settings.ratesRefreshed"));
   }
 
   async function startTotpSetup() {
@@ -217,67 +209,6 @@ export default function SettingsPage() {
         <div className="settings-panel">
           <div className="settings-card-head">
             <div className="settings-card-icon">
-              <Download size={18} />
-            </div>
-            <div>
-              <h2>{t("update.title")}</h2>
-              <span>{t("update.text")}</span>
-            </div>
-          </div>
-          <div className="rate-display-grid">
-            <div>
-              <span>{t("update.current")}</span>
-              <strong>v{update.version || meta.version || "—"}</strong>
-            </div>
-            <div>
-              <span>{t("update.latest")}</span>
-              <strong>{update.latest ? `v${update.latest}` : "—"}</strong>
-            </div>
-            <div>
-              <span>{t("update.checked")}</span>
-              <strong>{update.checkedAt ? formatDateTime(update.checkedAt) : t("update.never")}</strong>
-            </div>
-          </div>
-          {update.error ? (
-            <p className="hint">{t("update.checkFailed", { error: update.error })}</p>
-          ) : update.updateAvailable ? (
-            <p className="hint">
-              {t("update.availableToast", { version: update.latest })}{" "}
-              <a href={update.releaseUrl} target="_blank" rel="noreferrer">
-                {t("update.releaseLink")}
-              </a>
-            </p>
-          ) : (
-            <p className="hint">{t("update.upToDate")}</p>
-          )}
-          {!update.canApply ? <p className="hint">{t("update.dockerMissing")}</p> : null}
-          {update.apply?.log?.length ? (
-            <ul className="update-log">
-              {update.apply.log.map((entry) => (
-                <li key={entry.at + entry.message}>
-                  {formatDateTime(entry.at)} — {entry.message}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <div className="settings-inline-footer">
-            <span className="hint">{t("update.repo", { repo: update.repo || "—" })}</span>
-            <div className="export-actions">
-              <button className="secondary-button" type="button" disabled={updateBusy} onClick={checkUpdate}>
-                <RefreshCw size={16} />
-                {t("update.check")}
-              </button>
-              <button className="primary-button" type="button" disabled={updateBusy || !update.canApply || !update.updateAvailable || update.apply?.status === "running"} onClick={applyUpdate}>
-                <Download size={18} />
-                {t("update.apply")}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="settings-panel">
-          <div className="settings-card-head">
-            <div className="settings-card-icon">
               <Coins size={18} />
             </div>
             <div>
@@ -285,26 +216,12 @@ export default function SettingsPage() {
               <span>{t("settings.ratesText")}</span>
             </div>
           </div>
-          <div className="rate-display-grid">
-            <div>
-              <span>{t("settings.rateRubPerEur")}</span>
-              <strong>{formatShort(meta.rateRubPerEur)} RUB</strong>
-            </div>
-            <div>
-              <span>{t("settings.rateUsdtPerEur")}</span>
-              <strong>{formatShort(meta.rateUsdtPerEur)} ₮</strong>
-            </div>
-            <div>
-              <span>{t("settings.rateUsdRub")}</span>
-              <strong>{formatShort(usdRubRate())} RUB</strong>
-            </div>
-          </div>
           <div className="settings-inline-footer">
             <span className="hint">{meta.rateUpdatedAt ? t("settings.ratesUpdated", { value: formatDateTime(meta.rateUpdatedAt) }) : t("settings.ratesNever")}</span>
-            <button className="secondary-button" type="button" onClick={refreshRates}>
-              <RefreshCw size={16} />
-              {t("settings.refreshRates")}
-            </button>
+            <Link className="secondary-button" href="/#rates">
+              <Coins size={16} />
+              {t("settings.ratesGoTo")}
+            </Link>
           </div>
         </div>
 
