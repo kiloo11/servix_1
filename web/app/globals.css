@@ -3032,7 +3032,7 @@ table.data-table {
 }
 @media (max-width: 640px) {
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   /* .search-row's own min-width: 200px stops the flex-wrap math from ever
      moving the "Добавить запись" button to its own line — the two end up
