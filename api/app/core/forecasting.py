@@ -23,6 +23,7 @@ from app import models
 from app.core.dashboard_metrics import (
     bookings_mrr_by_month,
     cash_revenue_by_month,
+    is_month_complete,
     next_month,
     recognized_mrr_by_month,
 )
@@ -38,15 +39,24 @@ METRIC_FUNCTIONS = {
 
 
 def _history_months(db: Session) -> list[str]:
+    """Complete months only — a still-in-progress month is naturally a much
+    smaller partial total than a finished month, and feeding it into the
+    regression with equal weight drags the fitted trend down (making the
+    forecast look like it crashes then recovers). It's dropped here; instead
+    forecast_metric() predicts it via the same regression as any other
+    future month, so history — and the fit itself — only updates once that
+    month is actually complete."""
     earliest = db.scalar(select(func.min(models.BedolagaTransaction.created_at)))
     current_month = datetime.now().strftime("%Y-%m")
     if not earliest:
-        return [current_month]
+        return [current_month] if is_month_complete(current_month) else []
     month = earliest[:7]
     months = [month]
     while month < current_month:
         month = next_month(month)
         months.append(month)
+    if months[-1] == current_month and not is_month_complete(current_month):
+        months.pop()
     return months
 
 
@@ -69,6 +79,9 @@ def forecast_metric(
         raise ValueError(f"Unknown metric '{metric}' — expected one of {sorted(METRIC_FUNCTIONS)}")
 
     metric_fn = METRIC_FUNCTIONS[metric]
+    current_month = datetime.now().strftime("%Y-%m")
+    current_month_complete = is_month_complete(current_month)
+
     months = _history_months(db)
     history = [{"month": m, "value": metric_fn(db, m)} for m in months]
 
@@ -79,6 +92,17 @@ def forecast_metric(
     x = np.arange(len(history))
     model = sm.OLS(y, sm.add_constant(x)).fit()
 
+    # Predicting starts right after the last COMPLETE month. When the current
+    # month is still in progress (excluded from `history` above), that means
+    # forecast[0] lands ON the current month — the trend's own estimate for
+    # it, shown alongside its partial "real" actual (from
+    # /api/dashboard/trend) instead of skipping straight to next month. A
+    # plain run-rate projection (actual-so-far scaled up) was tried here
+    # first, but degenerates in the first days of a month — day 1 with zero
+    # transactions posted yet scales 0 to 0, so "projected" silently equals
+    # "real" and no divergence shows. Reusing the regression avoids that: the
+    # fit itself only shifts once this month is complete and enters
+    # `history` for good.
     future_x = np.arange(len(history), len(history) + months_ahead)
     prediction = model.get_prediction(sm.add_constant(future_x, has_constant="add"))
     summary = prediction.summary_frame(alpha=CONFIDENCE_INTERVAL_ALPHA)
@@ -96,6 +120,8 @@ def forecast_metric(
                 "upper": max(0.0, float(row["obs_ci_upper"])),
             }
         )
+    if forecast and not current_month_complete and forecast[0]["month"] == current_month:
+        forecast[0]["projected"] = True
 
     return {
         "metric": metric,

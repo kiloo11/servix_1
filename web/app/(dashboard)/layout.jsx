@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Menu } from "lucide-react";
+import { PanelLeftOpen } from "lucide-react";
 import Sidebar from "../../components/layout/Sidebar";
 import { useAuth } from "../../context/AuthContext";
 import { useLocale } from "../../context/LocaleContext";
@@ -42,8 +42,14 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
-      <button className="mobile-menu-button" type="button" aria-label={t("nav.assets")} onClick={() => setMobileNavOpen(true)}>
-        <Menu size={22} />
+      <button
+        className="mobile-menu-button"
+        type="button"
+        aria-label={mobileNavOpen ? t("nav.collapseMenu") : t("nav.expandMenu")}
+        onClick={() => setMobileNavOpen((open) => !open)}
+      >
+        <PanelLeftOpen size={16} />
+        <img className="mobile-menu-logo" src="/app-icon.svg" alt="" width={32} height={32} />
         <span>{meta.siteTitle}</span>
       </button>
       <Sidebar collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />

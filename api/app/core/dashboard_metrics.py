@@ -53,6 +53,18 @@ def month_bounds(month: str) -> tuple[date, date, int]:
     return start, start + timedelta(days=days_in_month), days_in_month
 
 
+def is_month_complete(month: str) -> bool:
+    """True once `month` has fully elapsed (i.e. today is on/after its last day)."""
+    today = date.today()
+    current_month = today.strftime("%Y-%m")
+    if month < current_month:
+        return True
+    if month > current_month:
+        return False
+    _, _, days_in_month = month_bounds(month)
+    return today.day >= days_in_month
+
+
 def prev_month(month: str) -> str:
     year, mon = int(month[:4]), int(month[5:7])
     if mon == 1:

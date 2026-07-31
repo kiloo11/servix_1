@@ -4,9 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { DropdownMenu, Separator } from "radix-ui";
 import {
-  ArrowDown,
   ArrowLeftRight,
-  ArrowUp,
   Bell,
   Building2,
   ChevronsUpDown,
@@ -23,6 +21,7 @@ import {
   Wallet,
 } from "lucide-react";
 import AppTooltip from "../ui/AppTooltip";
+import TrendTag from "../ui/TrendTag";
 import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
 import { useLocale } from "../../context/LocaleContext";
@@ -101,29 +100,6 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const monthProfit = monthRevenue - monthPaid;
   const previousMonthProfit = previousMonthRevenue - previousMonthPaid;
 
-  // Arrow direction always follows the raw delta (up = value increased).
-  // Color follows whether that direction is actually good for the metric —
-  // `invert` flips it for cost-like metrics (e.g. "Уплачено"), where rising
-  // is bad, so it renders red despite the up arrow.
-  function TrendTag({ current, previous, invert = false }) {
-    // A zero previous-month base makes "% change" undefined (division by
-    // zero) rather than just a big number — skip the tag entirely instead
-    // of showing a misleading e.g. "+100%".
-    if (!previous) return null;
-    const delta = current - previous;
-    if (Math.abs(delta) < 0.005) return <span className="trend-tag trend-flat">{t("summary.trendFlat")}</span>;
-    const percent = (delta / Math.abs(previous)) * 100;
-    const up = delta > 0;
-    const good = invert ? !up : up;
-    const Icon = up ? ArrowUp : ArrowDown;
-    return (
-      <span className={`trend-tag ${good ? "trend-good" : "trend-bad"}`}>
-        <Icon size={11} />
-        {Math.abs(percent).toFixed(1)}%
-      </span>
-    );
-  }
-
   const accountInitial = (security.login || "?").slice(0, 1).toUpperCase();
   const versionLabel = `v${meta.version || "—"}`;
 
@@ -147,26 +123,20 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
     <>
       {mobileOpen ? <div className="sidebar-backdrop" onClick={onCloseMobile} /> : null}
       <aside className={`sidebar${mobileOpen ? " open" : ""}`}>
-        <div className="brand">
-          <img className="brand-mark" src="/app-icon.svg" alt="" width={42} height={42} />
-          <div className="brand-text">
-            <strong>{meta.siteTitle}</strong>
-            <span>{t("logo.subtitle")}</span>
-          </div>
-          {!collapsed ? (
-            <AppTooltip label={t("nav.collapseMenu")} side="right">
-              <button className="icon-button sidebar-collapse" type="button" aria-label={t("nav.collapseMenu")} onClick={onToggleCollapse}>
-                <PanelLeftClose size={18} />
-              </button>
-            </AppTooltip>
-          ) : null}
-        </div>
-        {collapsed ? (
+        {showCollapsedUi ? (
           <AppTooltip label={t("nav.expandMenu")} side="right">
             <button className="sidebar-expand-trigger" type="button" aria-label={t("nav.expandMenu")} onClick={onToggleCollapse}>
               <PanelLeftOpen size={16} />
             </button>
           </AppTooltip>
+        ) : isDesktop ? (
+          <div className="sidebar-top">
+            <AppTooltip label={t("nav.collapseMenu")} side="right">
+              <button className="icon-button sidebar-collapse" type="button" aria-label={t("nav.collapseMenu")} onClick={onToggleCollapse}>
+                <PanelLeftClose size={18} />
+              </button>
+            </AppTooltip>
+          </div>
         ) : null}
 
         <Separator.Root className="sidebar-separator" decorative />

@@ -12,10 +12,17 @@ const COLOR_GRID = "rgba(154, 143, 179, 0.14)";
 
 // Real months as a solid line, then a dashed continuation into the forecast
 // months plus a shaded confidence band — same imperative canvas-ref
-// lifecycle as pnl/NetChart.jsx, just with two extra datasets. The dashed
-// "forecast" dataset repeats the last real value at its own start so the
-// line visually connects instead of jumping — a standard Chart.js technique
-// for solid-then-dashed continuation, not a new charting concept.
+// lifecycle as pnl/NetChart.jsx, just with two extra datasets. Normally the
+// dashed "forecast" dataset repeats the last real value at its own start so
+// the line visually connects instead of jumping. But when the most recent
+// real month is still in progress, the backend's forecastRows[0] is instead
+// the regression's own trend estimate FOR that same month (see
+// forecasting.py — it's excluded from the fit's input data, but still
+// predicted like any other future point) — using that as the anchor, rather
+// than the partial actual, is what makes the solid "real" line (partial,
+// low) and dashed "forecast" line (trend estimate for the full month)
+// visibly diverge at that shared month instead of the forecast appearing to
+// crash and recover.
 export default function RevenueTrendChart({ trendMonths, forecastRows, currency, t, formatMoney, formatShort }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
@@ -27,17 +34,22 @@ export default function RevenueTrendChart({ trendMonths, forecastRows, currency,
     if (!canvas || !trendMonths.length) return undefined;
 
     const realCount = trendMonths.length;
-    const forecastCount = forecastRows.length;
-    const labels = [...trendMonths.map((row) => row.monthLabel), ...forecastRows.map((row) => row.monthLabel)];
+    const lastTrendMonth = realCount ? trendMonths[realCount - 1].month : null;
+    // forecastRows[0] shares trendMonths' last month exactly when that month
+    // is still in progress (see the comment above) — it's the anchor point,
+    // not a new month on the axis, so it's split off from the truly-future
+    // rows rather than appended as a fifth label.
+    const hasCurrentMonthProjection = forecastRows.length > 0 && forecastRows[0].month === lastTrendMonth;
+    const futureForecastRows = hasCurrentMonthProjection ? forecastRows.slice(1) : forecastRows;
+    const anchorValue = hasCurrentMonthProjection ? forecastRows[0].value : realCount ? trendMonths[realCount - 1].bookingsMrr : null;
+
+    const forecastCount = futureForecastRows.length;
+    const labels = [...trendMonths.map((row) => row.monthLabel), ...futureForecastRows.map((row) => row.monthLabel)];
 
     const realData = [...trendMonths.map((row) => row.bookingsMrr), ...Array(forecastCount).fill(null)];
-    const forecastData = [
-      ...Array(Math.max(0, realCount - 1)).fill(null),
-      ...(realCount ? [trendMonths[realCount - 1].bookingsMrr] : []),
-      ...forecastRows.map((row) => row.value),
-    ];
-    const upperData = [...Array(realCount).fill(null), ...forecastRows.map((row) => row.upper)];
-    const lowerData = [...Array(realCount).fill(null), ...forecastRows.map((row) => row.lower)];
+    const forecastData = [...Array(Math.max(0, realCount - 1)).fill(null), ...(realCount ? [anchorValue] : []), ...futureForecastRows.map((row) => row.value)];
+    const upperData = [...Array(realCount).fill(null), ...futureForecastRows.map((row) => row.upper)];
+    const lowerData = [...Array(realCount).fill(null), ...futureForecastRows.map((row) => row.lower)];
 
     chartRef.current = new Chart(canvas, {
       type: "line",

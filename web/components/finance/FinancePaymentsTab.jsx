@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, FileText } from "lucide-react";
 import AppSelect from "../ui/AppSelect";
 import AppSelectItem from "../ui/AppSelectItem";
 import LineChart from "../stats/LineChart";
+import TrendTag from "../ui/TrendTag";
 import { useLocale } from "../../context/LocaleContext";
 import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
@@ -17,6 +18,7 @@ import { exportPaymentsCsv, exportPaymentsPdf } from "../../lib/pdfExport";
 import { providerFallbackColor } from "../../lib/assets";
 
 const PAGE_SIZES = [10, 25, 50, 100];
+const PERIOD_DAYS = { "7d": 7, "30d": 30, "90d": 90, "180d": 180, "1y": 365 };
 
 // Ported from the former standalone Stats page (web/app/(dashboard)/stats/page.jsx),
 // now the "Payments" tab of the merged Finance section — per-VPS payment
@@ -51,6 +53,24 @@ export default function FinancePaymentsTab() {
       });
   }, [vpsAssets, statsPeriod, currency, convertAmount]);
 
+  // The equal-length window immediately preceding the selected period, so
+  // each period-scoped card can show a trend vs. "the same span before this
+  // one" (e.g. previous 30 days vs current 30 days). "all" has no
+  // comparable previous window, so it's left empty and trends are omitted.
+  const previousPeriodPayments = useMemo(() => {
+    const days = PERIOD_DAYS[statsPeriod];
+    if (!days) return [];
+    const currentStart = periodStart(statsPeriod);
+    const previousStart = new Date(currentStart);
+    previousStart.setDate(previousStart.getDate() - days);
+    return vpsAssets
+      .flatMap((asset) => (asset.payments || []).map((payment) => ({ ...payment, amount: convertAmount(payment.amount, payment.currency || "USDT", currency), asset })))
+      .filter((payment) => {
+        const paidAt = parseAppDate(payment.paidAt);
+        return !Number.isNaN(paidAt.getTime()) && paidAt >= previousStart && paidAt < currentStart;
+      });
+  }, [vpsAssets, statsPeriod, currency, convertAmount]);
+
   const statCards = useMemo(() => {
     const periodTotal = periodPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     const maxLeadMinutes = maxNotificationLeadMinutes(meta.notificationLeads);
@@ -61,17 +81,23 @@ export default function FinancePaymentsTab() {
     const avg = periodPayments.length ? periodTotal / periodPayments.length : 0;
     const paidVps = new Set(periodPayments.map((payment) => payment.asset?.id)).size;
     const maxPayment = periodPayments.reduce((max, payment) => Math.max(max, Number(payment.amount || 0)), 0);
+
+    const hasPrevious = statsPeriod !== "all";
+    const previousTotal = previousPeriodPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const previousAvg = previousPeriodPayments.length ? previousTotal / previousPeriodPayments.length : 0;
+    const previousPaidVps = new Set(previousPeriodPayments.map((payment) => payment.asset?.id)).size;
+
     return [
       { label: t("stats.cardServers"), value: vpsAssets.length },
-      { label: t("stats.cardPaidServers"), value: paidVps },
-      { label: t("stats.cardPaidPeriod"), value: formatMoney(periodTotal, currency) },
-      { label: t("stats.cardPayments"), value: periodPayments.length },
-      { label: t("stats.cardAvgPayment"), value: formatMoney(avg, currency) },
+      { label: t("stats.cardPaidServers"), value: paidVps, raw: paidVps, previous: hasPrevious ? previousPaidVps : undefined },
+      { label: t("stats.cardPaidPeriod"), value: formatMoney(periodTotal, currency), raw: periodTotal, previous: hasPrevious ? previousTotal : undefined },
+      { label: t("stats.cardPayments"), value: periodPayments.length, raw: periodPayments.length, previous: hasPrevious ? previousPeriodPayments.length : undefined },
+      { label: t("stats.cardAvgPayment"), value: formatMoney(avg, currency), raw: avg, previous: hasPrevious ? previousAvg : undefined },
       { label: t("stats.cardMaxPayment"), value: formatMoney(maxPayment, currency) },
       { label: t("stats.cardSoon"), value: soon },
       { label: t("stats.cardOverdue"), value: overdueVpsCount },
     ];
-  }, [periodPayments, meta.notificationLeads, vpsAssets, overdueVpsCount, currency, formatMoney, t]);
+  }, [periodPayments, previousPeriodPayments, statsPeriod, meta.notificationLeads, vpsAssets, overdueVpsCount, currency, formatMoney, t]);
 
   const paymentTimeline = useMemo(() => buildPaymentTimeline(periodPayments, statsPeriod, locale, meta.timezone), [periodPayments, statsPeriod, locale, meta.timezone]);
 
@@ -218,7 +244,10 @@ export default function FinancePaymentsTab() {
       <div className="stats-grid">
         {statCards.map((card) => (
           <article key={card.label} className="stat-card">
-            <span>{card.label}</span>
+            <div className="stat-card-head">
+              <span>{card.label}</span>
+              {card.previous !== undefined ? <TrendTag current={card.raw} previous={card.previous} /> : null}
+            </div>
             <strong>{card.value}</strong>
           </article>
         ))}

@@ -201,8 +201,23 @@
     "tabDashboard": "Подписки",
     "tabOverview": "P&L",
     "tabPayments": "Платежи",
-    "tabRates": "Курсы валют",
+    "tabReports": "Отчёты",
     "tabPaymentsSubtitle": "Платежи и статистика по серверам за период"
+  },
+  "reports": {
+    "subtitle": "Помесячные финансовые и SaaS-отчёты, доступны для скачивания.",
+    "colMonth": "Месяц",
+    "colRevenue": "Доход",
+    "colExpense": "Расход",
+    "colNet": "Чистая прибыль",
+    "colMrr": "MRR",
+    "colDownload": "Скачать",
+    "sectionFinance": "Финансы",
+    "sectionSaas": "SaaS-метрики",
+    "pdfTitle": "Финансовый отчёт",
+    "generatedAt": "Сформировано {value}",
+    "empty": "Пока нет ни одного завершённого месяца с данными",
+    "loading": "Загрузка…"
   },
   "stats": {
     "currencyFilter": "Валюта статистики",
@@ -250,24 +265,24 @@
     "segmentOverdue": "Просрочено"
   },
   "pnl": {
-    "subtitle": "Расходы по всем записям и прогноз будущих трат.",
+    "subtitle": "Расходы по всем записям, доход и прогноз чистой прибыли.",
     "horizon": "Горизонт прогноза",
-    "cardRecords": "Активных записей",
     "cardHistorical": "Всего потрачено",
-    "cardForecast": "Прогноз на {days} дн.",
+    "cardNetForecastMonthly": "Прогноз прибыли в месяц",
+    "cardNetForecastTotal": "Итого за {months} мес.",
     "cardCostMonth": "Расходы за месяц",
     "tableTitle": "Расходы по записям",
     "filter": "Фильтр: название, провайдер, тип",
     "sort": "Сортировка",
-    "sortForecastDesc": "Прогноз по убыванию",
-    "sortForecastAsc": "Прогноз по возрастанию",
+    "sortNextAmountDesc": "Сумма продления по убыванию",
+    "sortNextAmountAsc": "Сумма продления по возрастанию",
     "sortRenewalAsc": "Продление сначала ближе",
     "sortRenewalDesc": "Продление сначала дальше",
     "sortNameAsc": "Название А-Я",
     "colTotal": "Всего уплачено",
     "colMonthly": "Стоимость/мес",
     "colRenewal": "Следующее продление",
-    "colForecast": "Прогноз",
+    "colNextAmount": "Сумма продления",
     "noForecast": "Недостаточно данных",
     "empty": "Пока нет активных записей для расчета P&L",
     "cardRevenue": "Доход от бота",
@@ -281,7 +296,8 @@
     "monthlyProfitEmpty": "Пока недостаточно данных для графика",
     "monthlyRevenue": "Доход",
     "monthlyCost": "Расход",
-    "monthlyNet": "Чистая прибыль"
+    "monthlyNet": "Чистая прибыль",
+    "forecastLabel": "Прогноз"
   },
   "alerts": {
     "emptyTitle": "Сроков нет",
@@ -326,7 +342,6 @@
     "currency": "Валюта по умолчанию",
     "ratesTitle": "Курс валют",
     "ratesText": "Курсы RUB и USDT к EUR обновляются автоматически из открытого источника.",
-    "ratesGoTo": "Перейти в Финансы",
     "rateRubPerEur": "EUR/RUB",
     "rateUsdtPerEur": "EUR/USDT",
     "rateUsdRub": "USD/RUB",
@@ -618,6 +633,11 @@
       "{count} дн.",
       "{count} дн.",
       "{count} дн."
+    ],
+    "month": [
+      "{count} месяц",
+      "{count} месяца",
+      "{count} месяцев"
     ],
     "hour": [
       "{count} ч.",

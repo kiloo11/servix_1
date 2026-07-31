@@ -13,7 +13,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useData } from "../../../context/DataContext";
 import { useToast } from "../../../context/ToastContext";
 import { useFormat } from "../../../lib/format";
-import { currencySymbol } from "../../../lib/money";
+import { currencySymbol, usdRubRate } from "../../../lib/money";
 import { CURRENCIES, emptyCategory } from "../../../lib/assets";
 import { clone } from "../../../lib/dates";
 
@@ -34,14 +34,11 @@ function buildSettingsDraft(meta) {
 const EMPTY_TWO_FACTOR = { currentPassword: "", token: "", secret: "", otpauthUrl: "", qrCode: "" };
 const EMPTY_PASSWORD_FORM = { currentPassword: "", newPassword: "", passwordRepeat: "" };
 
-// Rate refresh moved to the Finance section's Rates tab
-// (web/components/finance/FinanceRatesTab.jsx) — this page just links there
-// now instead of duplicating the refresh call and figures.
 export default function SettingsPage() {
   const { t, tc } = useLocale();
   const { meta, setMeta, call } = useAuth();
   const { security, categories, dataLoaded, loadSecurity } = useData();
-  const { formatDateTime } = useFormat();
+  const { formatDateTime, formatShort } = useFormat();
   const toast = useToast();
 
   const [settings, setSettings] = useState(() => buildSettingsDraft(meta));
@@ -72,6 +69,11 @@ export default function SettingsPage() {
     } finally {
       setBedolagaSyncing(false);
     }
+  }
+
+  async function refreshRates() {
+    setMeta({ ...meta, ...(await call("/api/rates/refresh", { method: "POST" })) });
+    toast(t("settings.ratesRefreshed"));
   }
 
   function openCategory(category = null) {
@@ -240,12 +242,26 @@ export default function SettingsPage() {
               <span>{t("settings.ratesText")}</span>
             </div>
           </div>
+          <div className="rate-display-grid">
+            <div>
+              <span>{t("settings.rateRubPerEur")}</span>
+              <strong>{formatShort(meta.rateRubPerEur)} RUB</strong>
+            </div>
+            <div>
+              <span>{t("settings.rateUsdtPerEur")}</span>
+              <strong>{formatShort(meta.rateUsdtPerEur)} ₮</strong>
+            </div>
+            <div>
+              <span>{t("settings.rateUsdRub")}</span>
+              <strong>{formatShort(usdRubRate(meta))} RUB</strong>
+            </div>
+          </div>
           <div className="settings-inline-footer">
             <span className="hint">{meta.rateUpdatedAt ? t("settings.ratesUpdated", { value: formatDateTime(meta.rateUpdatedAt) }) : t("settings.ratesNever")}</span>
-            <Link className="secondary-button" href="/#rates">
-              <Coins size={16} />
-              {t("settings.ratesGoTo")}
-            </Link>
+            <button className="secondary-button" type="button" onClick={refreshRates}>
+              <RefreshCw size={16} />
+              {t("settings.refreshRates")}
+            </button>
           </div>
         </div>
 

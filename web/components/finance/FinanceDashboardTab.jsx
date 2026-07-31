@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AppSelect from "../ui/AppSelect";
 import AppSelectItem from "../ui/AppSelectItem";
+import TrendTag from "../ui/TrendTag";
 import RevenueTrendChart from "../dashboard/RevenueTrendChart";
 import { useLocale } from "../../context/LocaleContext";
 import { useAuth } from "../../context/AuthContext";
@@ -10,7 +11,8 @@ import { useToast } from "../../context/ToastContext";
 import { useFormat } from "../../lib/format";
 import { formatMoney as formatMoneyRaw } from "../../lib/money";
 
-const DEFAULT_SUMMARY = { cashRevenue: 0, bookingsMrr: 0, recognizedMrr: 0, arpu: 0, grossMargin: 0, infraCostPerSubscriber: 0, churnRate: 0 };
+const DEFAULT_SUMMARY_METRICS = { cashRevenue: 0, bookingsMrr: 0, recognizedMrr: 0, arpu: 0, grossMargin: 0, infraCostPerSubscriber: 0, churnRate: 0 };
+const DEFAULT_SUMMARY = { ...DEFAULT_SUMMARY_METRICS, previous: DEFAULT_SUMMARY_METRICS };
 const DEFAULT_FORECAST = { dataPointsUsed: 0, confidence: "insufficient", history: [], forecast: [] };
 
 const MOVEMENT_ORDER = ["new", "expansion", "reactivated", "retained", "contraction", "churned"];
@@ -130,12 +132,16 @@ export default function FinanceDashboardTab() {
   }, [call, intlLocale]);
 
   const movementRows = useMemo(() => {
-    const rows = MOVEMENT_ORDER.map((key) => ({ key, ...(movement[key] || { count: 0, revenue: 0 }) }));
+    // Buckets with zero movement this month are dropped rather than shown as
+    // an empty gray bar — early in a month most buckets genuinely are zero,
+    // and a wall of empty tracks reads as "broken" rather than "nothing
+    // happened yet".
+    const rows = MOVEMENT_ORDER.map((key) => ({ key, ...(movement[key] || { count: 0, revenue: 0 }) })).filter((row) => row.count > 0);
     const maxRevenue = Math.max(1, ...rows.map((row) => Math.abs(row.revenue || 0)));
     return rows.map((row) => ({ ...row, width: (Math.abs(row.revenue || 0) / maxRevenue) * 100 }));
   }, [movement]);
 
-  const hasMovementData = movementRows.some((row) => row.count > 0);
+  const hasMovementData = movementRows.length > 0;
   const formatMoney = (value) => formatRub(value, locale);
 
   return (
@@ -157,37 +163,77 @@ export default function FinanceDashboardTab() {
         <>
           <div className="stats-grid">
             <article className="stat-card">
-              <span>{t("dashboard.cardCashRevenue")}</span>
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardCashRevenue")}</span>
+                <TrendTag current={summary.cashRevenue} previous={summary.previous.cashRevenue} />
+              </div>
               <strong>{formatMoney(summary.cashRevenue)}</strong>
             </article>
             <article className="stat-card">
-              <span>{t("dashboard.cardBookingsMrr")}</span>
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardBookingsMrr")}</span>
+                <TrendTag current={summary.bookingsMrr} previous={summary.previous.bookingsMrr} />
+              </div>
               <strong>{formatMoney(summary.bookingsMrr)}</strong>
             </article>
             <article className="stat-card">
-              <span>{t("dashboard.cardRecognizedMrr")}</span>
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardRecognizedMrr")}</span>
+                <TrendTag current={summary.recognizedMrr} previous={summary.previous.recognizedMrr} />
+              </div>
               <strong>{formatMoney(summary.recognizedMrr)}</strong>
             </article>
             <article className="stat-card">
-              <span>{t("dashboard.cardArpu")}</span>
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardArpu")}</span>
+                <TrendTag current={summary.arpu} previous={summary.previous.arpu} />
+              </div>
               <strong>{formatMoney(summary.arpu)}</strong>
             </article>
             <article className="stat-card">
-              <span>{t("dashboard.cardGrossMargin")}</span>
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardGrossMargin")}</span>
+                <TrendTag current={summary.grossMargin} previous={summary.previous.grossMargin} />
+              </div>
               <strong>{(summary.grossMargin * 100).toFixed(1)}%</strong>
             </article>
             <article className="stat-card">
-              <span>{t("dashboard.cardChurnRate")}</span>
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardChurnRate")}</span>
+                <TrendTag current={summary.churnRate} previous={summary.previous.churnRate} invert />
+              </div>
               <strong>{(summary.churnRate * 100).toFixed(1)}%</strong>
             </article>
             <article className="stat-card">
-              <span>{t("dashboard.cardInfraCostPerSubscriber")}</span>
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardInfraCostPerSubscriber")}</span>
+                <TrendTag current={summary.infraCostPerSubscriber} previous={summary.previous.infraCostPerSubscriber} invert />
+              </div>
               <strong>{formatMoney(summary.infraCostPerSubscriber)}</strong>
             </article>
           </div>
 
           <div className="charts-grid">
+            {/* Trend chart goes first in the DOM (not `wide-chart` — that
+                modifier spans 2 grid rows, meant for the 3-panel layout on
+                the Payments tab; here there are only 2 panels side by side,
+                so plain grid auto-placement + the default stretch already
+                puts them in the same row at equal height). */}
             <article className="chart-panel">
+              <div className="chart-title-row">
+                <h2>{t("dashboard.trendTitle")}</h2>
+                <span>{t(CONFIDENCE_LABEL_KEYS[forecast.confidence] || CONFIDENCE_LABEL_KEYS.insufficient)}</span>
+              </div>
+              {trend.some((row) => row.bookingsMrr) ? (
+                <div className="month-profit-chart-wrap">
+                  <RevenueTrendChart trendMonths={trend} forecastRows={forecast.forecast} currency="RUB" t={t} formatMoney={formatMoney} formatShort={formatShort} />
+                </div>
+              ) : (
+                <div className="inline-empty">{t("dashboard.trendEmpty")}</div>
+              )}
+            </article>
+
+            <article className="chart-panel movement-panel">
               <h2>{t("dashboard.movementTitle")}</h2>
               {hasMovementData ? (
                 <div className="bar-list">
@@ -209,20 +255,6 @@ export default function FinanceDashboardTab() {
                 </div>
               ) : (
                 <div className="inline-empty">{t("dashboard.movementEmpty")}</div>
-              )}
-            </article>
-
-            <article className="chart-panel wide-chart">
-              <div className="chart-title-row">
-                <h2>{t("dashboard.trendTitle")}</h2>
-                <span>{t(CONFIDENCE_LABEL_KEYS[forecast.confidence] || CONFIDENCE_LABEL_KEYS.insufficient)}</span>
-              </div>
-              {trend.some((row) => row.bookingsMrr) ? (
-                <div className="month-profit-chart-wrap">
-                  <RevenueTrendChart trendMonths={trend} forecastRows={forecast.forecast} currency="RUB" t={t} formatMoney={formatMoney} formatShort={formatShort} />
-                </div>
-              ) : (
-                <div className="inline-empty">{t("dashboard.trendEmpty")}</div>
               )}
             </article>
           </div>

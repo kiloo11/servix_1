@@ -502,8 +502,12 @@
   color: var(--muted);
   white-space: nowrap;
 }
+.sidebar-top {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 6px 18px;
+}
 .sidebar-collapse {
-  margin-left: auto;
   flex-shrink: 0;
 }
 .sidebar-separator {
@@ -842,29 +846,34 @@
   padding: 28px 32px 64px;
 }
 @media (max-width: 900px) {
-  /* .app-shell stays display:flex (row) at every width — without switching
-     to column here, .mobile-menu-button and .content (the sidebar is
-     position:fixed, out of flow) end up as two row items competing for
-     horizontal space instead of stacking: button-bar on top, content below. */
+  /* .mobile-menu-button and .sidebar are both position:fixed (out of flow)
+     at this width, but .app-shell still needs column so .content doesn't
+     try to share a row with nothing. */
   .app-shell {
     flex-direction: column;
   }
   .mobile-menu-button {
     display: flex;
     align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    border: none;
-    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    left: max(16px, env(safe-area-inset-left));
+    z-index: 95;
+    width: fit-content;
+    padding: 12px 20px 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
     background: var(--color-bg2);
     color: var(--text);
     font-family: var(--font-display);
     font-size: var(--text-lg);
     cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
   }
-  .sidebar-collapse {
-    display: none;
+  .mobile-menu-logo {
+    border-radius: 9px;
+    flex-shrink: 0;
   }
   .sidebar-backdrop {
     display: block;
@@ -884,16 +893,21 @@
   .sidebar.open {
     transform: translateX(0);
   }
-  /* Desktop-only icon-only-collapse UI — the toggle that expands it lives in
-     the brand row, which mobile doesn't show either. */
+  /* Desktop-only icon-only-collapse UI — mobile only ever has open/closed,
+     no collapsed rail, so the trigger that expands it has nothing to do here. */
   .sidebar-expand-trigger {
     display: none;
   }
   .content {
-    padding: 20px 16px max(48px, calc(env(safe-area-inset-bottom) + 20px));
+    /* Top padding clears the fixed .mobile-menu-button pill instead of a
+       document-flow gap, since the button no longer pushes content down. */
+    padding: max(88px, calc(env(safe-area-inset-top) + 76px)) 16px max(48px, calc(env(safe-area-inset-bottom) + 20px));
   }
   .sidebar {
-    padding-top: max(18px, env(safe-area-inset-top));
+    /* Same clearance as .content — the fixed .mobile-menu-button pill sits
+       on top of the open drawer too (z-index 95 vs. the sidebar's 91), so
+       its own nav items need to start below it, not underneath it. */
+    padding-top: max(88px, calc(env(safe-area-inset-top) + 76px));
     padding-bottom: max(18px, env(safe-area-inset-bottom));
     padding-left: max(12px, env(safe-area-inset-left));
   }
@@ -1333,6 +1347,14 @@ table.data-table {
   display: flex;
   flex-direction: column;
 }
+.finance-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
 .finance-tabs {
   display: flex;
   gap: 4px;
@@ -1341,7 +1363,27 @@ table.data-table {
   background: var(--glass-bg-nested);
   border: 1px solid var(--glass-border);
   width: fit-content;
-  margin-bottom: 20px;
+}
+.finance-tabs-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.finance-bedolaga-hint {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.finance-sync-button {
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.finance-sync-button:hover:not(:disabled) {
+  background: var(--glass-bg-nested);
 }
 .finance-tab-trigger {
   border: none;
@@ -2215,7 +2257,7 @@ table.data-table {
 .stats-grid .stat-card {
   gap: 4px;
 }
-.stats-grid .stat-card span {
+.stats-grid .stat-card span:not(.trend-tag) {
   font-size: var(--text-xs);
   line-height: 1.4;
   color: var(--muted);
@@ -2234,6 +2276,13 @@ table.data-table {
   font-family: var(--font-display);
   font-size: var(--text-3xl);
   color: var(--text);
+}
+.stat-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
 }
 .charts-grid {
   display: grid;
@@ -2259,6 +2308,13 @@ table.data-table {
   font-size: var(--text-md);
   color: var(--text);
   margin: 0;
+}
+/* Dashboard-tab MRR movement panel only — a bit more breathing room under
+   the title than the default .chart-panel gap (12px), since this panel is
+   now often just a couple of short bar rows (zero-movement buckets are
+   filtered out in JS) and felt cramped right under the heading. */
+.movement-panel {
+  gap: 20px;
 }
 .chart-title-row {
   display: flex;
@@ -2510,6 +2566,13 @@ table.data-table {
    "Стоимость/мес" column. */
 .cell-num {
   text-align: right;
+}
+/* Отчёты tab — value + TrendTag badge sharing one right-aligned table cell. */
+.reports-value-cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px;
 }
 .pnl-table-row {
   grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr 1fr;

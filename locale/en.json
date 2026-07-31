@@ -201,8 +201,23 @@
     "tabDashboard": "Subscriptions",
     "tabOverview": "P&L",
     "tabPayments": "Payments",
-    "tabRates": "Exchange rates",
+    "tabReports": "Reports",
     "tabPaymentsSubtitle": "Per-server payment history and stats for a period"
+  },
+  "reports": {
+    "subtitle": "Monthly financial and SaaS reports, available for download.",
+    "colMonth": "Month",
+    "colRevenue": "Revenue",
+    "colExpense": "Expense",
+    "colNet": "Net profit",
+    "colMrr": "MRR",
+    "colDownload": "Download",
+    "sectionFinance": "Finance",
+    "sectionSaas": "SaaS metrics",
+    "pdfTitle": "Financial report",
+    "generatedAt": "Generated {value}",
+    "empty": "No completed month with data yet",
+    "loading": "Loading…"
   },
   "stats": {
     "currencyFilter": "Statistics currency",
@@ -250,30 +265,30 @@
     "segmentOverdue": "Overdue"
   },
   "pnl": {
-    "subtitle": "Spend across all records and a forecast of future costs.",
+    "subtitle": "Spend across all records, revenue, and a net profit forecast.",
     "horizon": "Forecast horizon",
-    "cardRecords": "Active records",
     "cardHistorical": "Total spent",
-    "cardForecast": "Forecast for {days} d",
+    "cardNetForecastMonthly": "Monthly profit forecast",
+    "cardNetForecastTotal": "Total over {months} mo.",
     "cardCostMonth": "Expenses this month",
     "tableTitle": "Spend by record",
     "filter": "Filter: name, provider, type",
     "sort": "Sorting",
-    "sortForecastDesc": "Forecast descending",
-    "sortForecastAsc": "Forecast ascending",
+    "sortNextAmountDesc": "Renewal amount descending",
+    "sortNextAmountAsc": "Renewal amount ascending",
     "sortRenewalAsc": "Renewal soonest first",
     "sortRenewalDesc": "Renewal latest first",
     "sortNameAsc": "Name A-Z",
     "colTotal": "Total paid",
     "colMonthly": "Cost/mo",
     "colRenewal": "Next renewal",
-    "colForecast": "Forecast",
+    "colNextAmount": "Renewal amount",
     "noForecast": "Not enough data",
     "empty": "No active records yet to calculate P&L",
     "cardRevenue": "Bot revenue",
-    "cardRevenueMonth": "Revenue (30d)",
+    "cardRevenueMonth": "Revenue this month",
     "cardNet": "Net profit",
-    "cardNetMonth": "Net profit (30d)",
+    "cardNetMonth": "Net profit this month",
     "botPaymentsTitle": "All bot top-ups",
     "botPaymentMethod": "Payment method",
     "botPaymentsEmpty": "No top-ups yet",
@@ -281,7 +296,8 @@
     "monthlyProfitEmpty": "Not enough data for a chart yet",
     "monthlyRevenue": "Revenue",
     "monthlyCost": "Expense",
-    "monthlyNet": "Net profit"
+    "monthlyNet": "Net profit",
+    "forecastLabel": "Forecast"
   },
   "alerts": {
     "emptyTitle": "No terms",
@@ -326,7 +342,6 @@
     "currency": "Default currency",
     "ratesTitle": "Exchange rates",
     "ratesText": "RUB and USDT rates to EUR are refreshed automatically from an open source.",
-    "ratesGoTo": "Go to Finance",
     "rateRubPerEur": "EUR/RUB",
     "rateUsdtPerEur": "EUR/USDT",
     "rateUsdRub": "USD/RUB",
@@ -618,6 +633,11 @@
       "{count} d",
       "{count} d",
       "{count} d"
+    ],
+    "month": [
+      "{count} month",
+      "{count} months",
+      "{count} months"
     ],
     "hour": [
       "{count} h",
