@@ -11,11 +11,9 @@
     "subtitle": "SYSTEM"
   },
   "nav": {
-    "dashboard": "Дашборд",
     "assets": "Ресурсы",
     "providers": "Провайдеры",
-    "stats": "Статистика",
-    "pnl": "P&L",
+    "finance": "Финансы",
     "alerts": "Уведомления",
     "ads": "Рекламные компании",
     "logs": "Логи",
@@ -119,6 +117,9 @@
     "trendFlat": "без изменений"
   },
   "assets": {
+    "tabRecords": "Записи",
+    "description": "Описание",
+    "descriptionPlaceholder": "Назначение записи или любая полезная заметка",
     "search": "Поиск: название, IP, домен, провайдер",
     "allTypes": "Все типы",
     "inactive": "Неактивные",
@@ -193,6 +194,13 @@
     "confidenceMedium": "средняя точность",
     "confidenceHigh": "высокая точность",
     "confidenceInsufficient": "недостаточно данных"
+  },
+  "finance": {
+    "tabDashboard": "Подписки",
+    "tabOverview": "P&L",
+    "tabPayments": "Платежи",
+    "tabRates": "Курсы валют",
+    "tabPaymentsSubtitle": "Платежи и статистика по серверам за период"
   },
   "stats": {
     "currencyFilter": "Валюта статистики",
@@ -316,6 +324,7 @@
     "currency": "Валюта по умолчанию",
     "ratesTitle": "Курс валют",
     "ratesText": "Курсы RUB и USDT к EUR обновляются автоматически из открытого источника.",
+    "ratesGoTo": "Перейти в Финансы",
     "rateRubPerEur": "EUR/RUB",
     "rateUsdtPerEur": "EUR/USDT",
     "rateUsdRub": "USD/RUB",
@@ -325,26 +334,6 @@
     "refreshRates": "Обновить курс",
     "saved": "Настройки сохранены",
     "testTelegram": "Проверить Telegram"
-  },
-  "update": {
-    "title": "Обновление панели",
-    "text": "Панель сравнивает свою версию с последним релизом в репозитории.",
-    "current": "Текущая версия",
-    "latest": "Доступная версия",
-    "checked": "Проверено",
-    "never": "Ещё не проверялось",
-    "check": "Проверить обновления",
-    "apply": "Обновить",
-    "upToDate": "Установлена последняя версия",
-    "availableToast": "Доступна версия {version}",
-    "checkFailed": "Не удалось проверить обновления: {error}",
-    "releaseLink": "Что изменилось",
-    "dockerMissing": "Кнопка обновления работает только в Docker с проброшенным сокетом: добавьте в docker-compose.yml том /var/run/docker.sock:/var/run/docker.sock.",
-    "repo": "Репозиторий: {repo}",
-    "confirm": "Обновить панель до версии {version}? Контейнер будет пересоздан, панель ненадолго станет недоступна.",
-    "started": "Обновление запущено, панель скоро перезапустится",
-    "done": "Обновление до {version} установлено, перезагружаю страницу",
-    "failed": "Обновление не удалось: {error}"
   },
   "guide": {
     "subtitle": "Полное руководство по работе с панелью: записи, платежи, уведомления, безопасность и обслуживание.",

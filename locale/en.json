@@ -11,11 +11,9 @@
     "subtitle": "CRM SYSTEM"
   },
   "nav": {
-    "dashboard": "Dashboard",
     "assets": "Resources",
     "providers": "Providers",
-    "stats": "Statistics",
-    "pnl": "P&L",
+    "finance": "Finance",
     "alerts": "Alerts",
     "ads": "Ad Campaigns",
     "logs": "Logs",
@@ -119,6 +117,9 @@
     "trendFlat": "no change"
   },
   "assets": {
+    "tabRecords": "Records",
+    "description": "Description",
+    "descriptionPlaceholder": "What this record is for, or any useful note",
     "search": "Search: name, IP, domain, provider",
     "allTypes": "All types",
     "inactive": "Inactive",
@@ -193,6 +194,13 @@
     "confidenceMedium": "medium confidence",
     "confidenceHigh": "high confidence",
     "confidenceInsufficient": "insufficient data"
+  },
+  "finance": {
+    "tabDashboard": "Subscriptions",
+    "tabOverview": "P&L",
+    "tabPayments": "Payments",
+    "tabRates": "Exchange rates",
+    "tabPaymentsSubtitle": "Per-server payment history and stats for a period"
   },
   "stats": {
     "currencyFilter": "Statistics currency",
@@ -316,6 +324,7 @@
     "currency": "Default currency",
     "ratesTitle": "Exchange rates",
     "ratesText": "RUB and USDT rates to EUR are refreshed automatically from an open source.",
+    "ratesGoTo": "Go to Finance",
     "rateRubPerEur": "EUR/RUB",
     "rateUsdtPerEur": "EUR/USDT",
     "rateUsdRub": "USD/RUB",
@@ -325,26 +334,6 @@
     "refreshRates": "Refresh rate",
     "saved": "Settings saved",
     "testTelegram": "Test Telegram"
-  },
-  "update": {
-    "title": "Panel update",
-    "text": "The panel compares its own version with the latest release in the repository.",
-    "current": "Current version",
-    "latest": "Available version",
-    "checked": "Checked",
-    "never": "Not checked yet",
-    "check": "Check for updates",
-    "apply": "Update",
-    "upToDate": "You are on the latest version",
-    "availableToast": "Version {version} is available",
-    "checkFailed": "Update check failed: {error}",
-    "releaseLink": "What changed",
-    "dockerMissing": "The update button only works in Docker with the socket mounted: add /var/run/docker.sock:/var/run/docker.sock to docker-compose.yml.",
-    "repo": "Repository: {repo}",
-    "confirm": "Update the panel to version {version}? The container will be recreated and the panel will be briefly unavailable.",
-    "started": "Update started, the panel will restart shortly",
-    "done": "Updated to {version}, reloading the page",
-    "failed": "Update failed: {error}"
   },
   "guide": {
     "subtitle": "A complete manual for records, payments, notifications, security, and operating practices.",
