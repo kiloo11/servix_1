@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { computePoints, roundPoint } from "../../lib/statsTimeline";
 
-// Ported from the hand-rolled SVG chart markup shared by StatsView's two
-// line-chart panels (App.vue's showChartTooltip/hideChartTooltip +
-// paymentAmount/CountPoints/AreaPoints/Hits computeds). Tooltip state is kept
+// Shared by the stats page's two line-chart panels. Tooltip state is kept
 // local to each chart instance instead of a single shared `chartTooltip` on
 // the root — the two charts are independent DOM regions, so this is a
 // behavior-neutral simplification (only one can be hovered at a time anyway).

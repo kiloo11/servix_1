@@ -4,8 +4,8 @@ import { Select } from "radix-ui";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { EMPTY_SELECT_VALUE } from "../../lib/selectEmptyValue";
 
-// React port of src/components/AppSelect.vue — same prop shape (value/onChange
-// instead of v-model) and same empty-string sentinel handling.
+// Wraps Radix's Select primitive with value/onChange props and the
+// empty-string sentinel handling from lib/selectEmptyValue.js.
 export default function AppSelect({ value, onChange, placeholder = "", number = false, className, children, ...triggerProps }) {
   const stringValue = value === null || value === undefined || value === "" ? EMPTY_SELECT_VALUE : String(value);
 

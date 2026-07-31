@@ -3,11 +3,10 @@
 import { useAuth } from "../context/AuthContext";
 import { useLocale } from "../context/LocaleContext";
 
-// Ported verbatim from App.vue's convertToEur/convertAmount/usdRubRate/
-// formatMoney/paymentsTotalIn/formatPaymentTotal/totalPayments — EUR stays the
-// backend's pivot currency (see CLAUDE.md). Parameterized by meta/locale
-// instead of reading `this.*` so they're plain, testable functions; useMoney()
-// below binds them to context the way call sites actually use them.
+// EUR stays the backend's pivot currency (see CLAUDE.md). Parameterized by
+// meta/locale instead of reading from shared state directly, so they're
+// plain, testable functions; useMoney() below binds them to context the way
+// call sites actually use them.
 
 export function convertToEur(amount, currency, meta) {
   const value = Number(amount || 0);

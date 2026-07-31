@@ -34,10 +34,10 @@ export function AuthProvider({ children }) {
 
   const call = useCallback((path, options) => api(path, options, t), [t]);
 
-  // Ported from App.vue's mounted() bootstrap sequence — fetch auth status,
-  // decide which of setup/login/2FA/dashboard to show. Data loading (assets/
-  // providers/security/update) is triggered from DataContext once `authed`
-  // flips true, not here.
+  // Bootstrap sequence: fetch auth status, decide which of
+  // setup/login/2FA/dashboard to show. Data loading (assets/providers/
+  // security/update) is triggered from DataContext once `authed` flips true,
+  // not here.
   useEffect(() => {
     let cancelled = false;
     (async () => {

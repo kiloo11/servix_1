@@ -1,8 +1,8 @@
 import { jsPDF } from "jspdf";
 
-// Ported verbatim from App.vue's buildPdfCanvases/drawPdfRow/drawClippedPdfText
-// — rasterizes the payments table into canvas pages (a "table as image" trick,
-// not native PDF text) and exportPaymentsPdf.
+// Rasterizes the payments table into canvas pages (a "table as image" trick,
+// not native PDF text) via buildPdfCanvases/drawPdfRow/drawClippedPdfText
+// and exportPaymentsPdf.
 
 function buildPdfCanvases(title, headers, rows) {
   const width = 1600;
@@ -75,7 +75,6 @@ export async function exportPaymentsPdf(title, headers, rows, filename) {
   doc.save(filename);
 }
 
-// Ported verbatim from App.vue's exportPaymentsCsv.
 export function exportPaymentsCsv(headers, rows, filename) {
   const escape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
   const csv = [headers.map(escape).join(","), ...rows.map((row) => row.map(escape).join(","))].join("\n");

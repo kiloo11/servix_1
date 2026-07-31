@@ -25,3 +25,13 @@ def test_validation_error_shape_is_error_not_detail(auth_client):
     body = response.json()
     assert "error" in body
     assert "detail" not in body
+
+
+def test_unmatched_non_api_route_falls_through_to_spa_shell(auth_client):
+    """A client-side route (e.g. a Next.js page) that isn't a literal file
+    under dist/ must fall through to the root SPA shell, not 404 — the
+    opposite of the /api/* case above. Guards against over-correcting the
+    /api/* fix into rejecting every unmatched path indiscriminately."""
+    response = auth_client.get("/some/client-side/route")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]

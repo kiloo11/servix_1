@@ -11,16 +11,20 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy import inspect
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import get_app_version, get_settings
 from app.core.dates import now_iso
-from app.core.db import SessionLocal
+from app.core.db import SessionLocal, engine
+from app.core.demo_data import seed_demo_data
 from app.core.exchange_rates import refresh_exchange_rates
 from app.core.meta import init_meta_defaults
 from app.core.scheduler import init_scheduler
+from app.core.static_files import serve_static
 from app.core.update import check_for_update
 from app.routers import auth as auth_router
 from app.routers import bedolaga as bedolaga_router
@@ -38,9 +42,30 @@ API_DIR = Path(__file__).resolve().parent.parent
 logging.basicConfig(level=logging.INFO)
 
 
+# The initial-schema migration's revision id — a stable, permanent
+# identifier once committed, safe to reference directly (see the bootstrap
+# logic below). Matches api/alembic/versions/6d2d497a11f9_initial_schema.py.
+INITIAL_SCHEMA_REVISION = "6d2d497a11f9"
+
+
 def run_migrations() -> None:
     config = Config(str(API_DIR / "alembic.ini"))
     config.set_main_option("script_location", str(API_DIR / "alembic"))
+
+    # Self-healing bootstrap for the one real transitional case: a DB file
+    # created directly by server.js (real production data, cut over to this
+    # backend for the first time) has the "assets"/"providers"/etc. tables
+    # already, but no alembic_version row, since Node never used Alembic.
+    # Without this, `upgrade head` would try to CREATE TABLE on top of
+    # tables that already exist and crash-loop the container on its very
+    # first start against real data. A fresh install has neither the tables
+    # nor the tracking row, so it skips this and upgrades from scratch as
+    # normal — this only ever fires for the one Node→Python transition.
+    with engine.connect() as conn:
+        current_revision = MigrationContext.configure(conn).get_current_revision()
+    if current_revision is None and "assets" in inspect(engine).get_table_names():
+        command.stamp(config, INITIAL_SCHEMA_REVISION)
+
     command.upgrade(config, "head")
 
 
@@ -71,6 +96,7 @@ def create_app() -> FastAPI:
         try:
             init_meta_defaults(db)
             seed_categories(db)
+            seed_demo_data(db)
         finally:
             db.close()
 
@@ -151,6 +177,25 @@ def create_app() -> FastAPI:
     app.include_router(telegram_router.router)
     app.include_router(bedolaga_router.router)
     app.include_router(dashboard_router.router)
+
+    # Catch-all, registered last so every /api/* router above gets first
+    # chance to match — mirrors server.js's dispatch:
+    # `if (url.pathname.startsWith("/api/")) handleApi(...) else serveStatic(...)`.
+    # Two routes (not one): Starlette's {path:path} converter doesn't match
+    # the bare root by itself. An unmatched /api/* path must still 404 as an
+    # API error, not fall through to the SPA shell — {full_path:path}
+    # matches everything indiscriminately, so that branch has to be
+    # re-implemented here explicitly (http_exception_handler above already
+    # has the "Not Found" + /api/ prefix special-case for exactly this).
+    @app.get("/")
+    async def serve_root():
+        return serve_static("")
+
+    @app.get("/{full_path:path}")
+    async def serve_static_route(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        return serve_static(full_path)
 
     return app
 

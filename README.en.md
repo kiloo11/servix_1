@@ -4,7 +4,7 @@
 
 SERVIX is a self-hosted panel for tracking servers, domains, certificates, providers, payments, and service expiration dates.
 
-The project runs on Node.js, SQLite, and Vue. Data is stored locally in the `data` directory, notifications are sent to Telegram, and the interface can be installed as a PWA from the browser.
+The backend runs on Python (FastAPI) and SQLite, the frontend on React (Next.js). Data is stored locally in the `data` directory, notifications are sent to Telegram, and the interface can be installed as a PWA from the browser.
 
 ## Features
 
@@ -32,8 +32,8 @@ For Docker deployment:
 
 For local deployment without Docker:
 
-- Node.js `24+`;
-- npm.
+- Python `3.12+`;
+- Node.js `24+` and npm (only needed to build the frontend).
 
 ## Quick Docker Start
 
@@ -81,7 +81,7 @@ TELEGRAM_NOTIFY_URL: "tgram://TOKEN/CHAT_ID"
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PORT` | `3000` | Port inside the container or local Node.js process. |
+| `PORT` | `3000` | Port inside the container or local Python process. |
 | `SITE_TITLE` | `SERVIX` | Initial panel title. It can be changed later in settings. |
 | `DATA_DIR` | `./data` | Directory with the SQLite database and logs. |
 | `APP_TIMEZONE` | `Europe/Moscow` | Initial application timezone. It can be changed later in settings. |
@@ -101,8 +101,8 @@ TELEGRAM_NOTIFY_URL: "tgram://TOKEN/CHAT_ID"
 ```bash
 git clone https://github.com/sansepro/servix.git
 cd servix
-npm install
 npm run build
+pip install -e api
 npm start
 ```
 
@@ -192,32 +192,12 @@ On Windows, you can simply copy the `data` directory manually.
 
 ## Updating
 
-The panel version is shown in the sidebar and in Settings ("Panel update"). Every 6 hours,
-and whenever you press "Check for updates", the panel compares its own version with the
-latest release of the repository (`UPDATE_REPO`, `kiloo11/servix_1` by default). If there
-are no releases yet, the highest `vX.Y.Z` tag is used instead.
+The panel version is shown in the sidebar. Updating is manual — from a registry image:
 
-The "Update" button is available when the panel runs in Docker from a registry image and
-the docker socket is mounted into it:
-
-```yaml
-services:
-  servix:
-    image: ghcr.io/kiloo11/servix_1:latest
-    volumes:
-      - ./data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock
+```bash
+docker compose pull
+docker compose up -d
 ```
-
-The button makes the panel start a one-shot watchtower container through the socket; that
-container pulls the new image and recreates the panel container with the same settings. A
-container cannot recreate itself — the process would die halfway — so a separate container
-does the job. The panel is unavailable during the update and the page reloads itself once
-the new version is up.
-
-Access to the docker socket is equivalent to root on the host. If that is not acceptable,
-do not mount the socket: the panel will still report versions and new releases, and you can
-update manually.
 
 When building from source (`build: .`) there is no image to pull, so update manually:
 
@@ -230,8 +210,8 @@ If the app runs without Docker:
 
 ```bash
 git pull
-npm install
 npm run build
+pip install -e api
 npm start
 ```
 
@@ -361,14 +341,12 @@ SERVIX can be installed from the browser:
 ## Project Structure
 
 ```text
-server.js              # Node.js backend, API, SQLite, Telegram, auth
-src/                   # Vue frontend
-src/views/             # interface pages
-locale/                # ru/en translations
-public/                # manifest and public assets
-data/                  # database and logs, created on startup
-Dockerfile             # production build
-docker-compose.yml     # example deployment
+api/                    # Python (FastAPI) backend: API, SQLite (SQLAlchemy/Alembic), Telegram, auth
+web/                    # React (Next.js) frontend
+locale/                 # ru/en translations
+data/                   # database and logs, created on startup
+Dockerfile              # production build
+docker-compose.yml      # example deployment
 ```
 
 ## License

@@ -18,9 +18,7 @@ const GUIDE_ICONS = {
   bestPractices: BookOpen,
 };
 
-// Ported from src/views/GuideView.vue + App.vue's guideSections/
-// filteredGuideSections computeds. Pure content pulled from locale JSON,
-// filtered client-side by a search box.
+// Pure content pulled from locale JSON, filtered client-side by a search box.
 export default function GuidePage() {
   const { t, tList } = useLocale();
   const [search, setSearch] = useState("");

@@ -15,8 +15,6 @@ import { toLocalInput } from "../../lib/dates";
 
 const PAGE_SIZE = 5;
 
-// Ported from the "payments" <Modal> block in App.vue's template +
-// openPayments/addQuickPayment/deletePayment.
 export default function PaymentsModal({ open, onOpenChange, asset }) {
   const { t, tc } = useLocale();
   const { meta } = useAuth();

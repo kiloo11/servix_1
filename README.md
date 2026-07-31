@@ -4,7 +4,7 @@
 
 SERVIX - self-hosted панель для учета серверов, доменов, сертификатов, провайдеров, платежей и сроков действия услуг.
 
-Проект работает на Node.js, SQLite и Vue. Данные хранятся локально в папке `data`, уведомления отправляются в Telegram, а интерфейс можно установить как PWA-приложение через браузер.
+Бэкенд на Python (FastAPI) и SQLite, фронтенд на React (Next.js). Данные хранятся локально в папке `data`, уведомления отправляются в Telegram, а интерфейс можно установить как PWA-приложение через браузер.
 
 ## Возможности
 
@@ -32,8 +32,8 @@ SERVIX - self-hosted панель для учета серверов, домен
 
 Для локального запуска без Docker:
 
-- Node.js `24+`;
-- npm.
+- Python `3.12+`;
+- Node.js `24+` и npm (нужны только для сборки фронтенда).
 
 ## Быстрый запуск через Docker
 
@@ -81,7 +81,7 @@ TELEGRAM_NOTIFY_URL: "tgram://TOKEN/CHAT_ID"
 
 | Переменная | По умолчанию | Описание |
 | --- | --- | --- |
-| `PORT` | `3000` | Порт внутри контейнера или локального Node.js процесса. |
+| `PORT` | `3000` | Порт внутри контейнера или локального Python-процесса. |
 | `SITE_TITLE` | `SERVIX` | Название панели при первом запуске. Потом можно изменить в настройках. |
 | `DATA_DIR` | `./data` | Папка с SQLite-базой и логами. |
 | `APP_TIMEZONE` | `Europe/Moscow` | Таймзона приложения при первом запуске. Потом можно изменить в настройках. |
@@ -101,8 +101,8 @@ TELEGRAM_NOTIFY_URL: "tgram://TOKEN/CHAT_ID"
 ```bash
 git clone https://github.com/sansepro/servix.git
 cd servix
-npm install
 npm run build
+pip install -e api
 npm start
 ```
 
@@ -192,31 +192,12 @@ cp -r data data.backup
 
 ## Обновление
 
-Версия панели видна в сайдбаре и в настройках («Обновление панели»). Раз в 6 часов и по
-кнопке «Проверить обновления» панель сравнивает свою версию с последним релизом в
-репозитории (`UPDATE_REPO`, по умолчанию `kiloo11/servix_1`). Если релизов ещё нет,
-берётся максимальный тег `vX.Y.Z`.
+Версия панели видна в сайдбаре. Обновление делается вручную — образ из registry:
 
-Кнопка «Обновить» доступна, когда панель запущена в Docker из образа registry и в неё
-проброшен docker-сокет:
-
-```yaml
-services:
-  servix:
-    image: ghcr.io/kiloo11/servix_1:latest
-    volumes:
-      - ./data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock
+```bash
+docker compose pull
+docker compose up -d
 ```
-
-По кнопке панель через сокет запускает одноразовый контейнер watchtower, тот тянет новый
-образ и пересоздаёт контейнер панели с теми же настройками. Пересоздать себя изнутри
-контейнер не может — процесс умрёт на середине, поэтому работу делает отдельный контейнер.
-На время обновления панель недоступна, страница сама перезагрузится, когда поднимется
-новая версия.
-
-Доступ к docker-сокету равносилен root на хосте — если это не подходит, не пробрасывайте
-сокет: панель продолжит показывать версии и уведомлять о релизах, а обновлять можно руками.
 
 Со сборкой из исходников (`build: .`) обновлять образ неоткуда, обновление руками:
 
@@ -229,8 +210,8 @@ docker compose up -d --build
 
 ```bash
 git pull
-npm install
 npm run build
+pip install -e api
 npm start
 ```
 
@@ -360,14 +341,12 @@ SERVIX можно установить как приложение из брау
 ## Структура проекта
 
 ```text
-server.js              # Node.js backend, API, SQLite, Telegram, auth
-src/                   # Vue frontend
-src/views/             # страницы интерфейса
-locale/                # ru/en переводы
-public/                # manifest и публичные assets
-data/                  # база и логи, создается при запуске
-Dockerfile             # production-сборка
-docker-compose.yml     # пример запуска
+api/                    # Python (FastAPI) backend: API, SQLite (SQLAlchemy/Alembic), Telegram, auth
+web/                    # React (Next.js) frontend
+locale/                 # ru/en переводы
+data/                   # база и логи, создается при запуске
+Dockerfile              # production-сборка
+docker-compose.yml      # пример запуска
 ```
 
 ## Лицензия

@@ -8,9 +8,9 @@ const LocaleContext = createContext(null);
 export function LocaleProvider({ children }) {
   const [locale, setLocaleState] = useState("ru");
 
-  // Mirrors App.vue's pattern of deriving currentLocale from server meta.locale
-  // (on auth status, on /api/assets load, on settings save) — callers pass
-  // whatever meta.locale the backend reports, we just validate it's known.
+  // Derives currentLocale from server meta.locale (on auth status, on
+  // /api/assets load, on settings save) — callers pass whatever meta.locale
+  // the backend reports, we just validate it's known.
   const setLocale = useCallback((next) => {
     setLocaleState(messages[next] ? next : "ru");
   }, []);

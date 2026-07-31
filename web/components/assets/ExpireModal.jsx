@@ -13,8 +13,6 @@ import { currencySymbol } from "../../lib/money";
 
 const PRESET_DAYS = [1, 3, 5, 10, 20, 30, 60, 90];
 
-// Ported from the "expire" <Modal> block in App.vue's template +
-// openExpire/adjustExpireDays.
 export default function ExpireModal({ open, onOpenChange, asset }) {
   const { t, tc } = useLocale();
   const { meta } = useAuth();

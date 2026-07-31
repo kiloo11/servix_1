@@ -6,8 +6,8 @@ import { useLocale } from "./LocaleContext";
 
 const ConfirmContext = createContext(null);
 
-// Ported from App.vue's confirmAction()/resolveConfirm() — a promise-based
-// confirm dialog replacing window.confirm, backed by the shared Modal.
+// A promise-based confirm dialog replacing window.confirm, backed by the
+// shared Modal.
 export function ConfirmProvider({ children }) {
   const { t } = useLocale();
   const [dialog, setDialog] = useState({ open: false, message: "" });

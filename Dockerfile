@@ -11,20 +11,28 @@ COPY web ./web
 COPY locale ./locale
 RUN npm --prefix web run build
 
-FROM node:24-alpine
+FROM python:3.12-slim
 
 WORKDIR /app
-COPY package*.json ./
-RUN npm install --omit=dev
-
-COPY server.js ./
+COPY package.json ./
 COPY locale ./locale
 COPY --from=build /app/web/dist ./dist
 
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV TELEGRAM_NOTIFY_URL=
+# api/ stays a sibling of package.json/locale/dist, same relative layout as
+# local dev (`uvicorn --app-dir api app.main:app`) — config.py's
+# APP_DIR-relative lookups (package.json, data_dir/public_dir/locale_dir
+# defaults) and main.py's alembic.ini/alembic/ lookup all derive from
+# __file__, so they only keep working with zero code changes if this stays
+# a plain source tree at a fixed path, not something pip-installed into
+# site-packages (which would physically relocate the files __file__ resolves
+# against). Installing only the declared dependencies (read straight out of
+# pyproject.toml, not hand-duplicated here) and running against the source
+# tree via --app-dir is the same thing local dev already does.
+COPY api ./api
+RUN pip install --no-cache-dir $(python3 -c "import tomllib; print(' '.join(tomllib.load(open('api/pyproject.toml', 'rb'))['project']['dependencies']))")
+
 ENV APP_TIMEZONE=Europe/Moscow
+ENV TELEGRAM_NOTIFY_URL=
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "exec python3 -m uvicorn --app-dir api app.main:app --host 0.0.0.0 --port ${PORT:-3000}"]

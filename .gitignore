@@ -82,6 +82,11 @@ web_modules/
 .next
 out
 
+# Generated copy of the repo-root locale/*.json, synced in by
+# web/scripts/locale-sync.js so Turbopack's dev-server watch root can stay
+# scoped to web/ — see next.config.js. Not the source of truth, never commit.
+/web/locale/
+
 # Nuxt.js build / generate output
 .nuxt
 dist

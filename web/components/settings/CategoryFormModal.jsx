@@ -8,7 +8,7 @@ import { useLocale } from "../../context/LocaleContext";
 import { useAssetActions } from "../../lib/assetActions";
 
 // New — categories used to be a fixed 3-item const (infra/node/test); this is
-// the add/edit form for the now-managed entity (server.js's /api/categories),
+// the add/edit form for the now-managed entity (the backend's /api/categories),
 // modeled directly on ProviderFormModal.jsx.
 export default function CategoryFormModal({ open, onOpenChange, category }) {
   const { t } = useLocale();

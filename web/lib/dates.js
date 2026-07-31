@@ -3,8 +3,8 @@ import { translatePlural } from "./i18n";
 export const DAY_MS = 86_400_000;
 export const WEEK_MINUTES = 7 * 1440;
 
-// Ported verbatim from App.vue — un-suffixed date strings are treated as
-// +03:00/Moscow, not the browser's local timezone (see CLAUDE.md).
+// Un-suffixed date strings are treated as +03:00/Moscow, not the browser's
+// local timezone (see CLAUDE.md).
 export function parseAppDate(value) {
   if (!value) return new Date(Number.NaN);
   const raw = String(value);

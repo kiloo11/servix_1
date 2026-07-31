@@ -7,8 +7,6 @@ import AppTooltip from "../ui/AppTooltip";
 import { useLocale } from "../../context/LocaleContext";
 import { useAssetActions } from "../../lib/assetActions";
 
-// Ported from the "provider" <Modal> block in App.vue's template +
-// saveProvider/deleteProvider/autosizeTextarea.
 export default function ProviderFormModal({ open, onOpenChange, provider }) {
   const { t } = useLocale();
   const { saveProvider, deleteProvider } = useAssetActions();

@@ -10,10 +10,10 @@ import { useData } from "../../../context/DataContext";
 import { useFormat } from "../../../lib/format";
 import { clone } from "../../../lib/dates";
 
-// Ported from src/views/AlertsView.vue. The "edit" button opens the same
-// AssetFormModal as the Assets page — each page that can trigger it owns a
-// small local instance (open flag + draft), matching Phase 2's pattern of
-// keeping modal state page-local rather than global.
+// The "edit" button opens the same AssetFormModal as the Assets page — each
+// page that can trigger it owns a small local instance (open flag + draft),
+// matching Phase 2's pattern of keeping modal state page-local rather than
+// global.
 export default function AlertsPage() {
   const { t } = useLocale();
   const { meta } = useAuth();

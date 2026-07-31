@@ -8,11 +8,10 @@ import { ASSET_TYPES } from "./assets";
 import { assetCycleDays, compareAssetsOrder, DAY_MS, parseAppDate } from "./dates";
 import { countryNameForLocale } from "./i18n";
 
-// Ported from App.vue's providerOf/providerAssets/providerCategoriesFor/
+// Grouping/lookup helpers: providerOf/providerAssets/providerCategoriesFor/
 // providerTypeCost/providerRecommendedDateFor/
 // assetSubtitle/categorySubgroups/domainBucket/assetGroupBuckets/
-// providerTypeGroups/countryDisplayName — the grouping/lookup helpers shared
-// by AssetsView, ProvidersView and AssetCard.
+// providerTypeGroups/countryDisplayName.
 export function useGrouping() {
   const { providers, categories, assets } = useData();
   const { locale, t } = useLocale();
@@ -89,9 +88,9 @@ export function useGrouping() {
     })).filter((group) => group.providers.length);
   }
   // Providers grouped-by-type above are invisible if they have zero active
-  // assets attached (the grouping is asset-driven, ported from App.vue as-is)
-  // — surfaced separately here so a freshly created provider isn't just gone
-  // from the page until you attach a record to it.
+  // assets attached (the grouping is asset-driven) — surfaced separately
+  // here so a freshly created provider isn't just gone from the page until
+  // you attach a record to it.
   function providersWithoutRecords() {
     return providers.filter((provider) => providerAssets(provider.id).length === 0);
   }

@@ -1,0 +1,23 @@
+.git/
+data/
+.devdata/
+.env
+.env.*
+!.env.example
+
+# Python (api/) — never bake a dev venv/cache into the image; the build
+# stage installs deps fresh from pyproject.toml.
+api/.venv/
+api/tests/
+**/__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# Node — reinstalled fresh inside the build stage, and dist/ is generated
+# by that stage too, not copied in from the host.
+node_modules/
+web/node_modules/
+dist/
+web/dist/
+.next/

@@ -4,10 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLocale } from "../context/LocaleContext";
 import { DAY_MS, WEEK_MINUTES, minutesUntil, dueStateClass, formatDate, formatDateTime, formatDuration, quickRenewDays } from "./dates";
 
-// See lib/dates.js for the pure date math this binds to meta.timezone/locale —
-// mirrors App.vue's formatDateTime/formatDate/daysText/dueStateClass/
-// quickRenewLabel, which all read `this.currentLocale`/`this.meta.timezone`
-// implicitly.
+// See lib/dates.js for the pure date math this binds to meta.timezone/locale.
 export function useFormat() {
   const { meta } = useAuth();
   const { locale, t, tc } = useLocale();

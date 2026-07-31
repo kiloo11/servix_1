@@ -10,10 +10,8 @@ const COLOR_DANGER = "#ff6f9e";
 const COLOR_MUTED = "#9a8fb3";
 const COLOR_GRID = "rgba(154, 143, 179, 0.14)";
 
-// Ported from PnLView.vue's renderMonthChart/watch block. Vue needed a
-// flush:"post" watcher because the canvas sits under v-if inside a v-show
-// view that never remounts; a React useEffect already runs after the DOM
-// commit, so the mount/rows-change/unmount lifecycle is simpler here.
+// A React useEffect already runs after the DOM commit, so the chart's
+// mount/rows-change/unmount lifecycle is handled directly here.
 export default function NetChart({ rows, currency, t, formatMoney, formatShort }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);

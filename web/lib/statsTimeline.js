@@ -1,9 +1,9 @@
 import { parseAppDate } from "./dates";
 
-// Ported verbatim from App.vue's periodStart/maxNotificationLeadMinutes/
-// parseDurationToken/buildPaymentTimeline/alignTimelineStart/
-// formatTimelineLabel/linePoints/chartHits/areaPoints/roundPoint — the hand-
-// rolled SVG line-chart math used by StatsView (no charting library).
+// periodStart/maxNotificationLeadMinutes/parseDurationToken/
+// buildPaymentTimeline/alignTimelineStart/formatTimelineLabel/linePoints/
+// chartHits/areaPoints/roundPoint — the hand-rolled SVG line-chart math used
+// by the stats page (no charting library).
 
 export function periodStart(period) {
   if (period === "all") return null;

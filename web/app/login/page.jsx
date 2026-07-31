@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useLocale } from "../../context/LocaleContext";
 
-// Ported from src/views/auth/{login,create,2fa}.vue — one route reproducing
-// the same 3-state branch App.vue used to do at the root (setupRequired /
+// One route reproduces the same 3-state branch (setupRequired /
 // authRequiresTotp / plain login), since all three post through the same
 // submitAuth() flow and only differ in which fields they collect.
 export default function LoginPage() {

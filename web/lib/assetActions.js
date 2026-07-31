@@ -20,12 +20,11 @@ function fallbackCopyText(value) {
   if (!copied) throw new Error("Copy failed");
 }
 
-// Composed business actions, ported from App.vue's saveAsset/deleteAsset/
-// toggleAssetInactive/quickRenew/copyIp/saveProvider/deleteProvider/
-// addQuickPayment/deletePayment/adjustExpireDays/startAssetDrag/endAssetDrag/
-// dropAsset. Each wraps DataContext's raw CRUD primitives (which already
-// reload after mutating) with the same confirm/toast semantics the Vue
-// methods had directly via `this`.
+// Composed business actions (saveAsset/deleteAsset/toggleAssetInactive/
+// quickRenew/copyIp/saveProvider/deleteProvider/addQuickPayment/
+// deletePayment/adjustExpireDays/startAssetDrag/endAssetDrag/dropAsset).
+// Each wraps DataContext's raw CRUD primitives (which already reload after
+// mutating) with confirm/toast semantics.
 export function useAssetActions() {
   const { assets, createAsset, putAsset, removeAsset, createProvider, putProvider, removeProvider, createCategory, putCategory, removeCategory, reorderAssets } =
     useData();
