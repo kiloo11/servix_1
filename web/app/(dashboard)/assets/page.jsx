@@ -1,204 +1,49 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
-import { AccordionRoot, AccordionItem, AccordionTrigger, AccordionContent } from "../../../components/ui/Accordion";
-import AppSelect from "../../../components/ui/AppSelect";
-import AppSelectItem from "../../../components/ui/AppSelectItem";
-import AssetCard from "../../../components/assets/AssetCard";
-import AssetFormModal from "../../../components/assets/AssetFormModal";
-import PaymentsModal from "../../../components/assets/PaymentsModal";
-import ExpireModal from "../../../components/assets/ExpireModal";
+import { useState } from "react";
+import Tabs from "../../../components/ui/Tabs";
+import AssetsTab from "../../../components/assets/AssetsTab";
+import ProvidersTab from "../../../components/providers/ProvidersTab";
 import { useLocale } from "../../../context/LocaleContext";
-import { useAuth } from "../../../context/AuthContext";
-import { useData } from "../../../context/DataContext";
-import { useAssetActions } from "../../../lib/assetActions";
-import { useGrouping } from "../../../lib/grouping";
-import { ASSET_TYPES, emptyAsset } from "../../../lib/assets";
-import { clone, compareAssetsOrder, parseAppDate } from "../../../lib/dates";
 
-// Ported from src/views/AssetsView.vue + the asset-related slices of
-// App.vue's data/computed/methods (search/typeFilter, filteredAssets,
-// assetGroups, defaultAssetAccordionValue, drag-reorder, modal open/close).
+const TAB_VALUES = ["records", "providers"];
+
+function initialTab() {
+  if (typeof window === "undefined") return "records";
+  const fromHash = window.location.hash.replace("#", "");
+  return TAB_VALUES.includes(fromHash) ? fromHash : "records";
+}
+
+// Providers merged into the "Ресурсы" section as a second tab alongside the
+// individual records (servers/domains/certificates) — both are views onto
+// the same infrastructure, and Providers used to be a separate top-level
+// nav item for no strong reason.
 export default function AssetsPage() {
-  const { t, tc, locale } = useLocale();
-  const { meta } = useAuth();
-  const { assets } = useData();
-  const { assetGroupBuckets, providerOf, countryDisplayName } = useGrouping();
-  const { dropAsset } = useAssetActions();
+  const { t } = useLocale();
+  const [tab, setTab] = useState(initialTab);
 
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [sort, setSort] = useState("manual");
-  const [draggedId, setDraggedId] = useState("");
-
-  const [assetModalOpen, setAssetModalOpen] = useState(false);
-  const [editingAsset, setEditingAsset] = useState(null);
-  const [paymentsModalOpen, setPaymentsModalOpen] = useState(false);
-  const [paymentsAssetId, setPaymentsAssetId] = useState("");
-  const [expireModalOpen, setExpireModalOpen] = useState(false);
-  const [expireAssetId, setExpireAssetId] = useState("");
-
-  // Derived live from `assets` (not a snapshot) so the modal reflects fresh
-  // data after a mutation reloads — matches App.vue's paymentsAsset/expireAsset
-  // computeds, which re-resolve via assetById() on every assets change.
-  const paymentsAsset = assets.find((asset) => asset.id === paymentsAssetId) || null;
-  const expireAsset = assets.find((asset) => asset.id === expireAssetId) || null;
-
-  const filteredAssets = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return assets.filter((asset) => {
-      const provider = providerOf(asset);
-      const isInactive = Boolean(asset.inactive);
-      const matchesType = typeFilter === "inactive" ? isInactive : !isInactive && (typeFilter === "all" || asset.type === typeFilter);
-      const haystack = [asset.name, asset.ip, asset.domain, provider?.name].join(" ").toLowerCase();
-      return matchesType && haystack.includes(query);
-    });
-  }, [assets, search, typeFilter, providerOf]);
-
-  // "manual" is the drag-reordered sortOrder — the other three are purely
-  // client-side display order and never touch sortOrder, so switching back
-  // to "manual" always lands exactly where drag-and-drop left it.
-  const sorters = useMemo(
-    () => ({
-      manual: compareAssetsOrder,
-      payment: (a, b) => parseAppDate(a.expiresAt) - parseAppDate(b.expiresAt),
-      provider: (a, b) => (providerOf(a)?.name || "").localeCompare(providerOf(b)?.name || "", locale),
-      country: (a, b) => countryDisplayName(a.countryCode).localeCompare(countryDisplayName(b.countryCode), locale),
-    }),
-    [providerOf, countryDisplayName, locale]
-  );
-
-  const assetGroups = useMemo(
-    () =>
-      ASSET_TYPES.map((type) => ({
-        type,
-        label: t(`type.${type}`) || t("type.record"),
-        items: filteredAssets.filter((asset) => asset.type === type).sort(sorters[sort] || compareAssetsOrder),
-      })).filter((group) => group.items.length),
-    [filteredAssets, t, sort, sorters]
-  );
-
-  const defaultAccordionValue = useMemo(() => {
-    for (const group of assetGroups) {
-      if (group.type !== "vps" && group.type !== "domain") continue;
-      const bucket = assetGroupBuckets(group)[0];
-      if (bucket) return [`${group.type}:${bucket.category || "none"}`];
-    }
-    return [];
-  }, [assetGroups, assetGroupBuckets]);
-
-  function openAsset(asset = null) {
-    setEditingAsset(asset ? clone(asset) : { ...emptyAsset(), priceCurrency: meta.currency || "USDT" });
-    setAssetModalOpen(true);
-  }
-
-  function openPayments(asset) {
-    setPaymentsAssetId(asset.id);
-    setPaymentsModalOpen(true);
-  }
-
-  function openExpire(asset) {
-    setExpireAssetId(asset.id);
-    setExpireModalOpen(true);
-  }
-
-  function renderCard(asset) {
-    return (
-      <AssetCard
-        key={asset.id}
-        asset={asset}
-        dragging={draggedId === asset.id}
-        dragDisabled={sort !== "manual"}
-        onDragStart={(a, e) => {
-          setDraggedId(a.id);
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", a.id);
-        }}
-        onDragEnd={() => setDraggedId("")}
-        onDropOn={(target) => {
-          dropAsset(draggedId, target);
-          setDraggedId("");
-        }}
-        onEdit={openAsset}
-        onOpenPayments={openPayments}
-        onOpenExpire={openExpire}
-      />
-    );
+  function changeTab(value) {
+    setTab(value);
+    window.location.hash = value;
   }
 
   return (
-    <section>
-      <section className="toolbar">
-        <div className="search-row">
-          <input type="search" placeholder={t("assets.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
-          <AppSelect value={typeFilter} onChange={setTypeFilter} aria-label={t("common.type")}>
-            <AppSelectItem value="all">{t("assets.allTypes")}</AppSelectItem>
-            <AppSelectItem value="inactive">{t("assets.inactive")}</AppSelectItem>
-            <AppSelectItem value="vps">{t("typePlural.vps")}</AppSelectItem>
-            <AppSelectItem value="domain">{t("typePlural.domain")}</AppSelectItem>
-            <AppSelectItem value="certificate">{t("typePlural.certificate")}</AppSelectItem>
-          </AppSelect>
-          <AppSelect value={sort} onChange={setSort} aria-label={t("assets.sort")}>
-            <AppSelectItem value="manual">{t("assets.sortManual")}</AppSelectItem>
-            <AppSelectItem value="payment">{t("assets.sortPayment")}</AppSelectItem>
-            <AppSelectItem value="provider">{t("assets.sortProvider")}</AppSelectItem>
-            <AppSelectItem value="country">{t("assets.sortCountry")}</AppSelectItem>
-          </AppSelect>
-        </div>
-        <button className="primary-button" type="button" onClick={() => openAsset()}>
-          <Plus size={18} />
-          {t("assets.add")}
-        </button>
-      </section>
+    <section className="view active">
+      <div className="section-head">
+        <h1>{t("nav.assets")}</h1>
+      </div>
 
-      <section className="view active">
-        {filteredAssets.length ? (
-          <AccordionRoot type="multiple" defaultValue={defaultAccordionValue} className="asset-sections">
-            {assetGroups.map((group) => (
-              <section key={group.type} className="asset-type-section">
-                {typeFilter === "all" ? (
-                  <div className="asset-type-head">
-                    <h2>{group.label}</h2>
-                    <span>{tc("piece", group.items.length)}</span>
-                  </div>
-                ) : null}
-
-                {group.type === "vps" || group.type === "domain" ? (
-                  assetGroupBuckets(group).map((bucket) => (
-                    <AccordionItem key={bucket.category || "none"} value={`${group.type}:${bucket.category || "none"}`} className="category-group">
-                      <AccordionTrigger className="category-group-summary">
-                        <span className="category-badge" style={bucket.color ? { "--category-color": bucket.color } : undefined}>
-                          {bucket.label}
-                        </span>
-                        <span className="category-group-count">{tc("piece", bucket.items.length)}</span>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="asset-grid">{bucket.items.map(renderCard)}</div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))
-                ) : (
-                  <div className="asset-grid">{group.items.map(renderCard)}</div>
-                )}
-              </section>
-            ))}
-          </AccordionRoot>
-        ) : (
-          <div className="empty-state visible">
-            <h1>{t("assets.emptyTitle")}</h1>
-            <p>{t("assets.emptyText")}</p>
-            <button className="primary-button" type="button" onClick={() => openAsset()}>
-              <Plus size={18} />
-              {t("assets.add")}
-            </button>
-          </div>
-        )}
-      </section>
-
-      <AssetFormModal open={assetModalOpen} onOpenChange={setAssetModalOpen} asset={editingAsset} />
-      <PaymentsModal open={paymentsModalOpen} onOpenChange={setPaymentsModalOpen} asset={paymentsAsset} />
-      <ExpireModal open={expireModalOpen} onOpenChange={setExpireModalOpen} asset={expireAsset} />
+      <Tabs
+        value={tab}
+        onChange={changeTab}
+        tabs={[
+          { value: "records", label: t("assets.tabRecords") },
+          { value: "providers", label: t("nav.providers") },
+        ]}
+      >
+        {tab === "records" ? <AssetsTab /> : null}
+        {tab === "providers" ? <ProvidersTab /> : null}
+      </Tabs>
     </section>
   );
 }

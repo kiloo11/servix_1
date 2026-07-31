@@ -1,6 +1,6 @@
 "use client";
 
-import { ArchiveX, Building2, CalendarClock, CreditCard, ExternalLink, Pencil, RotateCcw, Terminal, TriangleAlert, Zap } from "lucide-react";
+import { ArchiveX, Building2, CalendarClock, CreditCard, ExternalLink, Pencil, RotateCcw, StickyNote, Terminal, TriangleAlert, Zap } from "lucide-react";
 import AppTooltip from "../ui/AppTooltip";
 import FaviconImage from "../ui/FaviconImage";
 import { useLocale } from "../../context/LocaleContext";
@@ -11,7 +11,6 @@ import { useMoney } from "../../lib/money";
 import { domainHref } from "../../lib/assets";
 import { countryFlagUrl } from "../../lib/countries";
 
-// Ported from src/views/AssetCard.vue.
 export default function AssetCard({ asset, dragging, dragDisabled, onDragStart, onDragEnd, onDropOn, onEdit, onOpenPayments, onOpenExpire }) {
   const { t, tc } = useLocale();
   const { providerOf, assetSubtitle } = useGrouping();
@@ -36,6 +35,15 @@ export default function AssetCard({ asset, dragging, dragDisabled, onDragStart, 
       onDragEnd={dragDisabled ? undefined : onDragEnd}
     >
       <header>
+        {asset.expiresAt ? (
+          <div className="asset-expiry-row">
+            <span className={`pill${due ? ` ${due}` : ""}`}>
+              {due === "is-overdue" ? <TriangleAlert size={12} /> : null}
+              {daysText(asset.expiresAt)}
+            </span>
+            <span className={`pill${due ? ` ${due}` : ""}`}>{formatDate(asset.expiresAt)}</span>
+          </div>
+        ) : null}
         <div className="card-title-row">
           <FaviconImage key={provider?.faviconUrl || "none"} src={provider?.faviconUrl} letter={asset.name.slice(0, 1).toUpperCase()} />
           <div>
@@ -55,11 +63,15 @@ export default function AssetCard({ asset, dragging, dragDisabled, onDragStart, 
           </div>
         </div>
       </header>
+      <p className="asset-description">
+        {asset.description ? (
+          <>
+            <StickyNote size={14} />
+            <span className="asset-description-text">{asset.description}</span>
+          </>
+        ) : null}
+      </p>
       <div className="meta-list">
-        <span className="meta-row">
-          <Building2 size={14} title={t("common.provider")} />
-          {provider?.name || t("common.providerEmpty")}
-        </span>
         {asset.type === "vps" && asset.ip ? (
           <span className="meta-row">
             <Terminal size={14} title="IP" />
@@ -68,11 +80,9 @@ export default function AssetCard({ asset, dragging, dragDisabled, onDragStart, 
             </button>
           </span>
         ) : null}
-      </div>
-      <div className={`expiry-block${due ? ` ${due}` : ""}`}>
-        <span className="expiry-block-main">
-          {due === "is-overdue" ? <TriangleAlert size={12} /> : null}
-          {daysText(asset.expiresAt)} ({formatDate(asset.expiresAt)})
+        <span className="meta-row">
+          <Building2 size={14} title={t("common.provider")} />
+          {provider?.name || t("common.providerEmpty")}
         </span>
       </div>
       <div className="asset-figures">

@@ -798,12 +798,6 @@
   color: var(--muted);
   flex-shrink: 0;
 }
-.sidebar-version-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--success);
-}
 .sidebar-account-menu {
   z-index: 120;
   width: 220px;
@@ -1332,6 +1326,61 @@ table.data-table {
   align-items: flex-start;
   gap: 2px;
 }
+/* Finance section: one page, three tabs (Overview/Payments/Rates) replacing
+   the old separate Stats/P&L routes — a segmented-control row under the page
+   h1, then each tab's own slim sub-head for its period/horizon picker. */
+.finance-tabs-root {
+  display: flex;
+  flex-direction: column;
+}
+.finance-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--glass-bg-nested);
+  border: 1px solid var(--glass-border);
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.finance-tab-trigger {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.finance-tab-trigger:hover {
+  color: var(--text);
+}
+.finance-tab-trigger[data-state="active"] {
+  background: var(--color-accent);
+  color: #fff;
+}
+.tab-head {
+  margin-bottom: 20px;
+}
+.finance-tab-subtitle {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.summary-card-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+.summary-card-link:hover {
+  border-color: var(--accent);
+}
 .heading-stack h1,
 .heading-stack h2 {
   margin: 0;
@@ -1503,7 +1552,7 @@ table.data-table {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   transition: border-color 0.2s, box-shadow 0.2s, opacity 0.15s;
@@ -1519,7 +1568,12 @@ table.data-table {
 }
 .asset-card header {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
+}
+.asset-expiry-row {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
@@ -1553,6 +1607,36 @@ table.data-table {
   /* No header badge competing for space anymore (category is already shown
      once, on the accordion group above) — the title can use the room. */
   max-width: 240px;
+}
+/* Always reserves 2 lines of height, even with no/short text — without
+   this, a card whose neighbor in the same grid row has a description ends
+   up with every section below (IP/provider, expiry, figures) sitting
+   higher than that neighbor's, since grid only equalizes each card's total
+   height, not the internal row offsets. The icon only renders when there's
+   actual text, so the reserved box stays empty (not a floating icon) on
+   cards with no description. */
+.asset-description {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  min-height: calc(1.5 * var(--text-sm) * 2);
+}
+.asset-description svg {
+  flex-shrink: 0;
+  color: var(--muted);
+  margin-top: 2px;
+}
+/* Line-clamped separately from the icon row above — -webkit-box would
+   otherwise apply to the icon too, which isn't a line of text. */
+.asset-description-text {
+  font-size: var(--text-sm);
+  color: var(--text2);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .favicon {
   width: 32px;
@@ -1609,52 +1693,32 @@ table.data-table {
   font-size: var(--text-xs);
   white-space: nowrap;
 }
-.meta-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: var(--text-sm);
-  color: var(--text2);
-}
-/* The relative status line ("Просрочено на…"/"Истекает через…") plus the
-   next-payment date are the single most actionable fact on the card —
-   pulled out of the plain meta-list into their own bordered block instead
-   of reading as just another gray line next to "Провайдер: …". */
-.expiry-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-}
-.expiry-block-main {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--text2);
-}
-.expiry-block.is-soon {
+/* Due-state colors for the expiry-status pills on AssetCard's header (see
+   .asset-expiry-row) — same red/yellow as the card's own border color. */
+.pill.is-soon {
   background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.28);
-}
-.expiry-block.is-soon .expiry-block-main {
   color: var(--warning);
 }
-.expiry-block.is-overdue {
+.pill.is-overdue {
   background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.32);
-}
-.expiry-block.is-overdue .expiry-block-main {
   color: var(--danger);
+}
+/* Same two-column grid as .asset-figures right below it (same column count,
+   same 12px gap) — IP/provider sit directly above cost/total-paid instead
+   of being independently centered by flex space-between, which happened to
+   look similar but didn't actually share column edges with the row below. */
+.meta-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  font-size: var(--text-sm);
+  color: var(--text2);
 }
 .meta-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .meta-row svg {
   flex-shrink: 0;
@@ -1681,6 +1745,8 @@ table.data-table {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   position: relative;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 /* A border on the second column (plus matching padding) would sit off from
    the card's true midpoint once the text inside is centered — this divider
@@ -1690,7 +1756,10 @@ table.data-table {
   content: "";
   position: absolute;
   top: 0;
-  bottom: 0;
+  /* Extends past this box's own bottom edge by exactly .asset-card's gap
+     (14px) so the line runs all the way down to meet footer's border-top,
+     instead of stopping short with a visible break before it. */
+  bottom: -14px;
   left: 50%;
   width: 1px;
   background: var(--border);
@@ -1791,13 +1860,8 @@ table.data-table {
 }
 .provider-asset-list {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.provider-asset-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .provider-card footer {
   display: flex;
@@ -2905,17 +2969,6 @@ table.data-table {
   font-family: var(--font-display);
   font-size: var(--text-md);
   color: var(--text);
-}
-.update-log {
-  margin: 0;
-  padding-left: 18px;
-  max-height: 140px;
-  overflow-y: auto;
-  font-size: var(--text-xs);
-  color: var(--muted);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 .totp-setup-grid {
   display: grid;

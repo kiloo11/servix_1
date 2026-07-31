@@ -13,6 +13,7 @@ export function emptyAsset() {
     ip: "",
     domain: "",
     countryCode: "",
+    description: "",
     category: "",
     inactive: false,
     sortOrder: Date.now(),

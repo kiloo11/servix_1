@@ -7,13 +7,11 @@ import {
   ArrowDown,
   ArrowLeftRight,
   ArrowUp,
-  BarChart3,
   Bell,
   Building2,
   ChevronsUpDown,
   Coins,
   Globe,
-  LayoutDashboard,
   LogOut,
   Megaphone,
   PanelLeftClose,
@@ -32,20 +30,17 @@ import { useFormat } from "../../lib/format";
 import { useMoney } from "../../lib/money";
 import { useMediaQuery } from "../../lib/useMediaQuery";
 
-// Ported from App.vue's <aside class="sidebar">, redesigned: nav no longer
-// force-stretches to fill the viewport (it used flex:1 to pin the summary/
-// logout footer to the bottom, which left a huge dead gap on tall screens
-// with only 8 nav items) — instead the summary sits right under nav, and a
+// Redesigned: nav no longer force-stretches to fill the viewport (the old
+// layout used flex:1 to pin the summary/logout footer to the bottom, which
+// left a huge dead gap on tall screens with only 8 nav items) — instead the
+// summary sits right under nav, and a
 // single spacer + Radix DropdownMenu-based account menu (replacing the old
 // two separate logout/version buttons) is what's pinned to the bottom.
 // Logs and Guide moved out of primary nav into a panel on the Settings page
 // — they're administrative/reference pages, not everyday navigation.
 const NAV_ITEMS = [
-  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/", labelKey: "nav.finance", icon: Wallet },
   { path: "/assets", labelKey: "nav.assets", icon: Server },
-  { path: "/providers", labelKey: "nav.providers", icon: Building2 },
-  { path: "/stats", labelKey: "nav.stats", icon: BarChart3 },
-  { path: "/pnl", labelKey: "nav.pnl", icon: Wallet },
   { path: "/ads", labelKey: "nav.ads", icon: Megaphone },
 ];
 
@@ -53,7 +48,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const { t } = useLocale();
   const { meta, setMeta, logout, call } = useAuth();
   const [ratesRefreshing, setRatesRefreshing] = useState(false);
-  const { providers, assets, alerts, update, security, botRevenue, botRevenueMonthly } = useData();
+  const { providers, assets, alerts, security, botRevenue, botRevenueMonthly } = useData();
   const { formatMoney, convertAmount, paymentsTotalIn, usdRubRate } = useMoney();
   const { formatShort } = useFormat();
   const router = useRouter();
@@ -100,10 +95,11 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const monthProfit = monthRevenue - monthPaid;
   const previousMonthProfit = previousMonthRevenue - previousMonthPaid;
 
-  // Colored by direction alone (up green, down red) — not by whether that
-  // direction is actually "good" for the metric (e.g. rising spend), since
-  // an up arrow rendered in red read as contradictory/broken at a glance.
-  function TrendTag({ current, previous }) {
+  // Arrow direction always follows the raw delta (up = value increased).
+  // Color follows whether that direction is actually good for the metric —
+  // `invert` flips it for cost-like metrics (e.g. "Уплачено"), where rising
+  // is bad, so it renders red despite the up arrow.
+  function TrendTag({ current, previous, invert = false }) {
     // A zero previous-month base makes "% change" undefined (division by
     // zero) rather than just a big number — skip the tag entirely instead
     // of showing a misleading e.g. "+100%".
@@ -112,9 +108,10 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
     if (Math.abs(delta) < 0.005) return <span className="trend-tag trend-flat">{t("summary.trendFlat")}</span>;
     const percent = (delta / Math.abs(previous)) * 100;
     const up = delta > 0;
+    const good = invert ? !up : up;
     const Icon = up ? ArrowUp : ArrowDown;
     return (
-      <span className={`trend-tag ${up ? "trend-good" : "trend-bad"}`}>
+      <span className={`trend-tag ${good ? "trend-good" : "trend-bad"}`}>
         <Icon size={11} />
         {Math.abs(percent).toFixed(1)}%
       </span>
@@ -122,7 +119,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   }
 
   const accountInitial = (security.login || "?").slice(0, 1).toUpperCase();
-  const versionLabel = `v${update.version || meta.version || "—"}`;
+  const versionLabel = `v${meta.version || "—"}`;
 
   function go(path) {
     router.push(path);
@@ -230,7 +227,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
             </div>
           </div>
 
-          <div className="summary-card">
+          <button type="button" className="summary-card summary-card-link" onClick={() => go("/#overview")}>
             <span className="summary-heading">{t("summary.financeHeading")}</span>
             <div className="summary">
               <div className="summary-row">
@@ -240,7 +237,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
                 </span>
                 <span className="summary-value">
                   <strong>{formatMoney(monthPaid, currency)}</strong>
-                  <TrendTag current={monthPaid} previous={previousMonthPaid} />
+                  <TrendTag current={monthPaid} previous={previousMonthPaid} invert />
                 </span>
               </div>
               {botRevenue.configured ? (
@@ -268,7 +265,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
                 </>
               ) : null}
             </div>
-          </div>
+          </button>
 
           <div className="summary-card">
             <div className="summary-heading-row">
@@ -314,10 +311,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
               <span className="sidebar-account-avatar">{accountInitial}</span>
               <span className="sidebar-account-text">
                 <strong>{security.login || t("common.login")}</strong>
-                <span>
-                  {versionLabel}
-                  {update.updateAvailable ? <span className="sidebar-version-dot" /> : null}
-                </span>
+                <span>{versionLabel}</span>
               </span>
               <ChevronsUpDown size={15} className="sidebar-account-chevron" />
             </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Popover } from "radix-ui";
 import { Save, Trash2 } from "lucide-react";
 import Modal from "../ui/Modal";
@@ -15,8 +15,7 @@ import { currencySymbol, useMoney } from "../../lib/money";
 import { ASSET_TYPES, CURRENCIES } from "../../lib/assets";
 import { countries, countryFlagUrl } from "../../lib/countries";
 
-// Ported from the "asset" <Modal> block in App.vue's template (asset create/
-// edit form, incl. the country popover picker) + saveAsset/deleteAsset.
+// Asset create/edit form, including the country popover picker.
 export default function AssetFormModal({ open, onOpenChange, asset }) {
   const { t } = useLocale();
   const { providers, categories } = useData();
@@ -27,6 +26,7 @@ export default function AssetFormModal({ open, onOpenChange, asset }) {
   const [draft, setDraft] = useState(asset);
   const [countrySearch, setCountrySearch] = useState("");
   const [countryOpen, setCountryOpen] = useState(false);
+  const descriptionRef = useRef(null);
 
   useEffect(() => {
     setDraft(asset);
@@ -34,10 +34,19 @@ export default function AssetFormModal({ open, onOpenChange, asset }) {
     setCountryOpen(false);
   }, [asset, open]);
 
+  useEffect(() => {
+    if (open && descriptionRef.current) autosizeTextarea(descriptionRef.current);
+  }, [open, draft?.description]);
+
   if (!draft) return null;
 
   function set(field, value) {
     setDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function autosizeTextarea(field) {
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
   }
 
   async function handleSubmit(e) {
@@ -167,6 +176,20 @@ export default function AssetFormModal({ open, onOpenChange, asset }) {
                 </AppSelectItem>
               ))}
             </AppSelect>
+          </label>
+          <label style={{ gridColumn: "1 / -1" }}>
+            {t("assets.description")}
+            <textarea
+              ref={descriptionRef}
+              className="autosize-textarea"
+              rows={1}
+              placeholder={t("assets.descriptionPlaceholder")}
+              value={draft.description}
+              onChange={(e) => {
+                set("description", e.target.value);
+                autosizeTextarea(e.target);
+              }}
+            />
           </label>
         </div>
         {draft.price && draft.priceCurrency !== "EUR" ? <p className="hint">≈ {formatMoney(convertToEur(draft.price, draft.priceCurrency), "EUR")}</p> : null}

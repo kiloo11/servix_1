@@ -56,6 +56,7 @@ class Asset(Base):
     ip: Mapped[str] = mapped_column(Text, nullable=False, default="")
     domain: Mapped[str] = mapped_column(Text, nullable=False, default="")
     country_code: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     inactive: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     category: Mapped[str] = mapped_column(Text, nullable=False, default="")

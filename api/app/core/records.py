@@ -204,6 +204,7 @@ def normalize_asset(db: Session, input: dict, previous: dict | None = None) -> d
         "countryCode": (
             str(input.get("countryCode", previous.get("countryCode", ""))).strip().upper()[:2] if asset_type == "vps" else ""
         ),
+        "description": str(input.get("description", previous.get("description", "")) or "").strip(),
         "sortOrder": int(input.get("sortOrder", previous.get("sortOrder", int(datetime.now().timestamp() * 1000)))),
         "inactive": bool(input.get("inactive", previous.get("inactive", False))),
         "category": normalize_category_ref(db, input.get("category", previous.get("category"))),
@@ -225,6 +226,7 @@ def asset_to_dict(row: models.Asset, include_payments: bool = True) -> dict:
         "ip": row.ip,
         "domain": row.domain,
         "countryCode": row.country_code,
+        "description": row.description,
         "sortOrder": row.sort_order,
         "inactive": bool(row.inactive),
         "category": row.category,
@@ -250,6 +252,7 @@ def upsert_asset(db: Session, asset: dict) -> dict:
     row.ip = asset["ip"]
     row.domain = asset["domain"]
     row.country_code = asset["countryCode"]
+    row.description = asset["description"]
     row.sort_order = asset["sortOrder"]
     row.inactive = 1 if asset["inactive"] else 0
     row.category = asset["category"]

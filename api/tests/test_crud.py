@@ -97,6 +97,23 @@ def test_asset_crud_with_embedded_payments(auth_client):
     auth_client.delete(f"/api/providers/{provider['id']}")
 
 
+def test_asset_description_round_trip(auth_client):
+    created = auth_client.post("/api/assets", json={"type": "domain", "name": "example.test", "description": "  Registered for the staging environment  "})
+    assert created.status_code == 201, created.text
+    asset = created.json()
+    assert asset["description"] == "Registered for the staging environment"
+
+    updated = auth_client.put(f"/api/assets/{asset['id']}", json={"type": "domain", "name": "example.test", "description": ""})
+    assert updated.status_code == 200
+    assert updated.json()["description"] == ""
+
+    bulk = auth_client.get("/api/assets").json()
+    row = next(a for a in bulk["assets"] if a["id"] == asset["id"])
+    assert row["description"] == ""
+
+    auth_client.delete(f"/api/assets/{asset['id']}")
+
+
 def test_asset_requires_name(auth_client):
     response = auth_client.post("/api/assets", json={"type": "vps", "name": ""})
     assert response.status_code == 400
