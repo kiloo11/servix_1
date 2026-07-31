@@ -1,9 +1,8 @@
-import ruLocale from "../../locale/ru.json";
-import enLocale from "../../locale/en.json";
+import ruLocale from "../locale/ru.json";
+import enLocale from "../locale/en.json";
 
-// Ported verbatim from src/App.vue (translate/translatePlural/translateList/
-// getPath/interpolate/pluralIndex/countryFlag/countryName/countryLabelForLocale/
-// countryNameForLocale) — framework-agnostic, no behavior changes.
+// translate/translatePlural/translateList/getPath/interpolate/pluralIndex/
+// countryFlag/countryName/countryLabelForLocale/countryNameForLocale.
 
 export const messages = { ru: ruLocale, en: enLocale };
 
