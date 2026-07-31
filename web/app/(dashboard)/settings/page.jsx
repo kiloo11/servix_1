@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { BookOpen, Coins, KeyRound, Plus, QrCode, Save, ScrollText, Send, Settings as SettingsIcon, ShieldCheck, Tag } from "lucide-react";
+import { BookOpen, Coins, KeyRound, Plus, QrCode, RefreshCw, Save, ScrollText, Send, Settings as SettingsIcon, ShieldCheck, Tag } from "lucide-react";
 import AppSelect from "../../../components/ui/AppSelect";
 import AppSelectItem from "../../../components/ui/AppSelectItem";
 import AppTooltip from "../../../components/ui/AppTooltip";
@@ -49,6 +49,30 @@ export default function SettingsPage() {
   const [twoFactor, setTwoFactor] = useState(EMPTY_TWO_FACTOR);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [bedolagaStatus, setBedolagaStatus] = useState(null);
+  const [bedolagaSyncing, setBedolagaSyncing] = useState(false);
+
+  useEffect(() => {
+    call("/api/bedolaga/sync/status").then(setBedolagaStatus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function syncBedolaga() {
+    setBedolagaSyncing(true);
+    try {
+      const result = await call("/api/bedolaga/sync", { method: "POST" });
+      setBedolagaStatus(result);
+      toast(
+        t("settings.bedolagaSyncDone", {
+          transactions: result.transactionsSynced,
+          subscriptions: result.subscriptionsSynced,
+          users: result.usersSynced,
+        })
+      );
+    } finally {
+      setBedolagaSyncing(false);
+    }
+  }
 
   function openCategory(category = null) {
     setEditingCategory(category ? clone(category) : emptyCategory());
@@ -222,6 +246,31 @@ export default function SettingsPage() {
               <Coins size={16} />
               {t("settings.ratesGoTo")}
             </Link>
+          </div>
+        </div>
+
+        <div className="settings-panel">
+          <div className="settings-card-head">
+            <div className="settings-card-icon">
+              <RefreshCw size={18} />
+            </div>
+            <div>
+              <h2>{t("settings.bedolagaTitle")}</h2>
+              <span>{t("settings.bedolagaText")}</span>
+            </div>
+          </div>
+          <div className="settings-inline-footer">
+            <span className="hint">
+              {bedolagaStatus && !bedolagaStatus.configured
+                ? t("settings.bedolagaNotConfigured")
+                : bedolagaStatus?.lastSyncAt
+                  ? `${t("settings.bedolagaLastSync", { value: formatDateTime(bedolagaStatus.lastSyncAt) })} — ${t("settings.bedolagaRowCounts", bedolagaStatus.rowCounts)}`
+                  : t("settings.bedolagaNeverSynced")}
+            </span>
+            <button className="secondary-button" type="button" onClick={syncBedolaga} disabled={bedolagaSyncing || bedolagaStatus?.configured === false}>
+              <RefreshCw size={16} />
+              {t("settings.bedolagaSyncNow")}
+            </button>
           </div>
         </div>
 

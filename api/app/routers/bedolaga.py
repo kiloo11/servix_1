@@ -14,6 +14,7 @@ from app.core.bedolaga_sync import (
     sync_subscriptions_and_users,
     sync_transactions,
 )
+from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import require_user
 
@@ -33,11 +34,17 @@ def _meta_value(db: Session, key: str) -> str:
     return row.value if row else ""
 
 
+def _configured() -> bool:
+    settings = get_settings()
+    return bool(settings.bedolaga_api_url_clean and settings.bedolaga_api_key)
+
+
 @router.post("/sync")
 async def sync_now(db: Session = Depends(get_db)):
     transactions_synced = await sync_transactions(db)
     subscriptions_synced, users_synced = await sync_subscriptions_and_users(db)
     return {
+        "configured": _configured(),
         "transactionsSynced": transactions_synced,
         "subscriptionsSynced": subscriptions_synced,
         "usersSynced": users_synced,
@@ -49,6 +56,7 @@ async def sync_now(db: Session = Depends(get_db)):
 @router.get("/sync/status")
 def sync_status(db: Session = Depends(get_db)):
     return {
+        "configured": _configured(),
         "rowCounts": _row_counts(db),
         "lastSyncAt": _meta_value(db, LAST_SYNC_AT_KEY),
         "lastTransactionId": _meta_value(db, LAST_TRANSACTION_ID_KEY),

@@ -335,7 +335,15 @@
     "ratesRefreshed": "Курс обновлен",
     "refreshRates": "Обновить курс",
     "saved": "Настройки сохранены",
-    "testTelegram": "Проверить Telegram"
+    "testTelegram": "Проверить Telegram",
+    "bedolagaTitle": "Синхронизация с Bedolaga",
+    "bedolagaText": "Вкладка «Подписки» в Финансах считается по этим данным — обновляются по расписанию, но можно синхронизировать вручную.",
+    "bedolagaNotConfigured": "Интеграция не настроена — задайте BEDOLAGA_API_URL и BEDOLAGA_API_KEY.",
+    "bedolagaNeverSynced": "Синхронизация ещё не выполнялась",
+    "bedolagaLastSync": "Последняя синхронизация: {value}",
+    "bedolagaRowCounts": "Транзакций: {transactions}, подписок: {subscriptions}, пользователей: {users}",
+    "bedolagaSyncNow": "Синхронизировать сейчас",
+    "bedolagaSyncDone": "Синхронизация выполнена: +{transactions} транзакций, {subscriptions} подписок, {users} пользователей"
   },
   "guide": {
     "subtitle": "Полное руководство по работе с панелью: записи, платежи, уведомления, безопасность и обслуживание.",

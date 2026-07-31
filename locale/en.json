@@ -335,7 +335,15 @@
     "ratesRefreshed": "Rate refreshed",
     "refreshRates": "Refresh rate",
     "saved": "Settings saved",
-    "testTelegram": "Test Telegram"
+    "testTelegram": "Test Telegram",
+    "bedolagaTitle": "Bedolaga sync",
+    "bedolagaText": "The Finance section's Subscriptions tab is computed from this data — it refreshes on a schedule, but you can also sync it manually.",
+    "bedolagaNotConfigured": "Integration isn't configured — set BEDOLAGA_API_URL and BEDOLAGA_API_KEY.",
+    "bedolagaNeverSynced": "Sync has never run",
+    "bedolagaLastSync": "Last sync: {value}",
+    "bedolagaRowCounts": "Transactions: {transactions}, subscriptions: {subscriptions}, users: {users}",
+    "bedolagaSyncNow": "Sync now",
+    "bedolagaSyncDone": "Sync complete: +{transactions} transactions, {subscriptions} subscriptions, {users} users"
   },
   "guide": {
     "subtitle": "A complete manual for records, payments, notifications, security, and operating practices.",
