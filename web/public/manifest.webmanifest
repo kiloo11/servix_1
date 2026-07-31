@@ -1,6 +1,6 @@
 {
-  "name": "SERVIX",
-  "short_name": "SIX",
+  "name": "postq vpn",
+  "short_name": "pqv",
   "description": "Панель учета серверов, доменов, сертификатов и платежей.",
   "start_url": "/",
   "scope": "/",
