@@ -18,7 +18,7 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#04000f",
+  themeColor: "#120b24",
   // Lets content draw under the iOS notch/home-indicator area so
   // env(safe-area-inset-*) below actually resolves to a nonzero value there
   // instead of always reading 0.

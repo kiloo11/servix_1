@@ -2,8 +2,8 @@
 
 /* ─── Design tokens, ported from postq-site/app/globals.css ──────────────────── */
 @theme {
-  --color-bg: #04000f;
-  --color-bg2: #08001a;
+  --color-bg: #120b24;
+  --color-bg2: #171029;
   --color-bg3: #1a1a24;
   --color-accent: #cf00a3;
   --color-accent2: #931b79;

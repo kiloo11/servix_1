@@ -180,6 +180,8 @@
     "cardArpu": "ARPU",
     "cardGrossMargin": "Gross margin",
     "cardChurnRate": "Churn rate",
+    "cardAvgLifetime": "Avg. subscriber lifetime",
+    "monthsShort": "mo.",
     "cardInfraCostPerSubscriber": "Infra / subscriber",
     "movementTitle": "Monthly MRR movement",
     "movementNew": "New",

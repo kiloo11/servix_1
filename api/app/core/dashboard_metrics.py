@@ -209,6 +209,16 @@ def churn_rate(db: Session, month: str) -> float:
     return mrr_movement(db, month)["churned"]["count"] / len(previous)
 
 
+def average_lifetime_months(db: Session, month: str) -> float:
+    """Classic SaaS formula: 1 / monthly churn rate. 0 when churn couldn't be
+    computed (no previous-month subscriber base) or was exactly zero that
+    month — there's no finite lifetime to report in either case."""
+    rate = churn_rate(db, month)
+    if rate <= 0:
+        return 0.0
+    return 1 / rate
+
+
 def trial_conversion_rate(db: Session, cohort_month: str) -> float:
     rows = db.scalars(
         select(models.BedolagaUser).where(func.substr(models.BedolagaUser.created_at, 1, 7) == cohort_month)

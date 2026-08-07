@@ -180,6 +180,8 @@
     "cardArpu": "ARPU",
     "cardGrossMargin": "Валовая маржа",
     "cardChurnRate": "Отток",
+    "cardAvgLifetime": "Средний срок жизни подписчика",
+    "monthsShort": "мес.",
     "cardInfraCostPerSubscriber": "Инфра / подписчик",
     "movementTitle": "Движение MRR за месяц",
     "movementNew": "Новые",

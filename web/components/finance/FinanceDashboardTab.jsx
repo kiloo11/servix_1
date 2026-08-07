@@ -11,7 +11,7 @@ import { useToast } from "../../context/ToastContext";
 import { useFormat } from "../../lib/format";
 import { formatMoney as formatMoneyRaw } from "../../lib/money";
 
-const DEFAULT_SUMMARY_METRICS = { cashRevenue: 0, bookingsMrr: 0, recognizedMrr: 0, arpu: 0, grossMargin: 0, infraCostPerSubscriber: 0, churnRate: 0 };
+const DEFAULT_SUMMARY_METRICS = { cashRevenue: 0, bookingsMrr: 0, recognizedMrr: 0, arpu: 0, grossMargin: 0, infraCostPerSubscriber: 0, churnRate: 0, avgLifetimeMonths: 0 };
 const DEFAULT_SUMMARY = { ...DEFAULT_SUMMARY_METRICS, previous: DEFAULT_SUMMARY_METRICS };
 const DEFAULT_FORECAST = { dataPointsUsed: 0, confidence: "insufficient", history: [], forecast: [] };
 
@@ -203,6 +203,15 @@ export default function FinanceDashboardTab() {
                 <TrendTag current={summary.churnRate} previous={summary.previous.churnRate} invert />
               </div>
               <strong>{(summary.churnRate * 100).toFixed(1)}%</strong>
+            </article>
+            <article className="stat-card">
+              <div className="stat-card-head">
+                <span>{t("dashboard.cardAvgLifetime")}</span>
+                <TrendTag current={summary.avgLifetimeMonths} previous={summary.previous.avgLifetimeMonths} />
+              </div>
+              <strong>
+                {summary.avgLifetimeMonths > 0 ? `${summary.avgLifetimeMonths.toFixed(1)} ${t("dashboard.monthsShort")}` : "—"}
+              </strong>
             </article>
             <article className="stat-card">
               <div className="stat-card-head">

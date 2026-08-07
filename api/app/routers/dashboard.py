@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app import models
 from app.core.dashboard_metrics import (
     arpu,
+    average_lifetime_months,
     bookings_mrr_by_month,
     cash_revenue_by_month,
     churn_rate,
@@ -47,6 +48,7 @@ def _summary_metrics(db: Session, target_month: str) -> dict:
         "grossMargin": gross_margin(db, target_month),
         "infraCostPerSubscriber": infra_cost_per_subscriber(db, target_month),
         "churnRate": churn_rate(db, target_month),
+        "avgLifetimeMonths": average_lifetime_months(db, target_month),
     }
 
 
