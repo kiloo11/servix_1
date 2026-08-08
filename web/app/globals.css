@@ -2,11 +2,26 @@
 
 /* ─── Design tokens, ported from postq-site/app/globals.css ──────────────────── */
 @theme {
-  --color-bg: #120b24;
-  --color-bg2: #171029;
-  --color-bg3: #1a1a24;
+  /* Pivoted to an OpenSea-style palette on request: clean white/gray
+     neutrals rather than a tinted color family — OpenSea's own palette is
+     genuinely near-achromatic (white content, light-gray panels), it's
+     the pill shapes, real card elevation, and flat single-accent color
+     that read as "OpenSea", not a colored neutral scale. Supersedes the
+     previous tinted-blush pass; --color-accent is explicitly unchanged
+     per the request. */
+  --color-bg: #ffffff;
+  --color-bg2: #f7f8fa;
+  /* OpenSea's actual divider/hover-state gray, not an invented gray-step —
+     was #eef0f3 (guessed to "look right" in the shape/elevation pass). */
+  --color-bg3: #e5e8eb;
   --color-accent: #cf00a3;
-  --color-accent2: #931b79;
+  /* Retired as a second brand hue (was a deep indigo duotone-gradient
+     partner) — OpenSea's own buttons are flat single-color fills, not
+     gradients, so the primary button below dropped its gradient too and
+     this token no longer needs to be a distinct, visible color. Kept as
+     a plain dark "ink" utility, close to --text, for anywhere a flat dark
+     fill is still needed. */
+  --color-accent2: #04111d;
 
   --font-display: "GT Eesti Pro Display", system-ui, -apple-system, sans-serif;
   --font-text: "GT Eesti Pro Text", system-ui, -apple-system, sans-serif;
@@ -55,17 +70,31 @@
   --accent: var(--color-accent);
   --accent2: var(--color-accent2);
 
-  --border: rgba(255, 255, 255, 0.14);
-  --text: #f4f4f5;
-  --text2: rgba(215, 194, 240, 0.9);
-  /* Was 0.55 — against the near-black --color-bg (#04000f), that landed
-     around 3:1 contrast, borderline/failing WCAG AA for the small text
-     (card labels, hints, subtitles) this is used for everywhere. */
-  --muted: rgba(215, 194, 240, 0.75);
+  /* Text hierarchy ported from OpenSea's actual system rather than
+     derived as alpha-steps of one black (the previous approach, and
+     ours, not theirs) — OpenSea genuinely uses distinct solid grays for
+     each tier, not one color at varying opacity. --text is their dark
+     navy-black (not pure black); --text2/--muted are real independent
+     grays, darkened from OpenSea's own (~#8a939b) — their raw value only
+     reaches ~3.1:1 against white, fine for large/UI-chrome text under
+     WCAG 1.4.11 but not the small secondary text this fills in this app.
+     --muted specifically is darkened past the 4.5:1-on-white minimum
+     (~5.4:1) because it's also used as text on the sidebar background,
+     which is darker than the page — a value that only cleared 4.5:1
+     against white failed there (4.27:1), caught by explicitly checking
+     every token against both backgrounds it's rendered on, not just one. */
+  --border: rgba(4, 17, 29, 0.14);
+  --text: #04111d;
+  --text2: #4b5563;
+  --muted: #656b71;
 
-  --glass-border: rgba(207, 0, 163, 0.14);
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-bg-nested: rgba(255, 255, 255, 0.03);
+  /* Neutral hairline, not accent-tinted — OpenSea's own cards define
+     themselves with a soft shadow and a barely visible neutral line, not
+     a brand-colored outline everywhere; keeps magenta reserved for
+     actionable elements per the Restrained strategy. */
+  --glass-border: rgba(4, 17, 29, 0.08);
+  --glass-bg: rgba(4, 17, 29, 0.04);
+  --glass-bg-nested: rgba(4, 17, 29, 0.03);
 
   /* ─── Typography scale ───────────────────────────────────────────────────────
      Grew organically to 16 near-duplicate font-sizes (12px/12.5px/13px/13.5px
@@ -94,9 +123,114 @@
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  --danger: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
+  /* ─── Spacing scale ───────────────────────────────────────────────────────────
+     Extracted from an audit of every padding/margin/gap value already in this
+     file (325 declarations, 26 distinct values) rather than invented fresh —
+     these 18 steps cover ~93% of existing usage exactly. Named after their own
+     px value (not an abstract 1-2-3 index) so a call site reads its own size
+     directly: `padding: var(--space-12) var(--space-20)` is self-documenting
+     without cross-referencing a table. A handful of true one-offs were
+     deliberately left out rather than forced into the scale: -6px (a
+     negative offset), 1px/13px/22px (single-use), and the 76/88px
+     layout-tier gaps, which are page-region spacing, not component
+     spacing, and don't recur often enough to earn their own mid-scale step. */
+  --space-2: 2px;
+  --space-3: 3px;
+  --space-4: 4px;
+  --space-5: 5px;
+  --space-6: 6px;
+  --space-7: 7px;
+  --space-8: 8px;
+  --space-9: 9px;
+  --space-10: 10px;
+  --space-11: 11px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-18: 18px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-28: 28px;
+  --space-32: 32px;
+  /* Layout tier — page-region gaps (safe-area clearance, section spacing),
+     not component padding. Kept separate so the component scale above stays
+     a clean 2-32px range. */
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* ─── Radius scale ────────────────────────────────────────────────────────────
+     Same extraction method as spacing (79 declarations, 11 distinct values).
+     9px is kept as its own step rather than rounded into 8/10 — it's used
+     consistently (6 occurrences) for compact icon-adjacent controls, not
+     drift. The scrollbar thumb (3px) is tokenized like everything else;
+     2px (the 15×11px flag-icon's own corner rounding) and the single 11px
+     icon-tile radius are the true single-purpose exceptions, deliberately
+     left as inline literals rather than forced into a shared token. */
+  --radius-3: 3px;
+  --radius-8: 8px;
+  --radius-9: 9px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-14: 14px;
+  --radius-16: 16px;
+  --radius-18: 18px;
+  --radius-20: 20px;
+  --radius-24: 24px;
+  /* Fully rounded — OpenSea's signature pill shape for buttons and
+     badges/pills, not a "large number" step of the scale above (999px
+     resolves the same at any control height, unlike a fixed px value that
+     would stop looking fully round past a certain size). */
+  --radius-pill: 999px;
+
+  /* ─── Elevation scale ─────────────────────────────────────────────────────────
+     Every box-shadow in this file is `0 <Y> <blur> rgba(0,0,0,<0.3-0.5>)` —
+     no x-offset or spread is ever used. 5 of 8 declarations matched one of
+     these three tiers exactly and were tokenized; the remaining 3 (login
+     card, tooltip, chart tooltip) sit at slightly different Y/blur/alpha
+     combinations that don't map onto any tier without changing their actual
+     appearance, so they were deliberately left as their own literals rather
+     than rounded into a tier. */
+  --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.5);
+  /* A much softer, two-layer resting elevation for in-flow cards/widgets —
+     the sm/md/lg tiers above are tuned for floating overlays over content
+     (dropdowns, modals) and are far too strong for a card sitting flat on
+     a white page at rest. This is the OpenSea-style "soft card lift"
+     instead: barely-there at rest, a bit more present on hover. */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 16px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.1);
+
+  /* Danger/success re-grounded in actual OpenSea screenshots the user
+     provided, after an earlier pass here cited specific hex codes
+     ("OpenSea's actual referenced hues") that were never really verified
+     against real pixels — reconstructed from generic fintech-UI memory
+     and presented with false confidence. #DC2626/#16A34A below are eyeballed
+     against the provided screenshots' clean market-red/market-green, then
+     darkened only as far as needed (green did; red already cleared it) for
+     4.5:1+ against both this app's page AND sidebar backgrounds — the
+     screenshots' own raw green likely doesn't clear that bar for small
+     text (~3.3:1), so it's darkened slightly past what's literally shown.
+     Warning/amber has no equivalent screenshot reference — still an
+     estimate, disclosed as one, not verified like the other two. */
+  --danger: #dc2626;
+  --success: #12823b;
+  --warning: #995906;
+
+  /* Bright-hue RGB triplets for pale badge/pill/alert-background washes —
+     danger uses a standard bright red (Tailwind red-500) since the dark
+     token above is already close to the screenshots' actual brightness;
+     success uses the screenshots' own un-darkened green. One token
+     feeding every rgba(var(--danger-rgb), alpha) call site means a future
+     hue change is a one-line edit, not another file-wide sweep. */
+  --danger-rgb: 239, 68, 68;
+  --success-rgb: 22, 163, 74;
+  --warning-rgb: 247, 144, 9;
+  /* Text-safe darker magenta — var(--accent) itself only clears ~4.1:1
+     against --color-bg, just under 4.5:1 AA for small/bold text (badges,
+     the favicon-placeholder letter), so those use this instead of the
+     brand accent directly. */
+  --accent-strong: #99007c;
 }
 
 /* ─── Glass surfaces — ported rule: no backdrop-filter on the base tier (the
@@ -112,7 +246,7 @@
   border: 1px solid var(--glass-border);
 }
 .glass-floating {
-  background: rgba(10, 4, 24, 0.92);
+  background: rgba(250, 250, 248, 0.92);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -133,7 +267,7 @@
   }
   ::selection {
     background: rgba(207, 0, 163, 0.3);
-    color: #fff;
+    color: var(--text);
   }
   ::-webkit-scrollbar {
     width: 6px;
@@ -144,136 +278,85 @@
   }
   ::-webkit-scrollbar-thumb {
     background: rgba(207, 0, 163, 0.4);
-    border-radius: 3px;
+    border-radius: var(--radius-3);
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(207, 0, 163, 0.7);
   }
 }
 
-/* ─── Buttons ──────────────────────────────────────────────────────────────── */
-.btn-accent {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-size: var(--text-md);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  padding: 10px 20px;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #cf00a3 0%, #931b79 100%);
-  color: #fff;
-  cursor: pointer;
-  transition: filter 0.15s, opacity 0.15s;
-}
-.btn-accent:hover {
-  filter: brightness(1.08);
-}
-.btn-accent:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: var(--font-text);
-  font-size: var(--text-md);
-  font-weight: 500;
-  padding: 10px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.14);
-}
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--muted);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-.btn-icon:hover {
-  background: rgba(207, 0, 163, 0.1);
-  border-color: rgba(207, 0, 163, 0.28);
-  color: var(--accent);
-}
-
-/* ─── Semantic action buttons (used throughout ported form/confirm markup,
-   alongside .btn-accent/.btn-ghost/.btn-icon which are for the dashboard
-   chrome authored fresh in this rewrite) ─────────────────────────────────────── */
-.primary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-size: var(--text-md);
-  font-weight: 500;
-  padding: 12px 20px;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #cf00a3 0%, #931b79 100%);
-  color: #fff;
-  cursor: pointer;
-  transition: filter 0.15s;
-}
-.primary-button:hover {
-  filter: brightness(1.08);
-}
-.secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: var(--font-text);
-  font-size: var(--text-md);
-  font-weight: 500;
-  padding: 11px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.secondary-button:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
+/* ─── Buttons ──────────────────────────────────────────────────────────────────
+   One shared shape, three color variants — consolidated from what were 6
+   near-duplicate classes. `.btn-accent`/`.btn-ghost`/`.btn-icon` (originally
+   "dashboard chrome authored fresh" per an earlier comment here) turned out
+   to be dead CSS with zero references anywhere in the app (verified via a
+   full-repo grep) and were removed rather than merged. `.secondary-button`
+   and `.danger-button` were already byte-identical in every dimension
+   except color — this keeps that shared shape in one place instead of two
+   copies that could drift apart. `.primary-button` keeps its own slightly
+   larger padding (12/20 vs 11/18) rather than being forced to match; that
+   was a real, if small, distinction in the original rules, not drift. */
+.primary-button,
+.secondary-button,
 .danger-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-family: var(--font-text);
+  gap: var(--space-8);
   font-size: var(--text-md);
   font-weight: 500;
-  padding: 11px 18px;
-  border-radius: 12px;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.1);
-  color: rgba(239, 68, 68, 0.9);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background 0.15s;
+}
+.primary-button {
+  font-family: var(--font-display);
+  padding: var(--space-12) var(--space-20);
+  border: none;
+  /* Flat, not a gradient — OpenSea's own primary buttons are a single
+     solid fill; brightness/hover carries the interactivity instead. */
+  background: var(--color-accent);
+  color: #fff;
+  transition: filter 0.15s;
+}
+.primary-button:hover {
+  filter: brightness(1.1);
+}
+.secondary-button,
+.danger-button {
+  font-family: var(--font-text);
+  padding: var(--space-11) var(--space-18);
+  transition: background 0.15s, border-color 0.15s;
+}
+.secondary-button {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+.secondary-button:hover {
+  background: rgba(7, 4, 11, 0.05);
+}
+.danger-button {
+  border: 1px solid rgba(var(--danger-rgb), 0.3);
+  background: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
 }
 .danger-button:hover {
-  background: rgba(239, 68, 68, 0.18);
+  background: rgba(var(--danger-rgb), 0.18);
+}
+
+/* Branded keyboard-focus ring for every plain button/link/nav control that
+   doesn't already get one from a per-component :focus rule (text inputs)
+   or a Radix data-state (Select/menu items) — previously these fell back
+   to each browser's own unstyled default outline. */
+.icon-button:focus-visible,
+.secondary-button:focus-visible,
+.secondary-link:focus-visible,
+.danger-button:focus-visible,
+.primary-button:focus-visible,
+.nav-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: inherit;
 }
 
 /* ─── Login / setup / 2FA screen ──────────────────────────────────────────────── */
@@ -299,10 +382,10 @@
   width: min(380px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 28px;
-  border-radius: 20px;
-  background: rgba(10, 4, 24, 0.6);
+  gap: var(--space-16);
+  padding: var(--space-28);
+  border-radius: var(--radius-20);
+  background: rgba(250, 250, 248, 0.6);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -311,16 +394,16 @@
 .login-card label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
 }
 .login-card input {
-  padding: 11px 13px;
-  border-radius: 10px;
+  padding: var(--space-11) 13px;
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-family: var(--font-text);
   font-size: var(--text-md);
@@ -332,7 +415,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-12);
 }
 .brand.compact strong {
   display: block;
@@ -346,12 +429,12 @@
 }
 .form-error {
   font-size: var(--text-base);
-  color: rgba(239, 68, 68, 0.9);
+  color: var(--danger);
   margin: 0;
 }
 .otp-inputs {
   display: flex;
-  gap: 8px;
+  gap: var(--space-8);
   justify-content: space-between;
 }
 .otp-inputs input {
@@ -367,10 +450,10 @@
    shrink both the boxes and the card's own padding to fit. */
 @media (max-width: 400px) {
   .login-card {
-    padding: 20px;
+    padding: var(--space-20);
   }
   .otp-inputs {
-    gap: 6px;
+    gap: var(--space-6);
   }
   .otp-inputs input {
     width: 38px;
@@ -399,7 +482,7 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding: 18px 12px;
+  padding: var(--space-18) var(--space-12);
   border-right: 1px solid var(--border);
   background: var(--color-bg2);
   transition: width 0.18s;
@@ -464,24 +547,24 @@
   height: 30px;
   margin-top: -6px;
   border: none;
-  border-radius: 9px;
+  border-radius: var(--radius-9);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
 }
 .sidebar-expand-trigger:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(7, 4, 11, 0.06);
   color: var(--text);
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 6px 18px;
+  gap: var(--space-10);
+  padding: var(--space-6) var(--space-6) var(--space-18);
   position: relative;
 }
 .brand-mark {
-  border-radius: 10px;
+  border-radius: var(--radius-10);
   flex-shrink: 0;
 }
 .brand-text {
@@ -505,7 +588,7 @@
 .sidebar-top {
   display: flex;
   justify-content: flex-end;
-  padding: 6px 6px 18px;
+  padding: var(--space-6) var(--space-6) var(--space-18);
 }
 .sidebar-collapse {
   flex-shrink: 0;
@@ -513,21 +596,21 @@
 .sidebar-separator {
   height: 1px;
   flex-shrink: 0;
-  margin: 12px 0;
+  margin: var(--space-12) 0;
   background: var(--border);
 }
 .nav-tabs {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 .nav-button {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: var(--space-11);
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-10);
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
@@ -540,7 +623,7 @@
 }
 .nav-button:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(7, 4, 11, 0.04);
 }
 .nav-button.active {
   color: var(--text);
@@ -560,8 +643,8 @@
   margin-left: auto;
   min-width: 18px;
   height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-9);
   background: var(--accent);
   color: #fff;
   font-size: var(--text-2xs);
@@ -576,11 +659,11 @@
 .summary-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .summary-card {
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: var(--radius-12);
+  padding: var(--space-12) var(--space-14);
   background: var(--glass-bg-nested);
   border: 1px solid var(--glass-border);
 }
@@ -591,7 +674,7 @@
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-16);
 }
 /* Only the rates card needs a corner action. align-items: center here
    centers by each child's margin box, not its glyph box — .summary-heading's
@@ -603,8 +686,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
 }
 .summary-heading-row .summary-heading {
   margin-bottom: 0;
@@ -643,7 +726,7 @@
 .summary {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: var(--space-9);
 }
 .summary-row {
   display: flex;
@@ -654,12 +737,12 @@
      label text itself (not the icon) is what should give up the space,
      down to nothing, so the value/trend always stay on one line. */
   flex-wrap: nowrap;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .summary-label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
   font-size: var(--text-2xs);
   color: var(--muted);
   text-transform: uppercase;
@@ -698,8 +781,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 8px;
+  gap: var(--space-6);
+  padding: 0 var(--space-8);
 }
 .summary-inline-item:not(:first-child) {
   border-left: 1px solid var(--border);
@@ -717,14 +800,14 @@
   display: flex;
   flex-direction: row;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--space-6);
   flex-shrink: 0;
   white-space: nowrap;
 }
 .trend-tag {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2);
   font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
@@ -748,10 +831,10 @@
 .sidebar-account-trigger {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
   width: 100%;
-  padding: 8px;
-  border-radius: 12px;
+  padding: var(--space-8);
+  border-radius: var(--radius-12);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text);
@@ -760,7 +843,7 @@
 }
 .sidebar-account-trigger:hover,
 .sidebar-account-trigger[data-state="open"] {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(7, 4, 11, 0.04);
   border-color: var(--border);
 }
 .sidebar-account-avatar {
@@ -769,7 +852,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
   background: rgba(207, 0, 163, 0.14);
   color: var(--accent);
@@ -794,7 +877,7 @@
 .sidebar-account-text span {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-5);
   font-size: var(--text-xs);
   color: var(--muted);
 }
@@ -805,20 +888,20 @@
 .sidebar-account-menu {
   z-index: 120;
   width: 220px;
-  border-radius: 12px;
-  padding: 6px;
-  background: rgba(10, 4, 24, 0.96);
+  border-radius: var(--radius-12);
+  padding: var(--space-6);
+  background: rgba(250, 250, 248, 0.96);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-md);
 }
 .sidebar-account-menu-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: 9px;
+  gap: var(--space-10);
+  padding: var(--space-9) var(--space-10);
+  border-radius: var(--radius-9);
   font-size: var(--text-base);
   color: var(--text2);
   cursor: pointer;
@@ -829,21 +912,21 @@
   color: var(--text);
 }
 .sidebar-account-menu-item.is-danger {
-  color: rgba(239, 68, 68, 0.85);
+  color: var(--danger);
 }
 .sidebar-account-menu-item.is-danger[data-highlighted] {
-  background: rgba(239, 68, 68, 0.12);
-  color: rgba(239, 68, 68, 0.95);
+  background: rgba(var(--danger-rgb), 0.12);
+  color: var(--danger);
 }
 .sidebar-account-menu-sep {
   height: 1px;
-  margin: 6px 4px;
+  margin: var(--space-6) var(--space-4);
   background: var(--border);
 }
 .content {
   flex: 1;
   min-width: 0;
-  padding: 28px 32px 64px;
+  padding: var(--space-28) var(--space-32) var(--space-64);
 }
 @media (max-width: 900px) {
   /* .mobile-menu-button and .sidebar are both position:fixed (out of flow)
@@ -855,24 +938,24 @@
   .mobile-menu-button {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-12);
     position: fixed;
     top: max(14px, env(safe-area-inset-top));
     left: max(16px, env(safe-area-inset-left));
     z-index: 95;
     width: fit-content;
-    padding: 12px 20px 12px 14px;
+    padding: var(--space-12) var(--space-20) var(--space-12) var(--space-14);
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: var(--radius-20);
     background: var(--color-bg2);
     color: var(--text);
     font-family: var(--font-display);
     font-size: var(--text-lg);
     cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-sm);
   }
   .mobile-menu-logo {
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     flex-shrink: 0;
   }
   .sidebar-backdrop {
@@ -901,7 +984,7 @@
   .content {
     /* Top padding clears the fixed .mobile-menu-button pill instead of a
        document-flow gap, since the button no longer pushes content down. */
-    padding: max(88px, calc(env(safe-area-inset-top) + 76px)) 16px max(48px, calc(env(safe-area-inset-bottom) + 20px));
+    padding: max(88px, calc(env(safe-area-inset-top) + 76px)) var(--space-16) max(48px, calc(env(safe-area-inset-bottom) + 20px));
   }
   .sidebar {
     /* Same clearance as .content — the fixed .mobile-menu-button pill sits
@@ -915,19 +998,28 @@
 
 /* ─── Cards / stat cards ─────────────────────────────────────────────────────── */
 .card {
-  border-radius: 16px;
-  padding: 18px;
+  border-radius: var(--radius-20);
+  padding: var(--space-18);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
+  /* Real resting elevation instead of flat — OpenSea-style soft card
+     lift, a deliberate reversal of this system's earlier "flat at rest"
+     rule (which was tuned for a busier, more saturated dark theme; a
+     pure-white page needs the shadow to separate white-on-white cards at
+     all). Lifts further on hover for cards that are actually clickable
+     (asset cards etc.); static dashboard tiles keep only the resting
+     shadow, no hover change, since they're not interactive. */
+  box-shadow: var(--shadow-card);
 }
 .stat-card {
-  border-radius: 16px;
-  padding: 18px 20px;
+  border-radius: var(--radius-20);
+  padding: var(--space-18) var(--space-20);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
 }
 .stat-card-label {
   font-size: var(--text-sm);
@@ -956,37 +1048,37 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 8px;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-10);
+  border-radius: var(--radius-pill);
   font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   border: 1px solid transparent;
 }
 .badge-accent {
-  color: rgba(207, 0, 163, 0.9);
+  color: var(--accent-strong);
   background: rgba(207, 0, 163, 0.1);
   border-color: rgba(207, 0, 163, 0.22);
 }
 .badge-success {
-  color: rgba(34, 197, 94, 0.85);
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.22);
+  color: var(--success);
+  background: rgba(var(--success-rgb), 0.1);
+  border-color: rgba(var(--success-rgb), 0.22);
 }
 .badge-warning {
-  color: rgba(245, 158, 11, 0.85);
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.22);
+  color: var(--warning);
+  background: rgba(var(--warning-rgb), 0.1);
+  border-color: rgba(var(--warning-rgb), 0.22);
 }
 .badge-danger {
-  color: rgba(239, 68, 68, 0.85);
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.22);
+  color: var(--danger);
+  background: rgba(var(--danger-rgb), 0.1);
+  border-color: rgba(var(--danger-rgb), 0.22);
 }
 .badge-neutral {
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(7, 4, 11, 0.04);
   border-color: var(--border);
 }
 
@@ -996,29 +1088,33 @@
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: var(--space-6);
 }
 .input,
 .textarea {
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-14);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-family: var(--font-text);
   font-size: var(--text-md);
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 .input:focus,
 .textarea:focus {
   outline: none;
-  border-color: rgba(207, 0, 163, 0.4);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-accent);
+  background: var(--color-bg);
+  /* A soft accent-colored ring around the border, not just a color swap —
+     reads as a more deliberate, "designed" focus state than a plain
+     border change alone. */
+  box-shadow: 0 0 0 3px rgba(207, 0, 163, 0.14);
 }
 .input::placeholder,
 .textarea::placeholder {
-  color: rgba(215, 194, 240, 0.35);
+  color: rgba(7, 4, 11, 0.35);
 }
 .textarea {
   resize: vertical;
@@ -1028,7 +1124,7 @@
 /* ─── Tables ──────────────────────────────────────────────────────────────────── */
 .table-wrap {
   overflow-x: auto;
-  border-radius: 14px;
+  border-radius: var(--radius-14);
 }
 table.data-table {
   width: 100%;
@@ -1037,7 +1133,7 @@ table.data-table {
 }
 .data-table th {
   text-align: left;
-  padding: 10px 14px;
+  padding: var(--space-10) var(--space-14);
   font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1046,8 +1142,8 @@ table.data-table {
   white-space: nowrap;
 }
 .data-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: var(--space-12) var(--space-14);
+  border-bottom: 1px solid rgba(7, 4, 11, 0.05);
   color: var(--text2);
   vertical-align: middle;
 }
@@ -1055,7 +1151,7 @@ table.data-table {
   border-bottom: none;
 }
 .data-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(7, 4, 11, 0.02);
 }
 
 /* ─── Toasts ──────────────────────────────────────────────────────────────────── */
@@ -1066,15 +1162,26 @@ table.data-table {
   z-index: 200;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-8);
   max-width: min(360px, calc(100vw - 32px));
 }
 .toast {
-  border-radius: 12px;
-  padding: 12px 16px;
-  font-size: var(--text-base);
-  color: var(--text);
+  border-radius: var(--radius-12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  /* Padding/font/color live on .toast-close (the actual clickable surface,
+     a <button> for Radix Toast.Close) rather than here, so resetting the
+     button's own UA chrome doesn't have to fight this rule for them. */
+}
+.toast-close {
+  display: block;
+  width: 100%;
+  padding: var(--space-12) var(--space-16);
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
 }
 
 /* ─── Select (AppSelect/AppSelectItem) ───────────────────────────────────────── */
@@ -1082,19 +1189,19 @@ table.data-table {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-8);
   min-width: 120px;
-  padding: 9px 12px;
-  border-radius: 10px;
+  padding: var(--space-9) var(--space-12);
+  border-radius: var(--radius-14);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-family: var(--font-text);
   font-size: var(--text-base);
   cursor: pointer;
 }
 .app-select-trigger:hover {
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(7, 4, 11, 0.16);
 }
 /* Long option text (e.g. "Российский рубль") wrapped to 2 lines and forced
    the trigger — and any grid/flex track sizing it, like .quick-payment —
@@ -1115,33 +1222,33 @@ table.data-table {
      at a lower z-index the dropdown rendered behind the modal card: visible
      nowhere, unclickable, effectively "can't select a provider". */
   z-index: 145;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   overflow: hidden;
   min-width: var(--radix-select-trigger-width);
   max-height: var(--radix-select-content-available-height);
-  background: rgba(10, 4, 24, 0.96);
+  background: rgba(250, 250, 248, 0.96);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-md);
 }
 .app-select-viewport {
-  padding: 4px;
+  padding: var(--space-4);
 }
 .app-select-scroll {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: var(--space-4);
   color: var(--muted);
 }
 .app-select-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-10);
+  border-radius: var(--radius-8);
   font-size: var(--text-base);
   color: var(--text2);
   cursor: pointer;
@@ -1161,18 +1268,18 @@ table.data-table {
   /* Same reasoning as .app-select-content above — tooltips (e.g. the delete
      button's) are used inside modals too. */
   z-index: 145;
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: var(--radius-8);
+  padding: var(--space-6) var(--space-10);
   font-size: var(--text-sm);
   color: var(--text);
   max-width: 240px;
-  background: rgba(10, 4, 24, 0.92);
+  background: rgba(250, 250, 248, 0.92);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 .tooltip-arrow {
-  fill: rgba(10, 4, 24, 0.92);
+  fill: rgba(250, 250, 248, 0.92);
 }
 
 /* ─── Modal (Dialog) ──────────────────────────────────────────────────────────── */
@@ -1180,7 +1287,10 @@ table.data-table {
   position: fixed;
   inset: 0;
   z-index: 140;
-  background: rgba(2, 0, 8, 0.7);
+  /* Pure black, not a tint of Ink/Indigo — same reasoning as every other
+     shadow/scrim in the system (see DESIGN.md's "Shadow Black"): a dimming
+     overlay recedes behind what it dims, it doesn't carry brand hue. */
+  background: rgba(0, 0, 0, 0.7);
 }
 .modal-card {
   /* Centered via fixed+inset+margin:auto, not a transform: translate(-50%,-50%)
@@ -1195,20 +1305,20 @@ table.data-table {
   height: fit-content;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
-  border-radius: 18px;
-  padding: 22px 24px 24px;
-  background: rgba(10, 4, 24, 0.96);
+  border-radius: var(--radius-24);
+  padding: 22px var(--space-24) var(--space-24);
+  background: rgba(250, 250, 248, 0.96);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
 }
 .dialog-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--space-16);
+  margin-bottom: var(--space-16);
 }
 .dialog-head h2 {
   font-family: var(--font-display);
@@ -1220,8 +1330,8 @@ table.data-table {
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: var(--space-10);
+  margin-top: var(--space-20);
 }
 .icon-button {
   display: inline-flex;
@@ -1229,7 +1339,7 @@ table.data-table {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   color: var(--muted);
@@ -1237,7 +1347,7 @@ table.data-table {
   transition: background 0.15s, color 0.15s;
 }
 .icon-button:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(7, 4, 11, 0.06);
   color: var(--text);
 }
 .confirm-message {
@@ -1254,7 +1364,7 @@ table.data-table {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 14px 16px;
+  padding: var(--space-14) var(--space-16);
   border: none;
   background: transparent;
   color: var(--text);
@@ -1281,14 +1391,14 @@ table.data-table {
   animation: accordion-up 0.2s ease-out;
 }
 .accordion-content-inner {
-  padding: 0 16px 16px;
+  padding: 0 var(--space-16) var(--space-16);
   /* Its children (.table-toolbar, .payments-table, .table-footer) had no
      margin of their own, so with no gap here they stacked flush against
      each other — no vertical breathing room between the filter row, the
      table, and the pagination footer. */
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-14);
 }
 @keyframes accordion-down {
   from {
@@ -1312,16 +1422,16 @@ table.data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-16);
+  margin-bottom: var(--space-24);
   flex-wrap: wrap;
 }
 .section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-16);
+  margin-bottom: var(--space-24);
 }
 .section-head h1 {
   font-family: var(--font-display);
@@ -1338,7 +1448,7 @@ table.data-table {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: var(--space-2);
 }
 /* Finance section: one page, three tabs (Overview/Payments/Rates) replacing
    the old separate Stats/P&L routes — a segmented-control row under the page
@@ -1351,15 +1461,15 @@ table.data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-12);
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-20);
 }
 .finance-tabs {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 12px;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-12);
   background: var(--glass-bg-nested);
   border: 1px solid var(--glass-border);
   width: fit-content;
@@ -1367,7 +1477,7 @@ table.data-table {
 .finance-tabs-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .finance-bedolaga-hint {
   font-size: var(--text-sm);
@@ -1380,7 +1490,7 @@ table.data-table {
   height: 36px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-10);
 }
 .finance-sync-button:hover:not(:disabled) {
   background: var(--glass-bg-nested);
@@ -1392,8 +1502,8 @@ table.data-table {
   font-family: var(--font-text);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: var(--space-8) var(--space-16);
+  border-radius: var(--radius-8);
   cursor: pointer;
 }
 .finance-tab-trigger:hover {
@@ -1404,7 +1514,7 @@ table.data-table {
   color: #fff;
 }
 .tab-head {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-20);
 }
 .finance-tab-subtitle {
   display: block;
@@ -1434,7 +1544,7 @@ table.data-table {
 .search-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
   flex: 1;
   min-width: 200px;
 }
@@ -1442,31 +1552,33 @@ table.data-table {
   flex: 1;
   min-width: 160px;
   max-width: 320px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: var(--space-10) var(--space-16);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-family: var(--font-text);
   font-size: var(--text-base);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .search-row input[type="search"]:focus {
   outline: none;
-  border-color: rgba(207, 0, 163, 0.4);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(207, 0, 163, 0.14);
 }
 .empty-state {
   text-align: center;
-  padding: 64px 24px;
+  padding: var(--space-64) var(--space-24);
   color: var(--muted);
 }
 .empty-state h1 {
   font-family: var(--font-display);
   font-size: var(--text-2xl);
   color: var(--text);
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-8);
 }
 .empty-state p {
-  margin: 0 0 20px;
+  margin: 0 0 var(--space-20);
   font-size: var(--text-base);
 }
 .empty-state .primary-button {
@@ -1477,17 +1589,17 @@ table.data-table {
 .asset-sections {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--space-28);
 }
 .asset-type-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-12);
 }
 .asset-type-head {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .asset-type-head h2 {
   font-family: var(--font-display);
@@ -1501,20 +1613,20 @@ table.data-table {
 }
 .provider-type-head {
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: var(--space-10) var(--space-14);
+  border-radius: var(--radius-12);
 }
 .provider-type-head-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-8);
   font-size: var(--text-sm);
   color: var(--muted);
   margin-left: auto;
 }
 .category-group,
 .provider-type-group {
-  border-radius: 14px;
+  border-radius: var(--radius-14);
   overflow: hidden;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -1522,7 +1634,7 @@ table.data-table {
 .category-group-summary {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .category-group-count {
   font-size: var(--text-sm);
@@ -1535,33 +1647,36 @@ table.data-table {
 .category-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 8px;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-10);
+  border-radius: var(--radius-pill);
   font-size: var(--text-xs);
   font-weight: 600;
   white-space: nowrap;
   /* Categories are a user-managed entity now (own color per row), not a
-     fixed 3-name enum — driven by the --category-color custom property set
-     inline per badge. */
-  background: color-mix(in srgb, var(--category-color, var(--accent)) 12%, transparent);
-  color: var(--category-color, var(--accent));
+     fixed 3-name enum — driven by the --category-color/--category-text
+     custom properties set inline per badge. --category-text is computed in
+     JS (lib/contrastText.js): white when it clears 4.5:1 against the
+     user-picked color, otherwise a darkened shade of that same color —
+     arbitrary user colors can't be guaranteed contrast-safe any other way. */
+  background: var(--category-color, var(--accent));
+  color: var(--category-text, #fff);
 }
 
 /* ─── Category management (Settings) ─────────────────────────────────────────── */
 .category-manage-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .category-manage-chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
-  border-radius: 10px;
+  gap: var(--space-7);
+  padding: var(--space-7) var(--space-12);
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-size: var(--text-sm);
   cursor: pointer;
@@ -1580,30 +1695,34 @@ table.data-table {
 .asset-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
+  gap: var(--space-14);
 }
 .provider-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  gap: var(--space-14);
 }
 
 /* ─── Asset card ──────────────────────────────────────────────────────────────── */
 .asset-card {
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: var(--radius-20);
+  padding: var(--space-20);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-14);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
   transition: border-color 0.2s, box-shadow 0.2s, opacity 0.15s;
 }
+.asset-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
 .asset-card.is-soon {
-  border-color: rgba(245, 158, 11, 0.28);
+  border-color: rgba(var(--warning-rgb), 0.28);
 }
 .asset-card.is-overdue {
-  border-color: rgba(239, 68, 68, 0.32);
+  border-color: rgba(var(--danger-rgb), 0.32);
 }
 .asset-card.dragging {
   opacity: 0.4;
@@ -1611,18 +1730,18 @@ table.data-table {
 .asset-card header {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .asset-expiry-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .card-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
   min-width: 0;
 }
 /* The name/subtitle wrapper is a flex item with no size of its own — without
@@ -1660,14 +1779,14 @@ table.data-table {
 .asset-description {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--space-6);
   margin: 0;
   min-height: calc(1.5 * var(--text-sm) * 2);
 }
 .asset-description svg {
   flex-shrink: 0;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: var(--space-2);
 }
 /* Line-clamped separately from the icon row above — -webkit-box would
    otherwise apply to the icon too, which isn't a line of text. */
@@ -1683,21 +1802,24 @@ table.data-table {
 .favicon {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
   object-fit: cover;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(7, 4, 11, 0.06);
 }
 .favicon-placeholder {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(207, 0, 163, 0.12);
-  color: var(--accent);
+  /* var(--accent) itself only clears ~4.1:1 here — just under 4.5:1 AA for
+     this 13px bold letter — so this uses the same darker text-safe magenta
+     as .badge-accent instead of the raw brand accent. */
+  color: var(--accent-strong);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: var(--text-base);
@@ -1705,7 +1827,7 @@ table.data-table {
 .country-option {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
   font-size: var(--text-sm);
   color: var(--muted);
 }
@@ -1727,23 +1849,33 @@ table.data-table {
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--muted);
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-9);
+  border-radius: var(--radius-pill);
+  /* Unfilled by default — the solid fill is reserved for genuinely urgent
+     states (.is-soon/.is-overdue below); a record that isn't expiring
+     soon has nothing urgent to announce, so it gets a quiet outline
+     instead of competing for the same visual weight. Applies to both the
+     neutral due-state pill (no is-soon/is-overdue class) and the plain
+     date pill, since both share this base class. */
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
   font-size: var(--text-xs);
   white-space: nowrap;
 }
 /* Due-state colors for the expiry-status pills on AssetCard's header (see
-   .asset-expiry-row) — same red/yellow as the card's own border color. */
+   .asset-expiry-row) — same red/yellow as the card's own border color, and
+   the same --warning/--danger tokens already darkened for 4.5:1 white text. */
 .pill.is-soon {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--warning);
+  background: var(--warning);
+  border-color: transparent;
+  color: #fff;
 }
 .pill.is-overdue {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--danger);
+  background: var(--danger);
+  border-color: transparent;
+  color: #fff;
 }
 /* Same two-column grid as .asset-figures right below it (same column count,
    same 12px gap) — IP/provider sit directly above cost/total-paid instead
@@ -1752,14 +1884,14 @@ table.data-table {
 .meta-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 12px;
+  gap: var(--space-4) var(--space-12);
   font-size: var(--text-sm);
   color: var(--text2);
 }
 .meta-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-8);
   min-width: 0;
 }
 .meta-row svg {
@@ -1785,9 +1917,9 @@ table.data-table {
 .asset-figures {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--space-12);
   position: relative;
-  padding-top: 14px;
+  padding-top: var(--space-14);
   border-top: 1px solid var(--border);
 }
 /* A border on the second column (plus matching padding) would sit off from
@@ -1811,9 +1943,9 @@ table.data-table {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 2px;
+  gap: var(--space-2);
   min-width: 0;
-  padding: 0 8px;
+  padding: 0 var(--space-8);
 }
 .asset-figure-label {
   font-size: var(--text-2xs);
@@ -1830,15 +1962,15 @@ table.data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-10);
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: var(--space-8);
   border-top: 1px solid var(--border);
 }
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
 }
 .secondary-button.icon-only,
 .danger-button.icon-only,
@@ -1851,38 +1983,43 @@ table.data-table {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
   color: var(--muted);
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
 .secondary-link:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(7, 4, 11, 0.05);
   color: var(--text);
 }
 
 /* ─── Provider card ───────────────────────────────────────────────────────────── */
 .provider-card {
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: var(--radius-20);
+  padding: var(--space-16);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-10);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s;
+}
+.provider-card:hover {
+  box-shadow: var(--shadow-card-hover);
 }
 .provider-card header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .provider-category-list {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
 }
 .provider-note {
   font-size: var(--text-sm);
@@ -1893,7 +2030,7 @@ table.data-table {
 .provider-total {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .provider-total strong {
   font-family: var(--font-display);
@@ -1903,15 +2040,15 @@ table.data-table {
 .provider-asset-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-6);
 }
 .provider-card footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-10);
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: var(--space-8);
   border-top: 1px solid var(--border);
 }
 
@@ -1919,15 +2056,15 @@ table.data-table {
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: var(--space-14);
+  margin-bottom: var(--space-14);
 }
 .form-grid label,
 .quick-payment label,
 .renewal-price-row label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
@@ -1936,10 +2073,10 @@ table.data-table {
 .form-grid textarea,
 .quick-payment input,
 .renewal-price-row input {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-family: var(--font-text);
   font-size: var(--text-md);
@@ -1958,7 +2095,7 @@ table.data-table {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
 }
 .form-grid legend {
   font-size: var(--text-sm);
@@ -1969,15 +2106,15 @@ table.data-table {
 .type-toggle-group {
   display: flex !important;
   flex-direction: row !important;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .type-toggle {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 9px 10px;
-  border-radius: 10px;
+  padding: var(--space-9) var(--space-10);
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
   font-size: var(--text-base);
   color: var(--muted);
@@ -1995,13 +2132,13 @@ table.data-table {
 .hint {
   font-size: var(--text-sm);
   color: var(--muted);
-  margin: -6px 0 14px;
+  margin: -6px 0 var(--space-14);
 }
 .dialog-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .dialog-actions.has-danger {
   justify-content: space-between;
@@ -2012,7 +2149,7 @@ table.data-table {
 .color-input-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .color-input-row input[type="text"] {
   flex: 1;
@@ -2020,7 +2157,7 @@ table.data-table {
 .color-swatch-button {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
   flex-shrink: 0;
   overflow: hidden;
@@ -2046,32 +2183,32 @@ table.data-table {
 .search-select-button {
   width: 100%;
   text-align: left;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-14);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   cursor: pointer;
 }
 .search-select-panel {
   z-index: 150;
   width: min(320px, 90vw);
-  border-radius: 14px;
-  background: rgba(10, 4, 24, 0.96);
+  border-radius: var(--radius-14);
+  background: rgba(250, 250, 248, 0.96);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
-  padding: 10px;
+  box-shadow: var(--shadow-md);
+  padding: var(--space-10);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .search-select-panel input[type="search"] {
-  padding: 9px 11px;
-  border-radius: 9px;
+  padding: var(--space-9) var(--space-11);
+  border-radius: var(--radius-9);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(7, 4, 11, 0.04);
   color: var(--text);
   font-size: var(--text-base);
 }
@@ -2080,12 +2217,12 @@ table.data-table {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2);
 }
 .search-select-options .country-option {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: var(--space-8) var(--space-10);
+  border-radius: var(--radius-8);
   border: none;
   background: transparent;
   color: var(--text2);
@@ -2099,7 +2236,7 @@ table.data-table {
   color: var(--text);
 }
 .inline-empty {
-  padding: 12px;
+  padding: var(--space-12);
   text-align: center;
   font-size: var(--text-sm);
   color: var(--muted);
@@ -2114,9 +2251,9 @@ table.data-table {
      out past the modal's edge. minmax(0, 1fr) actually lets it shrink; the
      select's own text truncates instead (see .app-select-value). */
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: var(--space-10);
   align-items: end;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-16);
 }
 .quick-add-button {
   height: 40px;
@@ -2126,7 +2263,7 @@ table.data-table {
 .payments-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
   max-height: 320px;
   overflow-y: auto;
 }
@@ -2134,14 +2271,14 @@ table.data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-10);
+  background: rgba(7, 4, 11, 0.03);
 }
 .payment-item div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2);
 }
 .payment-item strong {
   font-family: var(--font-display);
@@ -2156,15 +2293,15 @@ table.data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
+  gap: var(--space-12);
+  margin-top: var(--space-14);
   font-size: var(--text-sm);
   color: var(--muted);
 }
 .pagination {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .pagination strong {
   font-family: var(--font-display);
@@ -2177,10 +2314,10 @@ table.data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  margin-bottom: 16px;
+  padding: var(--space-12) var(--space-14);
+  border-radius: var(--radius-10);
+  background: rgba(7, 4, 11, 0.03);
+  margin-bottom: var(--space-16);
   font-size: var(--text-base);
   color: var(--muted);
 }
@@ -2191,20 +2328,20 @@ table.data-table {
 .renewal-price-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: var(--space-10);
+  margin-bottom: var(--space-8);
 }
 .date-adjust-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 18px;
+  gap: var(--space-16);
+  margin-top: var(--space-18);
 }
 .date-adjust-title {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
 }
 .date-adjust-title strong {
   font-size: var(--text-base);
@@ -2217,29 +2354,29 @@ table.data-table {
 .date-adjust-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-6);
 }
 .preset-button {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 7px 12px;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-12);
   font-size: var(--text-sm);
 }
 .is-plus .preset-button:hover {
-  border-color: rgba(34, 197, 94, 0.3);
-  color: rgba(34, 197, 94, 0.9);
+  border-color: rgba(var(--success-rgb), 0.3);
+  color: var(--success);
 }
 .is-minus .preset-button:hover {
-  border-color: rgba(239, 68, 68, 0.3);
-  color: rgba(239, 68, 68, 0.9);
+  border-color: rgba(var(--danger-rgb), 0.3);
+  color: var(--danger);
 }
 
 /* ─── Stats / PnL ─────────────────────────────────────────────────────────────── */
 .section-head-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .period-select {
   min-width: 130px;
@@ -2251,11 +2388,11 @@ table.data-table {
      wide screens instead of wrapping into a predictable 2x4 layout. Narrower
      viewports drop to 2 then 1 column below. */
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--space-12);
+  margin-bottom: var(--space-24);
 }
 .stats-grid .stat-card {
-  gap: 4px;
+  gap: var(--space-4);
 }
 .stats-grid .stat-card span:not(.trend-tag) {
   font-size: var(--text-xs);
@@ -2281,25 +2418,25 @@ table.data-table {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-8);
   width: 100%;
 }
 .charts-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: var(--space-14);
+  margin-bottom: var(--space-14);
 }
 .charts-grid .wide-chart {
   grid-column: 1;
   grid-row: 1 / 3;
 }
 .chart-panel {
-  border-radius: 16px;
-  padding: 18px;
+  border-radius: var(--radius-16);
+  padding: var(--space-18);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-12);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
 }
@@ -2314,13 +2451,13 @@ table.data-table {
    now often just a couple of short bar rows (zero-movement buckets are
    filtered out in JS) and felt cramped right under the heading. */
 .movement-panel {
-  gap: 20px;
+  gap: var(--space-20);
 }
 .chart-title-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .chart-title-row span {
   font-family: var(--font-display);
@@ -2383,7 +2520,7 @@ table.data-table {
 .line-axis {
   display: flex;
   justify-content: space-between;
-  padding-top: 6px;
+  padding-top: var(--space-6);
   font-size: var(--text-2xs);
   color: var(--muted);
 }
@@ -2392,10 +2529,10 @@ table.data-table {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(10, 4, 24, 0.94);
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-10);
+  border-radius: var(--radius-10);
+  background: rgba(250, 250, 248, 0.94);
   border: 1px solid var(--glass-border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   pointer-events: none;
@@ -2419,7 +2556,7 @@ table.data-table {
 .bar-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-10);
   /* providerSpend is capped at 8 rows in JS, but even that many can grow
      taller than the wide chart it sits beside in .charts-grid's row-1 —
      since .wide-chart spans both rows, an unbounded panel here would push
@@ -2432,13 +2569,13 @@ table.data-table {
   display: grid;
   grid-template-columns: 100px 1fr auto;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
   font-size: var(--text-sm);
 }
 .bar-row > span {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
   color: var(--text2);
   white-space: nowrap;
   overflow: hidden;
@@ -2452,14 +2589,14 @@ table.data-table {
 }
 .bar-row > div {
   height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-3);
+  background: rgba(7, 4, 11, 0.05);
   overflow: hidden;
 }
 .bar-row > div i {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--radius-3);
 }
 .bar-row strong {
   font-family: var(--font-display);
@@ -2470,47 +2607,49 @@ table.data-table {
 
 /* Payments/expenses tables */
 .table-panel {
-  gap: 14px;
+  gap: var(--space-14);
 }
 .table-title-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-12);
 }
 .table-title-row span {
   display: block;
   font-size: var(--text-sm);
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: var(--space-2);
 }
 .export-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .table-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--space-16);
 }
 .table-toolbar input[type="search"] {
   flex: 1;
   min-width: 160px;
-  padding: 9px 12px;
-  border-radius: 10px;
+  padding: var(--space-9) var(--space-16);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-size: var(--text-base);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .table-toolbar input[type="search"]:focus {
   outline: none;
-  border-color: rgba(207, 0, 163, 0.4);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(207, 0, 163, 0.14);
 }
 .payments-table {
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   border: 1px solid var(--border);
   overflow: hidden;
   /* Scrolls horizontally on narrow screens instead of squeezing 4+ columns
@@ -2524,8 +2663,8 @@ table.data-table {
   /* Right-aligned numeric columns (.cell-num, strong) sit at their column's
      right edge, right next to the next (left-aligned) column's left edge —
      10px read as the two touching. */
-  gap: 24px;
-  padding: 16px 14px;
+  gap: var(--space-24);
+  padding: var(--space-16) var(--space-14);
   align-items: center;
   min-width: 540px;
 }
@@ -2535,7 +2674,7 @@ table.data-table {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   border-bottom: 1px solid var(--border);
 }
 .payments-table-row {
@@ -2547,7 +2686,7 @@ table.data-table {
 /* Zebra striping + hover — a flat 6-column row is hard to track by eye
    across a wide table without some banding to anchor on. */
 .payments-table-row:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(7, 4, 11, 0.02);
 }
 .payments-table-row:hover {
   background: rgba(207, 0, 163, 0.06);
@@ -2572,7 +2711,7 @@ table.data-table {
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .pnl-table-row {
   grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr 1fr;
@@ -2588,7 +2727,7 @@ table.data-table {
 
 /* PnL monthly chart + collapsible tables */
 .month-profit-panel {
-  margin-bottom: 14px;
+  margin-bottom: var(--space-14);
 }
 /* Both bot-payments and expenses AccordionItems below are separate
    .chart-panel cards, but nothing spaced them apart from each other — with
@@ -2597,7 +2736,7 @@ table.data-table {
 .pnl-tables-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-14);
 }
 .month-profit-chart-wrap {
   height: 240px;
@@ -2620,9 +2759,9 @@ table.data-table {
 .alerts-counter {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 12px;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  border-radius: var(--radius-12);
   background: rgba(207, 0, 163, 0.1);
   color: var(--accent);
 }
@@ -2633,40 +2772,40 @@ table.data-table {
 .alerts-status-panel {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: rgba(239, 68, 68, 0.9);
+  gap: var(--space-10);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-12);
+  background: rgba(var(--danger-rgb), 0.08);
+  border: 1px solid rgba(var(--danger-rgb), 0.2);
+  color: var(--danger);
   font-size: var(--text-base);
-  margin-bottom: 20px;
+  margin-bottom: var(--space-20);
 }
 .alerts-status-panel.configured {
-  background: rgba(34, 197, 94, 0.08);
-  border-color: rgba(34, 197, 94, 0.2);
-  color: rgba(34, 197, 94, 0.9);
+  background: rgba(var(--success-rgb), 0.08);
+  border-color: rgba(var(--success-rgb), 0.2);
+  color: var(--success);
 }
 .alert-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .alert-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
+  gap: var(--space-14);
+  padding: var(--space-14) var(--space-16);
+  border-radius: var(--radius-14);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   transition: border-color 0.2s;
 }
 .alert-item.is-soon {
-  border-color: rgba(245, 158, 11, 0.28);
+  border-color: rgba(var(--warning-rgb), 0.28);
 }
 .alert-item.is-overdue {
-  border-color: rgba(239, 68, 68, 0.32);
+  border-color: rgba(var(--danger-rgb), 0.32);
 }
 .alert-icon {
   display: flex;
@@ -2674,8 +2813,8 @@ table.data-table {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-10);
+  background: rgba(7, 4, 11, 0.04);
   color: var(--muted);
   flex-shrink: 0;
 }
@@ -2684,7 +2823,7 @@ table.data-table {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-4);
 }
 .alert-main strong {
   font-family: var(--font-display);
@@ -2693,28 +2832,28 @@ table.data-table {
 }
 .alert-meta {
   display: flex;
-  gap: 12px;
+  gap: var(--space-12);
   font-size: var(--text-sm);
   color: var(--muted);
 }
 .alert-empty svg {
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-12);
 }
 
 /* ─── Logs ────────────────────────────────────────────────────────────────────── */
 .logs-table {
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   overflow-x: auto;
 }
 .logs-table-head,
 .logs-table-row {
   display: grid;
   grid-template-columns: 140px 120px 1fr 110px 1.4fr;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: var(--space-10);
+  padding: var(--space-10) var(--space-14);
   align-items: center;
   min-width: 640px;
 }
@@ -2728,7 +2867,7 @@ table.data-table {
 .logs-table-row {
   font-size: var(--text-sm);
   color: var(--text2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(7, 4, 11, 0.04);
 }
 .logs-table-row:last-child {
   border-bottom: none;
@@ -2750,16 +2889,16 @@ table.data-table {
 .guide-search-panel {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--space-12);
+  margin-bottom: var(--space-20);
 }
 .guide-search-panel input {
   flex: 1;
   max-width: 360px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: var(--space-10) var(--space-14);
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-size: var(--text-base);
 }
@@ -2770,20 +2909,20 @@ table.data-table {
 .guide-manual {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-14);
 }
 .guide-manual-card {
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: var(--radius-16);
+  padding: var(--space-20);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-14);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
 }
 .guide-manual-head {
   display: flex;
-  gap: 14px;
+  gap: var(--space-14);
   align-items: flex-start;
 }
 .guide-section-icon {
@@ -2792,7 +2931,7 @@ table.data-table {
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: rgba(207, 0, 163, 0.1);
   color: var(--accent);
   flex-shrink: 0;
@@ -2801,7 +2940,7 @@ table.data-table {
   font-family: var(--font-display);
   font-size: var(--text-lg);
   color: var(--text);
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-4);
 }
 .guide-manual-head p {
   font-size: var(--text-base);
@@ -2811,32 +2950,32 @@ table.data-table {
 }
 .guide-list {
   margin: 0;
-  padding-left: 20px;
+  padding-left: var(--space-20);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-4);
   font-size: var(--text-base);
   color: var(--text2);
 }
 .guide-advice-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--space-12);
 }
 .guide-advice {
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: var(--radius-12);
+  padding: var(--space-14);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
 }
 .guide-advice.is-good {
-  background: rgba(34, 197, 94, 0.06);
-  border: 1px solid rgba(34, 197, 94, 0.18);
+  background: rgba(var(--success-rgb), 0.06);
+  border: 1px solid rgba(var(--success-rgb), 0.18);
 }
 .guide-advice.is-bad {
-  background: rgba(239, 68, 68, 0.06);
-  border: 1px solid rgba(239, 68, 68, 0.18);
+  background: rgba(var(--danger-rgb), 0.06);
+  border: 1px solid rgba(var(--danger-rgb), 0.18);
 }
 .guide-advice strong {
   font-size: var(--text-sm);
@@ -2844,12 +2983,12 @@ table.data-table {
 }
 .guide-advice ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: var(--space-18);
   font-size: var(--text-sm);
   color: var(--text2);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-4);
 }
 @media (max-width: 640px) {
   .guide-advice-grid {
@@ -2865,18 +3004,18 @@ table.data-table {
    actual content height instead, so cards just pack tightly. */
 .settings-stack {
   columns: 2;
-  column-gap: 16px;
+  column-gap: var(--space-16);
 }
 .settings-panel {
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: var(--radius-16);
+  padding: var(--space-20);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-14);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   break-inside: avoid;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-16);
 }
 /* .settings-panel has no align-items, so it defaults to stretch — labels and
    .settings-inline-footer are meant to be full width, but a bare submit
@@ -2893,14 +3032,14 @@ table.data-table {
 .settings-links-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
 }
 .settings-link-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 12px;
-  border-radius: 10px;
+  gap: var(--space-12);
+  padding: var(--space-11) var(--space-12);
+  border-radius: var(--radius-10);
   color: var(--text2);
   text-decoration: none;
   font-size: var(--text-base);
@@ -2918,7 +3057,7 @@ table.data-table {
 .settings-panel label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--muted);
@@ -2927,10 +3066,10 @@ table.data-table {
 .settings-panel input[type="password"],
 .settings-panel input[type="number"],
 .settings-panel textarea {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--text);
   font-family: var(--font-text);
   font-size: var(--text-md);
@@ -2943,7 +3082,7 @@ table.data-table {
 .settings-card-head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-12);
 }
 .settings-card-icon {
   display: flex;
@@ -2969,12 +3108,12 @@ table.data-table {
 .settings-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
+  gap: var(--space-12);
 }
 .input-with-action {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-8);
 }
 .input-with-action input {
   flex: 1;
@@ -2986,9 +3125,9 @@ table.data-table {
   width: 38px;
   height: 38px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-10);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--muted);
   cursor: pointer;
 }
@@ -3000,27 +3139,27 @@ table.data-table {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-12);
   flex-wrap: wrap;
 }
 .check-row {
   flex-direction: row !important;
   align-items: center;
-  gap: 8px !important;
+  gap: var(--space-8) !important;
   font-weight: normal !important;
 }
 .rate-display-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: var(--space-10);
 }
 .rate-display-grid > div {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  gap: var(--space-4);
+  padding: var(--space-10) var(--space-12);
+  border-radius: var(--radius-10);
+  background: rgba(7, 4, 11, 0.03);
 }
 .rate-display-grid span {
   font-size: var(--text-2xs);
@@ -3036,23 +3175,23 @@ table.data-table {
 .totp-setup-grid {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 16px;
+  gap: var(--space-16);
   align-items: start;
 }
 .totp-qr-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  gap: var(--space-8);
+  padding: var(--space-14);
+  border-radius: var(--radius-12);
+  background: rgba(7, 4, 11, 0.03);
   color: var(--muted);
 }
 .totp-qr-card img {
   width: 140px;
   height: 140px;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: #fff;
 }
 .totp-qr-card span {
@@ -3061,7 +3200,7 @@ table.data-table {
 .totp-secret-fields {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-10);
 }
 .totp-secret-fields textarea {
   resize: none;
@@ -3182,12 +3321,12 @@ table.data-table {
     height: 36px;
   }
   .nav-button {
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
   }
   .accordion-trigger {
-    padding-top: 16px;
-    padding-bottom: 16px;
+    padding-top: var(--space-16);
+    padding-bottom: var(--space-16);
   }
 }
 

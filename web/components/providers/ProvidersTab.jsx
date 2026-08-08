@@ -12,6 +12,7 @@ import { useGrouping } from "../../lib/grouping";
 import { useMoney } from "../../lib/money";
 import { emptyProvider } from "../../lib/assets";
 import { clone } from "../../lib/dates";
+import { contrastTextColor } from "../../lib/contrastText";
 
 // The former standalone Providers page (web/app/(dashboard)/providers/page.jsx),
 // now the "Провайдеры" tab of the merged "Ресурсы" section alongside Records.
@@ -51,7 +52,11 @@ export default function ProvidersTab() {
               {categories.length ? (
                 <span className="provider-category-list">
                   {categories.map((cat) => (
-                    <span key={cat.id} className="category-badge" style={{ "--category-color": cat.color }}>
+                    <span
+                      key={cat.id}
+                      className="category-badge"
+                      style={{ "--category-color": cat.color, "--category-text": contrastTextColor(cat.color) }}
+                    >
                       {cat.name}
                     </span>
                   ))}

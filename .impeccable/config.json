@@ -1,0 +1,38 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-radius",
+        "value": "2px",
+        "createdAt": "2026-08-07T21:06:00.296Z",
+        "reason": "User confirmed: .flag-icon's 15x11px corner rounding is an intentional single-use exception, not part of the reusable radius scale (documented in DESIGN.md's Shapes section)"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "11px",
+        "createdAt": "2026-08-07T21:06:08.030Z",
+        "reason": "User confirmed: .settings-card-icon's 11px radius is a deliberate proportional exception for that specific 38px icon tile, not part of the reusable radius scale (documented in DESIGN.md's Shapes section)"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "web/app/globals.css"
+        ],
+        "createdAt": "2026-08-07T21:06:17.947Z",
+        "reason": "User confirmed: .sidebar's width transition is a genuine desktop-only content reflow (not a decorative slide transform could replace), already scoped to just width, fires once per user click; grid-template-columns evaluated and rejected as no cheaper since both endpoints are known fixed widths"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "app/globals.css"
+        ],
+        "createdAt": "2026-08-08T10:28:39.941Z",
+        "reason": "User confirmed: .sidebar's width transition is a genuine desktop-only content reflow, already scoped to just width; grid-template-columns evaluated and rejected as no cheaper. Duplicate of the web/app/globals.css-scoped entry, added because the hook resolves this file's path as app/globals.css (relative to web/, its actual project root) rather than relative to the repo root."
+      }
+    ]
+  }
+}

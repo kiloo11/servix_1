@@ -50,7 +50,7 @@ export default function AssetCard({ asset, dragging, dragDisabled, onDragStart, 
             <h2>{asset.name}</h2>
             {asset.type === "vps" ? (
               <span className="country-option">
-                {asset.countryCode ? <img className="flag-icon" src={countryFlagUrl(asset.countryCode)} alt="" /> : null}
+                {asset.countryCode ? <img className="flag-icon" src={countryFlagUrl(asset.countryCode)} alt="" loading="lazy" /> : null}
                 {assetSubtitle(asset)}
               </span>
             ) : asset.domain ? (

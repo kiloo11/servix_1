@@ -16,6 +16,7 @@ import { useAssetActions } from "../../lib/assetActions";
 import { useGrouping } from "../../lib/grouping";
 import { ASSET_TYPES, emptyAsset } from "../../lib/assets";
 import { clone, compareAssetsOrder, parseAppDate } from "../../lib/dates";
+import { contrastTextColor } from "../../lib/contrastText";
 
 // The former standalone Assets page (web/app/(dashboard)/assets/page.jsx),
 // now the "Записи" tab of the merged "Ресурсы" section alongside Providers.
@@ -165,7 +166,10 @@ export default function AssetsTab() {
                 assetGroupBuckets(group).map((bucket) => (
                   <AccordionItem key={bucket.category || "none"} value={`${group.type}:${bucket.category || "none"}`} className="category-group">
                     <AccordionTrigger className="category-group-summary">
-                      <span className="category-badge" style={bucket.color ? { "--category-color": bucket.color } : undefined}>
+                      <span
+                        className="category-badge"
+                        style={bucket.color ? { "--category-color": bucket.color, "--category-text": contrastTextColor(bucket.color) } : undefined}
+                      >
                         {bucket.label}
                       </span>
                       <span className="category-group-count">{tc("piece", bucket.items.length)}</span>

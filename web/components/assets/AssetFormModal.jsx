@@ -116,7 +116,7 @@ export default function AssetFormModal({ open, onOpenChange, asset }) {
                   <Popover.Trigger asChild>
                     <button className="search-select-button" type="button">
                       <span className="country-option">
-                        {draft.countryCode ? <img className="flag-icon" src={countryFlagUrl(draft.countryCode)} alt="" /> : null}
+                        {draft.countryCode ? <img className="flag-icon" src={countryFlagUrl(draft.countryCode)} alt="" loading="lazy" /> : null}
                         {draft.countryCode ? countryDisplayName(draft.countryCode) : t("common.countryEmpty")}
                       </span>
                     </button>
@@ -142,7 +142,7 @@ export default function AssetFormModal({ open, onOpenChange, asset }) {
                               setCountryOpen(false);
                             }}
                           >
-                            {country.code ? <img className="flag-icon" src={countryFlagUrl(country.code)} alt="" /> : null}
+                            {country.code ? <img className="flag-icon" src={countryFlagUrl(country.code)} alt="" loading="lazy" /> : null}
                             {country.code ? countryDisplayName(country.code) : t("common.countryEmpty")}
                           </button>
                         ))}

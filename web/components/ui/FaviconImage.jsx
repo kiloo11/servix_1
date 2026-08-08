@@ -14,5 +14,5 @@ export default function FaviconImage({ src, letter }) {
   if (!src || errored) {
     return <span className="favicon-placeholder">{letter}</span>;
   }
-  return <img className="favicon" src={src} alt="" referrerPolicy="no-referrer" onError={() => setErrored(true)} />;
+  return <img className="favicon" src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setErrored(true)} />;
 }

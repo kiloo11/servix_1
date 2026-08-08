@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-08T02:00:00Z",
+  "title": "Design System: SERVIX",
+  "extensions": {
+    "colorMeta": {
+      "editorial-magenta": { "role": "primary", "displayName": "Editorial Magenta", "canonical": "#cf00a3" },
+      "ink-magenta": { "role": "primary", "displayName": "Ink Magenta", "canonical": "#99007c" },
+      "sky-count-line": { "role": "secondary", "displayName": "Sky Count-Line", "canonical": "#38bdf8" },
+      "plum-glow": { "role": "secondary", "displayName": "Plum Glow", "canonical": "rgba(147, 27, 121, 0.14)" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#04111d" },
+      "text-secondary": { "role": "neutral", "displayName": "Text Secondary", "canonical": "#4b5563" },
+      "text-muted": { "role": "neutral", "displayName": "Text Muted", "canonical": "#656b71" },
+      "page": { "role": "neutral", "displayName": "Page", "canonical": "#ffffff" },
+      "sidebar-surface": { "role": "neutral", "displayName": "Sidebar Surface", "canonical": "#f7f8fa" },
+      "divider-gray": { "role": "neutral", "displayName": "Divider Gray", "canonical": "#e5e8eb" },
+      "floating-surface": { "role": "neutral", "displayName": "Floating Surface", "canonical": "rgba(250, 250, 248, 0.92)" },
+      "white": { "role": "neutral", "displayName": "White", "canonical": "#ffffff" },
+      "shadow-black": { "role": "neutral", "displayName": "Shadow Black", "canonical": "#000000" },
+      "danger": { "role": "status", "displayName": "Danger", "canonical": "#dc2626" },
+      "success": { "role": "status", "displayName": "Success", "canonical": "#12823b" },
+      "warning": { "role": "status", "displayName": "Warning", "canonical": "#995906" }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 16px rgba(0, 0, 0, 0.06)", "purpose": "Resting elevation for every in-flow card/widget — replaces the earlier flat-at-rest rule." },
+      { "name": "card-hover", "value": "0 2px 4px rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.1)", "purpose": "Hover state for genuinely clickable cards only (asset cards, provider cards)." },
+      { "name": "sm", "value": "0 6px 18px rgba(0, 0, 0, 0.3)", "purpose": "Small floating chips — the mobile menu button." },
+      { "name": "md", "value": "0 16px 48px rgba(0, 0, 0, 0.45)", "purpose": "Mid-elevation floating panels — dropdowns, popovers, the account menu." },
+      { "name": "lg", "value": "0 24px 64px rgba(0, 0, 0, 0.5)", "purpose": "Modals — the highest elevation tier." },
+      { "name": "login-card", "value": "0 24px 64px rgba(0, 0, 0, 0.4)", "purpose": "The login card only — same Y/blur as lg but a lighter 0.4 alpha to match that screen's lighter glass effect." },
+      { "name": "toast", "value": "0 8px 32px rgba(0, 0, 0, 0.35)", "purpose": "Toast notifications — between sm and md, doesn't map onto either without changing its appearance." },
+      { "name": "chart-tooltip", "value": "0 8px 24px rgba(0, 0, 0, 0.4)", "purpose": "Chart hover tooltips — a smaller, tighter shadow than the standard tooltip." }
+    ],
+    "motion": [
+      { "name": "modal-enter", "value": "opacity+scale(0.97→1)+y(8px→0), 0.16s", "purpose": "Modal card entrance (Framer Motion, Modal.jsx)." },
+      { "name": "toast-enter", "value": "opacity+scale(0.96→1)+y(12px→0), 0.18s", "purpose": "Toast entrance (Framer Motion, ToastContext.jsx)." },
+      { "name": "reduced-motion-fallback", "value": "opacity only, same duration", "purpose": "Both of the above drop to an opacity-only fade when prefers-reduced-motion is set, via Framer Motion's useReducedMotion()." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action — flat solid magenta fill (no gradient), white text, fully rounded pill shape.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Save</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: \"GT Eesti Pro Display\", system-ui, sans-serif; font-size: 14px; font-weight: 500; padding: 12px 20px; border-radius: 999px; border: none; background: #cf00a3; color: #fff; cursor: pointer; transition: filter 0.15s; } .ds-btn-primary:hover { filter: brightness(1.1); } .ds-btn-primary:focus-visible { outline: 2px solid #cf00a3; outline-offset: 2px; border-radius: inherit; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Transparent, bordered, fully rounded pill — the default non-primary action.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: \"GT Eesti Pro Text\", system-ui, sans-serif; font-size: 14px; font-weight: 500; padding: 11px 18px; border-radius: 999px; border: 1px solid rgba(4, 17, 29, 0.14); background: transparent; color: #04111d; cursor: pointer; transition: background 0.15s, border-color 0.15s; } .ds-btn-secondary:hover { background: rgba(4, 17, 29, 0.05); } .ds-btn-secondary:focus-visible { outline: 2px solid #cf00a3; outline-offset: 2px; border-radius: inherit; }"
+    },
+    {
+      "name": "Status Pill (Overdue)",
+      "kind": "chip",
+      "refersTo": "pill-overdue",
+      "description": "Solid-fill, fully-rounded status pill — the pattern every status/category badge follows: opaque background, white text, never a translucent wash. Background is OpenSea's own referenced red, darkened for a 5.5:1+ contrast margin.",
+      "html": "<span class=\"ds-pill-overdue\">Overdue 11d</span>",
+      "css": ".ds-pill-overdue { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: #dc2626; border-color: transparent; color: #fff; font-size: 11px; white-space: nowrap; }"
+    },
+    {
+      "name": "Category Badge",
+      "kind": "chip",
+      "refersTo": "badge-category",
+      "description": "User-colored category chip, fully rounded — background is the user's own chosen color; text is white when that clears 4.5:1, otherwise a darkened shade of the same color (computed in lib/contrastText.js).",
+      "html": "<span class=\"ds-badge-category\" style=\"background:#cf00a3;color:#fff\">Инфраструктура</span>",
+      "css": ".ds-badge-category { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The base in-flow surface — real soft-shadow elevation at rest (not flat), translucent ink-tinted background over the white page, generous 20px radius, neutral (not accent-tinted) border.",
+      "html": "<div class=\"ds-card\">Card content</div>",
+      "css": ".ds-card { border-radius: 20px; padding: 18px; background: rgba(4, 17, 29, 0.04); border: 1px solid rgba(4, 17, 29, 0.08); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 16px rgba(0, 0, 0, 0.06); }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text input — faint ink-tinted fill at rest, 14px radius, magenta border + soft ring on focus.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search…\" />",
+      "css": ".ds-input { width: 100%; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(4, 17, 29, 0.14); background: rgba(4, 17, 29, 0.03); color: #04111d; font-size: 14px; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; } .ds-input:focus { outline: none; border-color: #cf00a3; background: #ffffff; box-shadow: 0 0 0 3px rgba(207, 0, 163, 0.14); } .ds-input::placeholder { color: #656b71; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Operator's Ledger, Ported from OpenSea",
+    "overview": "SERVIX is a single-operator cockpit, not a team product — one person tracking their own servers, domains, certificates, and a VPN-reselling business's real subscriber economics (MRR, churn, subscriber lifetime) in one place, self-hosted, with nothing routed through a third-party SaaS. The ledger identity (quiet neutrals, one magenta accent reserved for actionable elements) stays; the rest of the palette — neutrals, text hierarchy, semantic status colors, shape and elevation — is a direct, explicit port from OpenSea, requested twice: first as a shape/elevation reference, then as a full color-level port of its actual near-black/gray text hierarchy and semantic hues. The magenta accent was the one color pinned out of scope across both passes.",
+    "keyCharacteristics": [
+      "Restrained color strategy: OpenSea's own near-achromatic white/gray neutrals and dark-navy text hierarchy + one magenta accent — not a tinted neutral scale (an earlier pass tried one; explicitly superseded).",
+      "A real, independent secondary/muted text hierarchy — distinct solid grays, not one ink color at varying opacity.",
+      "Pill-first shape language: buttons, badges, pills, search fields, and avatars are fully rounded; cards/modals use large but finite radii (20-24px).",
+      "Real resting elevation on cards/widgets — a deliberate reversal of an earlier flat-by-default rule.",
+      "Semantic status colors are OpenSea's own referenced hues, darkened only as far as needed for a genuine 5.5:1+ margin.",
+      "Every text/status color verified against every background it actually renders on, not just the lightest one.",
+      "Every Radix overlay/menu primitive is already in use; no hand-rolled dropdown, dialog, or toast remains."
+    ],
+    "rules": [
+      { "name": "The Solid-Gray-Not-Alpha-Black Rule", "body": "Text Secondary and Text Muted are independent solid colors, not --text at reduced opacity — an alpha-blended gray renders differently depending on what's behind it.", "section": "colors" },
+      { "name": "The Solid Status Rule", "body": "Status badges use a solid, opaque background with darkened semantic color and white (or contrast-computed) text — never a translucent wash with colored text on top.", "section": "colors" },
+      { "name": "The Flat-Button Rule", "body": "Primary/CTA buttons are a single flat fill, never a gradient — a direct OpenSea reference.", "section": "components" },
+      { "name": "The Check-Every-Background Rule", "body": "A text/status color is verified against every background it actually renders on, not just the palest one — a muted gray that passed against the white page failed against the slightly darker sidebar until checked explicitly.", "section": "colors" },
+      { "name": "The No-Offset Rule", "body": "Every shadow is 0 <Y> <blur> rgba(0,0,0,<alpha>) — no x-offset, no spread, ever.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use the pill radius for any new button, badge, pill, search input, or avatar.",
+      "Do give any new in-flow card/widget the card shadow at rest (and card-hover only if genuinely clickable).",
+      "Do use the darkened semantic tokens for anything that renders as text.",
+      "Do check a new text/status color against every background it will actually render on, not just the lightest.",
+      "Do reach for a Radix primitive first for anything overlay/menu/dialog-shaped."
+    ],
+    "donts": [
+      "Don't reintroduce a gradient on the primary button.",
+      "Don't outline a card/panel in the magenta accent — the border is neutral now.",
+      "Don't derive secondary/muted text as an alpha of --text — use the named solid grays.",
+      "Don't use a translucent color wash as a badge/pill/status background with colored text on top.",
+      "Don't introduce a shadow with an x-offset or spread.",
+      "Don't hand-roll a dropdown, dialog, tooltip, or toast."
+    ]
+  }
+}

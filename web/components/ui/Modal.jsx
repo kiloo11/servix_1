@@ -2,9 +2,15 @@
 
 import { Dialog } from "radix-ui";
 import { X } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function Modal({ open, onOpenChange, cardClass = "", closeLabel = "Close", title, children }) {
+  // Opacity-only fade for the overlay is already motion-safe; the card's
+  // scale+y entrance is real movement, so that's what reduced-motion drops.
+  const reduceMotion = useReducedMotion();
+  const cardMotion = reduceMotion
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+    : { initial: { opacity: 0, scale: 0.97, y: 8 }, animate: { opacity: 1, scale: 1, y: 0 }, exit: { opacity: 0, scale: 0.97, y: 8 } };
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -14,9 +20,7 @@ export default function Modal({ open, onOpenChange, cardClass = "", closeLabel =
         <Dialog.Content asChild>
           <motion.div
             className={`modal-card${cardClass ? ` ${cardClass}` : ""}`}
-            initial={{ opacity: 0, scale: 0.97, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            {...cardMotion}
             transition={{ duration: 0.16 }}
           >
             <div className="dialog-head">
